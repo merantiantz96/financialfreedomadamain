@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="ms" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      CSP: connect-src 'none' = page ni tak boleh hantar data ke mana-mana server (fetch/XHR blocked).
+      Data kewangan kekal dalam browser je. 'unsafe-inline' perlu sebab Tailwind CDN + inline handlers.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="no-referrer">
+    <title>Hub Kebebasan Kewangan Keluarga</title>
+
+    <!-- Tailwind v3 pinned (CDN JIT build cannot use SRI, it is generated at runtime) -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: {
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+                mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace']
+            } } }
+        };
+    </script>
+    <!-- Chart.js 4.4.1 pinned + SRI -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"
+            integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG"
+            crossorigin="anonymous"></script>
+    <!-- FontAwesome 6.4.0 pinned + SRI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===== Theme tokens: Japandi sage/earth. Satu tempat je untuk tukar warna ===== */
+        :root {
+            --bg: #f6f4ef; --card: #ffffff; --sub: #f7f5f0; --border: #e5e0d5; --border-strong: #d6cfc1;
+            --text: #1b242a; --muted: #56626c; --faint: #8a939b;
+            --sage: #2d6a4f; --sage-bg: rgba(64,145,108,.10);
+            --earth: #a85f3d; --gold: #9a6b2f; --rose: #b4233c; --blue: #2b6cb0; --teal: #23756b;
+            --track: #ece7dc; --input: #ffffff;
+        }
+        html.dark {
+            --bg: #0e1319; --card: #151b22; --sub: #11161c; --border: rgba(255,255,255,.08); --border-strong: rgba(255,255,255,.14);
+            --text: #f1eee4; --muted: #9aa5b1; --faint: #6b7682;
+            --sage: #74c69d; --sage-bg: rgba(82,183,136,.12);
+            --earth: #e09f7d; --gold: #e0b77f; --rose: #f07a8c; --blue: #7fb2e5; --teal: #6fd0c2;
+            --track: #1f2730; --input: #0f141a;
+        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent; }
+
+        /* Cards: rounded-xl + border + shadow-sm */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: .75rem; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+        .card-sub { background: var(--sub); border: 1px solid var(--border); border-radius: .75rem; }
+        /* KPI card: jalur warna nipis di tepi kiri */
+        .kpi { position: relative; overflow: hidden; }
+        .kpi::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--stripe, var(--sage)); }
+
+        .t-muted { color: var(--muted); } .t-faint { color: var(--faint); }
+        .t-sage { color: var(--sage); } .t-earth { color: var(--earth); } .t-gold { color: var(--gold); }
+        .t-rose { color: var(--rose); } .t-blue { color: var(--blue); } .t-teal { color: var(--teal); }
+        .bd { border-color: var(--border); }
+        .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+        .badge { display: inline-flex; align-items: center; gap: .3rem; font-size: 10px; font-weight: 700; padding: .15rem .5rem; border-radius: .375rem; border: 1px solid var(--border); white-space: nowrap; }
+        .b-sage { color: var(--sage); background: var(--sage-bg); border-color: transparent; }
+        .b-gold { color: var(--gold); background: rgba(212,163,115,.14); border-color: transparent; }
+        .b-rose { color: var(--rose); background: rgba(209,73,91,.12); border-color: transparent; }
+        .b-blue { color: var(--blue); background: rgba(74,127,181,.12); border-color: transparent; }
+        .b-pink { color: #c2417a; background: rgba(194,65,122,.10); border-color: transparent; }
+        html.dark .b-pink { color: #f29ac2; }
+        .b-mute { color: var(--faint); background: transparent; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font-size: 12px; font-weight: 600; border-radius: .6rem; padding: .55rem .9rem; border: 1px solid var(--border); background: var(--card); color: var(--text); min-height: 38px; transition: background .15s; }
+        .btn:hover { background: var(--sub); }
+        .btn-primary { background: #40916c; color: #fff; border-color: #40916c; }
+        .btn-primary:hover { background: #2d6a4f; }
+        .btn-icon { width: 38px; padding: 0; }
+        .btn-danger { color: var(--rose); }
+
+        .field { width: 100%; background: var(--input); border: 1px solid var(--border-strong); color: var(--text); border-radius: .6rem; padding: .55rem .75rem; font-size: 13px; }
+        .field:focus { outline: 2px solid rgba(64,145,108,.45); outline-offset: 0; }
+        .field.invalid { border-color: var(--rose); }
+        label.lbl { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .3rem; }
+
+        table.tbl { width: 100%; font-size: 12px; border-collapse: collapse; }
+        table.tbl thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; color: var(--muted); text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); background: var(--sub); white-space: nowrap; }
+        table.tbl tbody td { padding: .6rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        table.tbl tbody tr:hover { background: var(--sub); }
+
+        .bar { height: 6px; border-radius: 99px; background: var(--track); overflow: hidden; }
+        .bar > div { height: 100%; border-radius: 99px; transition: width .5s ease; }
+
+        .tab-btn { font-size: 12px; font-weight: 600; padding: .5rem .85rem; border-radius: .6rem; color: var(--muted); white-space: nowrap; display: inline-flex; gap: .4rem; align-items: center; }
+        .tab-btn.active { background: #40916c; color: #fff; }
+        .seg-btn { font-size: 12px; font-weight: 600; padding: .4rem .8rem; border-radius: .5rem; color: var(--muted); display: inline-flex; gap: .35rem; align-items: center; }
+        .seg-btn.active { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+
+        /* Privacy mode: blur angka + chart */
+        body.privacy-active .pv { filter: blur(7px); user-select: none; }
+        .pv { transition: filter .2s; }
+
+        .scroll-x { overflow-x: auto; scrollbar-width: thin; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+        @media print {
+            header, nav, .no-print, button { display: none !important; }
+            body { background: #fff !important; color: #000 !important; }
+            .card, .card-sub { box-shadow: none !important; border: 1px solid #ccc !important; background: #fff !important; }
+            .view-tab-content.hidden { display: block !important; }   /* print semua tab */
+            body.privacy-active .pv { filter: none; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased pb-24 md:pb-8">
+
+<!-- ================= HEADER ================= -->
+<header class="sticky top-0 z-40 border-b bd no-print" style="background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="flex items-center justify-between w-full md:w-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white" style="background: linear-gradient(135deg,#2d6a4f,#52b788)">
+                    <i class="fa-solid fa-leaf"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight leading-tight">Hub Kewangan Keluarga</h1>
+                    <p class="text-[11px] t-muted font-medium">FIRE Malaysia · Data kekal dalam peranti ini</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 md:hidden">
+                <button class="btn btn-icon" data-action="privacy" title="Mod Privasi"><i class="fa-solid fa-eye js-privacy-icon"></i></button>
+                <button class="btn btn-icon" data-action="theme" title="Tukar Tema"><i class="fa-solid fa-moon js-theme-icon t-gold"></i></button>
+                <button class="btn btn-icon" data-action="open-settings" title="Tetapan & Backup"><i class="fa-solid fa-gear"></i></button>
+            </div>
+        </div>
+
+        <!-- Profile switcher -->
+        <div class="flex items-center p-1 rounded-xl w-full md:w-auto justify-center" style="background: var(--track)">
+            <button class="seg-btn profile-tab active" data-profile="combined"><i class="fa-solid fa-users"></i>Gabungan</button>
+            <button class="seg-btn profile-tab" data-profile="husband"><i class="fa-solid fa-user t-blue"></i>Suami</button>
+            <button class="seg-btn profile-tab" data-profile="wife"><i class="fa-solid fa-user" style="color:#c2417a"></i>Isteri</button>
+        </div>
+
+        <div class="hidden md:flex items-center gap-2">
+            <button class="btn btn-icon" data-action="privacy" title="Mod Privasi (Sorok Angka)"><i class="fa-solid fa-eye js-privacy-icon"></i></button>
+            <button class="btn btn-icon" data-action="theme" title="Tukar Tema"><i class="fa-solid fa-moon js-theme-icon t-gold"></i></button>
+            <button class="btn btn-icon" data-action="open-settings" title="Tetapan & Backup"><i class="fa-solid fa-gear"></i></button>
+            <button class="btn btn-icon" data-action="print" title="Cetak / PDF"><i class="fa-solid fa-print"></i></button>
+            <button class="btn btn-primary" data-action="add" data-type="asset"><i class="fa-solid fa-plus"></i>Tambah Rekod</button>
+        </div>
+    </div>
+</header>
+
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-5 space-y-5">
+
+    <!-- Level banner -->
+    <section class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl flex flex-col items-center justify-center text-[10px] font-bold text-white shrink-0" style="background: linear-gradient(135deg,#c67d5a,#d4a373)">
+                <span>LVL</span><span id="lvl-num" class="text-lg leading-none font-extrabold num">1</span>
+            </div>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 id="lvl-title" class="text-sm font-bold">Level 1</h3>
+                    <span id="streak-badge" class="badge b-gold"><i class="fa-solid fa-bolt"></i>0 Snapshot</span>
+                </div>
+                <p id="lvl-desc" class="text-xs t-muted mt-0.5"></p>
+            </div>
+        </div>
+        <div id="milestones" class="flex flex-wrap gap-1.5"></div>
+        <button class="btn whitespace-nowrap no-print" data-action="open-modal" data-modal="modal-ics"><i class="fa-solid fa-bell t-gold"></i>Peringatan 25hb</button>
+    </section>
+
+    <!-- FIRE hero -->
+    <section class="card p-5 md:p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div class="space-y-1.5 max-w-xl">
+                <span class="badge b-sage"><i class="fa-solid fa-bullseye"></i>Sasaran FI ikut aset liquid</span>
+                <h2 class="text-xl md:text-2xl font-bold">Progress FI: <span id="fi-pct" class="t-sage num pv">0%</span></h2>
+                <p class="text-xs t-muted leading-relaxed">
+                    Sasaran = <span id="fi-mult-txt">25</span>× belanja tahunan. Hanya aset liquid dikira (ASB, saham, tunai, robo, TH, emas).
+                    KWSP & rumah dikira berasingan sebagai kusyen umur 55/60+, bukan duit untuk hidup sebelum itu.
+                </p>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+                <div class="card-sub p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider t-muted">Sasaran FI</p>
+                    <p id="fi-target" class="text-lg font-extrabold num pv">RM 0</p>
+                </div>
+                <div class="card-sub p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider t-muted">Baki Diperlukan</p>
+                    <p id="fi-gap" class="text-lg font-extrabold num t-gold pv">RM 0</p>
+                </div>
+                <div class="card-sub p-3 col-span-2 sm:col-span-1">
+                    <p class="text-xs font-semibold uppercase tracking-wider t-muted">Liputan Pasif</p>
+                    <p id="fi-passive" class="text-lg font-extrabold num t-teal pv">0%</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 space-y-2">
+            <div class="flex flex-col sm:flex-row justify-between text-xs gap-1">
+                <span class="t-muted">Liquid: <strong id="fi-liquid" class="t-sage num pv">RM 0</strong> · Terkunci (KWSP/Rumah): <strong id="fi-locked" class="t-blue num pv">RM 0</strong></span>
+                <span id="fi-eta" class="t-sage font-semibold">Anggaran capai: --</span>
+            </div>
+            <div class="bar" style="height:10px"><div id="fi-bar" style="width:0;background:linear-gradient(90deg,#2d6a4f,#52b788)"></div></div>
+        </div>
+        <div class="mt-4 pt-4 border-t bd flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[11px] uppercase font-semibold tracking-wider t-muted">Sub-kategori FIRE</span>
+            <div class="flex flex-wrap gap-1.5">
+                <span id="b-lean" class="badge">Lean FI (75%): 0%</span>
+                <span id="b-base" class="badge">Base FI: 0%</span>
+                <span id="b-fat" class="badge">Fat FI (150%): 0%</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- KPI row -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card kpi p-4" style="--stripe:#4a7fb5">
+            <p class="text-xs font-semibold uppercase tracking-wider t-muted">Nilai Bersih</p>
+            <p id="k-networth" class="text-2xl font-extrabold num mt-1 pv">RM 0</p>
+            <div class="mt-3 pt-2.5 border-t bd text-xs t-muted flex justify-between">
+                <span>Aset <strong id="k-assets" class="num pv">RM 0</strong></span>
+                <span>Hutang <strong id="k-liab" class="num t-rose pv">RM 0</strong></span>
+            </div>
+        </div>
+        <div class="card kpi p-4" style="--stripe:#40916c">
+            <p class="text-xs font-semibold uppercase tracking-wider t-muted">Pendapatan Bersih / Bln</p>
+            <p id="k-income" class="text-2xl font-extrabold num t-sage mt-1 pv">RM 0</p>
+            <div class="mt-3 pt-2.5 border-t bd text-xs t-muted flex justify-between">
+                <span>Pasif liquid</span><strong id="k-passive" class="num t-teal pv">RM 0</strong>
+            </div>
+        </div>
+        <div class="card kpi p-4" style="--stripe:#d1495b">
+            <p class="text-xs font-semibold uppercase tracking-wider t-muted">Perbelanjaan / Bln</p>
+            <p id="k-expenses" class="text-2xl font-extrabold num t-rose mt-1 pv">RM 0</p>
+            <div class="mt-3 pt-2.5 border-t bd text-xs t-muted flex justify-between">
+                <span>Tetap <strong id="k-fixed" class="num pv">RM 0</strong></span>
+                <span>Variabel <strong id="k-variable" class="num pv">RM 0</strong></span>
+            </div>
+        </div>
+        <div class="card kpi p-4" style="--stripe:#d4a373">
+            <p class="text-xs font-semibold uppercase tracking-wider t-muted">Kadar Simpanan</p>
+            <p id="k-srate" class="text-2xl font-extrabold num t-gold mt-1 pv">0%</p>
+            <div class="mt-3 pt-2.5 border-t bd text-xs t-muted flex justify-between items-center">
+                <span><strong id="k-savings" class="num pv">RM 0</strong>/bln</span>
+                <span class="badge b-sage">Runway <span id="k-runway" class="num">0</span> bln</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ulasan lokal (Module F Tier 1) -->
+    <section class="card p-4 md:p-5">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-lightbulb t-gold"></i>Ringkasan & Ulasan</h3>
+            <span class="text-[10px] t-faint font-semibold uppercase tracking-wider">Dikira dalam peranti · tiada AI luar</span>
+        </div>
+        <div id="insights" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+    </section>
+
+    <!-- Tabs -->
+    <section class="card overflow-hidden">
+        <div class="border-b bd p-2 flex gap-1 scroll-x no-print" style="background: var(--sub)">
+            <button class="tab-btn view-tab active" data-tab="dashboard"><i class="fa-solid fa-chart-pie"></i>Ringkasan</button>
+            <button class="tab-btn view-tab" data-tab="assets"><i class="fa-solid fa-vault"></i>Aset</button>
+            <button class="tab-btn view-tab" data-tab="liabilities"><i class="fa-solid fa-hand-holding-dollar"></i>Liabiliti</button>
+            <button class="tab-btn view-tab" data-tab="cashflow"><i class="fa-solid fa-money-bill-wave"></i>Pendapatan & Belanja</button>
+            <button class="tab-btn view-tab" data-tab="zakat-tax"><i class="fa-solid fa-kaaba"></i>Zakat & Cukai</button>
+            <button class="tab-btn view-tab" data-tab="simulator"><i class="fa-solid fa-calculator"></i>Unjuran FIRE</button>
+            <button class="tab-btn view-tab" data-tab="trend"><i class="fa-solid fa-chart-line"></i>Sejarah</button>
+        </div>
+
+        <!-- TAB: Dashboard -->
+        <div id="tab-dashboard" class="view-tab-content p-4 md:p-6 space-y-5">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div class="card-sub p-4">
+                    <h3 class="text-sm font-bold mb-3">Agihan Aset</h3>
+                    <div class="relative h-52 pv"><canvas id="chart-assets"></canvas></div>
+                    <div id="asset-legend" class="mt-4 pt-3 border-t bd space-y-1.5"></div>
+                </div>
+                <div class="card-sub p-4 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="text-sm font-bold">Aliran Tunai Bulanan</h3>
+                        <span class="text-[11px] t-sage font-semibold">Sasaran simpanan ≥ 50%</span>
+                    </div>
+                    <p class="text-xs t-muted mb-3">Pendapatan bersih vs belanja vs baki untuk simpan/labur</p>
+                    <div class="relative h-60 pv"><canvas id="chart-cashflow"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="card-sub p-4 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i class="fa-solid fa-building-columns t-gold mr-1"></i>KWSP</h4>
+                        <span class="badge b-blue">Per individu</span>
+                    </div>
+                    <div id="epf-box" class="space-y-2"></div>
+                    <p class="text-[11px] t-faint">Simpanan Asas RIA KWSP: naik berperingkat RM290k (2026) → RM340k (2027) → RM390k (2028). Ubah sasaran di Tetapan.</p>
+                </div>
+                <div class="card-sub p-4 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i class="fa-solid fa-mosque t-sage mr-1"></i>ASB & Tabung Haji</h4>
+                        <span class="badge b-sage">Liquid</span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-xs t-muted">Jumlah</span>
+                        <span id="asbth-total" class="text-lg font-extrabold num t-sage pv">RM 0</span>
+                    </div>
+                    <div class="flex justify-between items-baseline text-xs">
+                        <span class="t-muted">Anggaran dividen/hibah setahun</span>
+                        <span id="asbth-div" class="num font-semibold pv">RM 0</span>
+                    </div>
+                    <p class="text-[11px] t-faint">Dikira ikut kadar % p.a yang kau isi pada setiap aset, bukan andaian rata. Dividen lepas bukan jaminan.</p>
+                </div>
+                <div class="card-sub p-4 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i class="fa-solid fa-coins t-gold mr-1"></i>Emas</h4>
+                        <span id="gold-alloc-badge" class="badge b-gold">0% portfolio</span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-xs t-muted">Nilai</span>
+                        <span id="gold-total" class="text-lg font-extrabold num t-gold pv">RM 0</span>
+                    </div>
+                    <div class="bar"><div id="gold-bar" style="width:0;background:var(--gold)"></div></div>
+                    <p class="text-[11px] t-faint">Panduan biasa 5–10% daripada aset liquid. Emas tiada pulangan tunai; nilai ikut harga pasaran.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Assets -->
+        <div id="tab-assets" class="view-tab-content hidden p-4 md:p-6 space-y-4">
+            <div class="flex justify-between items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-bold">Portfolio Aset</h3>
+                    <p class="text-xs t-muted">Liquid (boleh guna) vs terkunci (KWSP, rumah). Item "Bersama" dibahagi ikut nisbah di Tetapan.</p>
+                </div>
+                <button class="btn btn-primary no-print" data-action="add" data-type="asset"><i class="fa-solid fa-plus"></i>Aset</button>
+            </div>
+            <div class="scroll-x card-sub">
+                <table class="tbl">
+                    <thead><tr><th>Pemilik</th><th>Nama</th><th>Kategori</th><th>Status</th><th>Zakat</th><th class="text-right">Nilai</th><th class="text-right">% p.a</th><th class="text-right no-print">Tindakan</th></tr></thead>
+                    <tbody id="tbody-assets"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: Liabilities -->
+        <div id="tab-liabilities" class="view-tab-content hidden p-4 md:p-6 space-y-4">
+            <div class="flex justify-between items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-bold">Liabiliti & Pembiayaan</h3>
+                    <p class="text-xs t-muted">Bayaran bulanan auto-sync ke senarai belanja. Edit/padam di sini, belanja ikut sekali.</p>
+                </div>
+                <button class="btn btn-primary no-print" data-action="add" data-type="liability"><i class="fa-solid fa-plus"></i>Liabiliti</button>
+            </div>
+            <div class="scroll-x card-sub">
+                <table class="tbl">
+                    <thead><tr><th>Pemilik</th><th>Nama</th><th>Kategori</th><th class="text-right">Baki</th><th class="text-right">Bayaran / Bln</th><th class="text-right">Kadar %</th><th class="text-right no-print">Tindakan</th></tr></thead>
+                    <tbody id="tbody-liabilities"></tbody>
+                </table>
+            </div>
+            <div id="dsr-box" class="card-sub p-4 text-xs"></div>
+        </div>
+
+        <!-- TAB: Cashflow -->
+        <div id="tab-cashflow" class="view-tab-content hidden p-4 md:p-6 space-y-6">
+            <div class="space-y-3">
+                <div class="flex justify-between items-center gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold">Pendapatan Bulanan</h3>
+                        <p class="text-xs t-muted">Isi gaji <strong>bersih</strong> untuk aliran tunai; gaji <strong>kasar</strong> untuk kiraan zakat pendapatan.</p>
+                    </div>
+                    <button class="btn btn-primary no-print" data-action="add" data-type="income"><i class="fa-solid fa-plus"></i>Pendapatan</button>
+                </div>
+                <div class="scroll-x card-sub">
+                    <table class="tbl">
+                        <thead><tr><th>Pemilik</th><th>Sumber</th><th>Kategori</th><th>Jenis</th><th class="text-right">Bersih / Bln</th><th class="text-right">Kasar / Bln</th><th class="text-right no-print">Tindakan</th></tr></thead>
+                        <tbody id="tbody-income"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold">Perbelanjaan Bulanan</h3>
+                        <p class="text-xs t-muted">Tetap, variabel & bayaran hutang (auto-sync, ikon <i class="fa-solid fa-link"></i>).</p>
+                    </div>
+                    <button class="btn btn-primary no-print" data-action="add" data-type="expense"><i class="fa-solid fa-plus"></i>Belanja</button>
+                </div>
+                <div class="scroll-x card-sub">
+                    <table class="tbl">
+                        <thead><tr><th>Pemilik</th><th>Item</th><th>Kategori</th><th>Jenis</th><th class="text-right">Jumlah / Bln</th><th class="text-right no-print">Tindakan</th></tr></thead>
+                        <tbody id="tbody-expenses"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Zakat & Tax -->
+        <div id="tab-zakat-tax" class="view-tab-content hidden p-4 md:p-6 space-y-6">
+            <div class="space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-kaaba t-sage"></i>Anggaran Zakat (per individu)</h3>
+                    <span id="nisab-badge" class="badge b-sage">Nisab RM 0</span>
+                </div>
+                <div id="zakat-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div class="card-sub p-3 text-[11px] t-muted leading-relaxed space-y-1">
+                    <p><strong>Andaian (sila sahkan dengan kalkulator PPZ-MAIWP / pusat zakat negeri tempat kerja):</strong></p>
+                    <p>• Zakat dikira <strong>per individu</strong>, bukan gabungan suami isteri. Aset "Bersama" dibahagi ikut nisbah di Tetapan.</p>
+                    <p>• Zakat harta guna baki semasa sebagai anggaran. Yang tepat: baki terendah sepanjang haul (setahun).</p>
+                    <p>• Tabung Haji ditetapkan "Tiada" secara default sebab PPZ kecualikan simpanan TH daripada zakat wang simpanan. KWSP dikecualikan selagi belum boleh dikeluarkan.</p>
+                    <p>• Emas perhiasan yang dipakai ada had uruf berasingan; kalkulator ni anggap emas pelaburan (GAP/jongkong).</p>
+                    <p>• Pendapatan pasif (dividen) tak masuk zakat pendapatan untuk elak kira dua kali dengan zakat simpanan.</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar t-blue"></i>Penjejak Pelepasan Cukai LHDN</h3>
+                    <span class="badge b-blue">Had YA 2026 · per individu</span>
+                </div>
+                <p class="text-xs t-muted">Isi jumlah yang dah dibelanjakan/dicarum tahun ni. Bar tunjuk baki ruang pelepasan. Pelepasan kurangkan pendapatan bercukai, bukan potong cukai terus.</p>
+                <div class="scroll-x card-sub">
+                    <table class="tbl">
+                        <thead><tr><th>Pelepasan</th><th class="text-right">Had</th><th style="min-width:180px">Suami</th><th style="min-width:180px">Isteri</th></tr></thead>
+                        <tbody id="tbody-tax"></tbody>
+                    </table>
+                </div>
+                <p class="text-[11px] t-faint">Had ikut ringkasan pelepasan YA 2026 (KWSP RM4k + insurans hayat RM3k = had gabungan RM7k; SSPN dijadual tamat YA 2027). Semak hasil.gov.my sebelum e-Filing.</p>
+            </div>
+        </div>
+
+        <!-- TAB: Simulator -->
+        <div id="tab-simulator" class="view-tab-content hidden p-4 md:p-6 space-y-5">
+            <div class="text-center max-w-2xl mx-auto space-y-1">
+                <h3 class="text-xl md:text-2xl font-bold">Unjuran FIRE (Real Return)</h3>
+                <p class="text-xs t-muted">Semua dalam nilai ringgit hari ini (pulangan − inflasi). Sasaran FI kekal mendatar sebab dah diselaraskan inflasi.</p>
+            </div>
+            <div class="card-sub p-4 space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <h4 class="text-[11px] font-semibold uppercase tracking-wider t-muted">3 Senario vs Sasaran</h4>
+                    <span id="mc-text" class="badge b-sage">Monte Carlo: --</span>
+                </div>
+                <div class="relative h-72 pv"><canvas id="chart-scenarios"></canvas></div>
+                <p id="mc-note" class="text-[11px] t-faint"></p>
+            </div>
+            <div class="card-sub p-4 space-y-3">
+                <h4 class="text-[11px] font-semibold uppercase tracking-wider t-muted">Matriks: Kadar Simpanan vs Tahun ke FI</h4>
+                <p class="text-xs t-muted">Andaian: apa yang tak disimpan = dibelanja. Simpan lebih → belanja kurang → sasaran FI pun mengecil. Kolum bertanda = kadar semasa kau.</p>
+                <div class="scroll-x">
+                    <table class="tbl text-center">
+                        <thead id="thead-sens"></thead>
+                        <tbody id="tbody-sens"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Trend -->
+        <div id="tab-trend" class="view-tab-content hidden p-4 md:p-6 space-y-5">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-bold">Sejarah Snapshot Bulanan (Gabungan)</h3>
+                    <p class="text-xs t-muted">Snapshot sentiasa simpan angka isi rumah penuh, tak kira tab profil yang aktif.</p>
+                </div>
+                <button class="btn btn-primary no-print" data-action="snapshot"><i class="fa-solid fa-camera"></i>Simpan Snapshot Bulan Ini</button>
+            </div>
+            <div class="card-sub p-4 relative h-72 pv"><canvas id="chart-trend"></canvas></div>
+            <div class="scroll-x card-sub">
+                <table class="tbl">
+                    <thead><tr><th>Bulan</th><th class="text-right">Nilai Bersih</th><th class="text-right">Liquid</th><th class="text-right">Pendapatan</th><th class="text-right">Belanja</th><th class="text-right">Simpanan</th><th class="text-right no-print">Tindakan</th></tr></thead>
+                    <tbody id="tbody-history"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Mobile bottom nav -->
+<nav class="md:hidden fixed bottom-0 inset-x-0 border-t bd px-2 py-2 z-40 no-print" style="background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(12px);">
+    <div class="flex justify-around items-center text-[10px] font-semibold">
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="dashboard"><i class="fa-solid fa-chart-pie text-base"></i>Ringkasan</button>
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="assets"><i class="fa-solid fa-vault text-base"></i>Aset</button>
+        <button data-action="add" data-type="asset" class="w-11 h-11 rounded-xl flex items-center justify-center text-white" style="background:#40916c" aria-label="Tambah rekod"><i class="fa-solid fa-plus"></i></button>
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="cashflow"><i class="fa-solid fa-money-bill-wave text-base"></i>Belanja</button>
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="zakat-tax"><i class="fa-solid fa-kaaba text-base"></i>Zakat</button>
+    </div>
+</nav>
+
+<footer class="py-6 px-4 text-center text-[11px] t-faint no-print">
+    Data disimpan dalam LocalStorage browser ini sahaja (tidak dienkrip, tidak sync). Buat backup JSON selalu. · Bukan nasihat kewangan/syariah rasmi.
+</footer>
+
+<!-- ================= MODAL: Add/Edit ================= -->
+<div id="modal-entry" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-lg p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-entry" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        <div>
+            <h3 id="entry-title" class="text-sm font-bold">Tambah Rekod</h3>
+            <p id="entry-hint" class="text-xs t-muted"></p>
+        </div>
+        <form id="form-entry" novalidate class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="lbl" for="in-type">Jenis Rekod</label>
+                    <select id="in-type" class="field">
+                        <option value="asset">Aset / Pelaburan</option>
+                        <option value="liability">Liabiliti / Hutang</option>
+                        <option value="income">Pendapatan</option>
+                        <option value="expense">Perbelanjaan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="lbl" for="in-owner">Pemilik</label>
+                    <select id="in-owner" class="field">
+                        <option value="husband">Suami</option>
+                        <option value="wife">Isteri</option>
+                        <option value="shared">Bersama</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="lbl" for="in-name">Nama / Penerangan</label>
+                <input id="in-name" type="text" maxlength="80" class="field" placeholder="Contoh: ASB Suami">
+                <p id="err-name" class="text-[11px] t-rose mt-1 hidden">Nama wajib diisi.</p>
+            </div>
+            <div>
+                <label class="lbl" for="in-category">Kategori</label>
+                <select id="in-category" class="field"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="lbl" for="in-amount" id="lbl-amount">Nilai Semasa (RM)</label>
+                    <input id="in-amount" type="number" step="0.01" min="0" inputmode="decimal" class="field" placeholder="0.00">
+                    <p id="err-amount" class="text-[11px] t-rose mt-1 hidden">Masukkan nombor ≥ 0.</p>
+                </div>
+                <div id="wrap-secondary">
+                    <label class="lbl" for="in-secondary" id="lbl-secondary">Pulangan % p.a</label>
+                    <input id="in-secondary" type="number" step="0.01" min="0" inputmode="decimal" class="field" placeholder="0.00">
+                </div>
+            </div>
+            <div id="wrap-tertiary" class="hidden">
+                <label class="lbl" for="in-tertiary">Kadar Keuntungan / Faedah % p.a</label>
+                <input id="in-tertiary" type="number" step="0.01" min="0" inputmode="decimal" class="field" placeholder="Contoh: 4.20">
+            </div>
+            <div id="wrap-zakat">
+                <label class="lbl" for="in-zakat">Jenis Zakat</label>
+                <select id="in-zakat" class="field">
+                    <option value="simpanan">Wang Simpanan / Pelaburan (2.5%)</option>
+                    <option value="emas">Emas (2.5%)</option>
+                    <option value="tiada">Tiada / Dikecualikan</option>
+                </select>
+            </div>
+            <div class="space-y-2 pt-1 text-xs">
+                <label id="wrap-locked" class="flex items-center gap-2"><input id="chk-locked" type="checkbox" class="w-4 h-4 accent-emerald-600">Aset terkunci (KWSP / rumah) – tak dikira dalam FI liquid</label>
+                <label id="wrap-passive" class="flex items-center gap-2 hidden"><input id="chk-passive" type="checkbox" class="w-4 h-4 accent-emerald-600">Hasil pasif liquid (dividen/sewa yang boleh dikeluarkan)</label>
+                <label id="wrap-fixed" class="flex items-center gap-2 hidden"><input id="chk-fixed" type="checkbox" class="w-4 h-4 accent-emerald-600" checked>Komitmen tetap / wajib</label>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" class="btn" data-action="close-modal" data-modal="modal-entry">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL: Settings & Backup ================= -->
+<div id="modal-settings" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-xl p-5 space-y-5 max-h-[92vh] overflow-y-auto relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-settings" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        <div>
+            <h3 class="text-sm font-bold">Tetapan & Backup</h3>
+            <p class="text-xs t-muted">Andaian kiraan. Semua disimpan dalam peranti ni.</p>
+        </div>
+        <form id="form-settings" class="grid grid-cols-2 gap-3">
+            <div><label class="lbl" for="s-split">Bahagian Suami utk item Bersama (%)</label><input id="s-split" type="number" min="0" max="100" step="1" class="field"></div>
+            <div><label class="lbl" for="s-mult">Gandaan FI (×)</label><input id="s-mult" type="number" min="10" max="50" step="1" class="field"></div>
+            <div><label class="lbl" for="s-return">Pulangan nominal jangkaan (%)</label><input id="s-return" type="number" min="0" max="20" step="0.1" class="field"></div>
+            <div><label class="lbl" for="s-infl">Inflasi (%)</label><input id="s-infl" type="number" min="0" max="15" step="0.1" class="field"></div>
+            <div><label class="lbl" for="s-nisab">Nisab zakat (RM)</label><input id="s-nisab" type="number" min="0" step="1" class="field"></div>
+            <div><label class="lbl" for="s-zmethod">Kaedah zakat pendapatan</label>
+                <select id="s-zmethod" class="field"><option value="tolakan">Dengan tolakan had kifayah</option><option value="kasar">Tanpa tolakan (kasar)</option></select></div>
+            <div><label class="lbl" for="s-hk-h">Had kifayah Suami / thn (RM)</label><input id="s-hk-h" type="number" min="0" step="1" class="field"></div>
+            <div><label class="lbl" for="s-hk-w">Had kifayah Isteri / thn (RM)</label><input id="s-hk-w" type="number" min="0" step="1" class="field"></div>
+            <div><label class="lbl" for="s-epf">Sasaran KWSP / orang (RM)</label><input id="s-epf" type="number" min="0" step="1000" class="field"></div>
+            <div><label class="lbl" for="s-mcyears">Horizon Monte Carlo (thn)</label><input id="s-mcyears" type="number" min="1" max="50" step="1" class="field"></div>
+            <div><label class="lbl" for="s-mcvol">Volatiliti tahunan (%)</label><input id="s-mcvol" type="number" min="1" max="40" step="0.5" class="field"></div>
+            <div class="col-span-2 text-[11px] t-faint">Nisab default = RM33,996 (WP 2026, 85g emas). Had kifayah: isi ikut kalkulator PPZ (tolakan diri, pasangan, anak, caruman KWSP dll). Kosongkan = 0.</div>
+            <div class="col-span-2 flex justify-end"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i>Simpan Tetapan</button></div>
+        </form>
+
+        <div class="border-t bd pt-4 space-y-3">
+            <h4 class="text-xs font-semibold uppercase tracking-wider t-muted">Backup / Kongsi dengan pasangan</h4>
+            <p class="text-xs t-muted">Backup terakhir: <strong id="last-backup">belum pernah</strong>. Fail JSON ni ada <strong>semua</strong> angka kewangan. Hantar terus ke pasangan je, jangan letak dalam group.</p>
+            <div class="flex flex-wrap gap-2">
+                <button class="btn btn-primary" data-action="download-json"><i class="fa-solid fa-download"></i>Muat Turun JSON</button>
+                <button class="btn" data-action="copy-json"><i class="fa-solid fa-copy"></i>Salin JSON</button>
+                <label class="btn cursor-pointer"><i class="fa-solid fa-upload"></i>Import Fail<input id="import-file" type="file" accept=".json,application/json" class="hidden"></label>
+            </div>
+            <textarea id="import-text" rows="3" class="field num text-[11px]" placeholder="Atau tampal teks JSON di sini…"></textarea>
+            <button class="btn w-full" data-action="import-text"><i class="fa-solid fa-file-import"></i>Import dari teks</button>
+            <p class="text-[11px] t-faint">Import akan <strong>ganti</strong> semua data semasa. Muat turun backup dulu kalau ragu.</p>
+        </div>
+
+        <div class="border-t bd pt-4 flex flex-wrap gap-2">
+            <button class="btn" data-action="load-sample"><i class="fa-solid fa-flask"></i>Isi data contoh</button>
+            <button class="btn btn-danger" data-action="wipe"><i class="fa-solid fa-trash"></i>Padam semua data</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: ICS ================= -->
+<div id="modal-ics" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-sm p-5 space-y-4 text-center relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-ics" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        <div class="w-12 h-12 rounded-xl mx-auto flex items-center justify-center b-gold text-xl"><i class="fa-solid fa-calendar-check"></i></div>
+        <div>
+            <h3 class="text-sm font-bold">Peringatan Bulanan 25hb, 9:00 pagi</h3>
+            <p class="text-xs t-muted mt-1">Fail .ics untuk Google/Apple Calendar: kemaskini angka, ambil snapshot, backup JSON.</p>
+        </div>
+        <button class="btn btn-primary w-full" data-action="download-ics"><i class="fa-solid fa-calendar-plus"></i>Muat Turun .ics</button>
+    </div>
+</div>
+
+<!-- ================= MODAL: Confirm ================= -->
+<div id="modal-confirm" class="modal fixed inset-0 z-[60] hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6);">
+    <div class="card w-full max-w-sm p-5 space-y-4">
+        <h3 id="confirm-title" class="text-sm font-bold">Sahkan</h3>
+        <p id="confirm-text" class="text-xs t-muted"></p>
+        <div class="flex justify-end gap-2">
+            <button class="btn" data-action="confirm-no">Batal</button>
+            <button class="btn btn-primary" data-action="confirm-yes" id="confirm-yes">Ya</button>
+        </div>
+    </div>
+</div>
+
+<div id="toasts" class="fixed bottom-20 md:bottom-5 right-4 z-[70] flex flex-col gap-2 pointer-events-none"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   CONSTANTS
+   ===================================================================== */
+const DATA_CLASSIFICATION = 'Sensitive';      // household salary/assets: local only, never synced
+const STORAGE_KEY = 'fire_hub_malaysia_data'; // same key as old version so existing data migrates
+const SCHEMA_VERSION = 2;
+
+const OWNER_LABEL = { husband: 'Suami', wife: 'Isteri', shared: 'Bersama' };
+
+// Fixed category lists: kills the old fragile "category text contains 'tunai'" matching
+const CATEGORIES = {
+    asset:     ['Tunai & Simpanan', 'ASB / ASN', 'Tabung Haji', 'Saham & ETF', 'Unit Amanah / Robo', 'Emas', 'KWSP', 'Hartanah', 'Lain-lain'],
+    liability: ['Pembiayaan Rumah', 'Sewa Beli Kenderaan', 'PTPTN', 'Pembiayaan Peribadi', 'Pembiayaan ASB', 'Kad Kredit', 'Lain-lain'],
+    income:    ['Gaji', 'Side Income', 'Bisnes', 'Dividen / Hibah', 'Sewa', 'Lain-lain'],
+    expense:   ['Rumah / Sewa', 'Kenderaan', 'Makanan & Dapur', 'Utiliti & Bil', 'Takaful / Insurans', 'Zakat & Sedekah', 'Pendidikan', 'Hutang Lain', 'Peribadi', 'Lain-lain']
+};
+// Default behaviour when an asset category is picked
+const ASSET_DEFAULTS = {
+    'Tunai & Simpanan': { locked: false, zakat: 'simpanan' },
+    'ASB / ASN':        { locked: false, zakat: 'simpanan' },
+    'Tabung Haji':      { locked: false, zakat: 'tiada' },   // PPZ: TH savings exempt from zakat simpanan
+    'Saham & ETF':      { locked: false, zakat: 'simpanan' },
+    'Unit Amanah / Robo': { locked: false, zakat: 'simpanan' },
+    'Emas':             { locked: false, zakat: 'emas' },
+    'KWSP':             { locked: true,  zakat: 'tiada' },   // not withdrawable yet
+    'Hartanah':         { locked: true,  zakat: 'tiada' },   // own home: no zakat
+    'Lain-lain':        { locked: false, zakat: 'tiada' }
+};
+const LIAB_TO_EXP_CAT = { 'Pembiayaan Rumah': 'Rumah / Sewa', 'Sewa Beli Kenderaan': 'Kenderaan', 'PTPTN': 'Pendidikan' };
+
+// LHDN YA 2026 relief limits (per individual). Verify yearly on hasil.gov.my
+const TAX_RELIEFS = [
+    { key: 'epf',       label: 'KWSP (caruman pekerja)',              limit: 4000 },
+    { key: 'life',      label: 'Insurans hayat / takaful keluarga',   limit: 3000 },
+    { key: 'medical',   label: 'Insurans pendidikan & perubatan',     limit: 4000 },
+    { key: 'lifestyle', label: 'Gaya hidup (buku, gajet, internet)',  limit: 2500 },
+    { key: 'sports',    label: 'Sukan & gim',                         limit: 1000 },
+    { key: 'sspn',      label: 'SSPN (simpanan bersih)',              limit: 8000 },
+    { key: 'perkeso',   label: 'PERKESO / SIP',                       limit: 350 }
+];
+
+const DEFAULT_SETTINGS = {
+    fireMultiplier: 25, inflationRate: 3.0, expectedReturn: 6.0,
+    theme: 'dark', sharedSplitRatio: 0.5,
+    nisab: 33996, zakatMethod: 'tolakan', hadKifayah: { husband: 0, wife: 0 },
+    epfTarget: 390000, mcYears: 20, mcVolatility: 10,
+    lastBackupAt: null
+};
+
+const SAMPLE_DATA = {
+    schemaVersion: SCHEMA_VERSION,
+    settings: { ...DEFAULT_SETTINGS },
+    historySnapshots: [],
+    taxRelief: { year: 2026, husband: {}, wife: {} },
+    assets: [
+        { id: 'a1', owner: 'husband', name: 'KWSP Suami', category: 'KWSP', amount: 145000, yieldPercent: 5.5, isLocked: true, zakatType: 'tiada' },
+        { id: 'a2', owner: 'husband', name: 'ASB Suami', category: 'ASB / ASN', amount: 65000, yieldPercent: 5.25, isLocked: false, zakatType: 'simpanan' },
+        { id: 'a3', owner: 'husband', name: 'Portfolio Saham & ETF', category: 'Saham & ETF', amount: 32000, yieldPercent: 8.0, isLocked: false, zakatType: 'simpanan' },
+        { id: 'a4', owner: 'husband', name: 'Dana Kecemasan Suami', category: 'Tunai & Simpanan', amount: 18000, yieldPercent: 2.5, isLocked: false, zakatType: 'simpanan' },
+        { id: 'a5', owner: 'wife', name: 'KWSP Isteri', category: 'KWSP', amount: 120000, yieldPercent: 5.5, isLocked: true, zakatType: 'tiada' },
+        { id: 'a6', owner: 'wife', name: 'Tabung Haji Isteri', category: 'Tabung Haji', amount: 45000, yieldPercent: 3.25, isLocked: false, zakatType: 'tiada' },
+        { id: 'a7', owner: 'wife', name: 'Robo-Advisor', category: 'Unit Amanah / Robo', amount: 24000, yieldPercent: 6.5, isLocked: false, zakatType: 'simpanan' },
+        { id: 'a8', owner: 'wife', name: 'Dana Kecemasan Isteri', category: 'Tunai & Simpanan', amount: 15000, yieldPercent: 2.5, isLocked: false, zakatType: 'simpanan' },
+        { id: 'a9', owner: 'wife', name: 'Emas GAP', category: 'Emas', amount: 12000, yieldPercent: 0, isLocked: false, zakatType: 'emas' },
+        { id: 'a10', owner: 'shared', name: 'Rumah Utama (nilai pasaran)', category: 'Hartanah', amount: 470000, yieldPercent: 3.0, isLocked: true, zakatType: 'tiada' }
+    ],
+    liabilities: [
+        { id: 'l1', owner: 'husband', name: 'Honda City', category: 'Sewa Beli Kenderaan', amount: 42000, monthlyPayment: 780, interestRate: 2.7 },
+        { id: 'l2', owner: 'husband', name: 'PTPTN Suami', category: 'PTPTN', amount: 12000, monthlyPayment: 150, interestRate: 1.0 },
+        { id: 'l3', owner: 'wife', name: 'Perodua Ativa', category: 'Sewa Beli Kenderaan', amount: 35000, monthlyPayment: 620, interestRate: 2.8 },
+        { id: 'l4', owner: 'shared', name: 'Pembiayaan Rumah', category: 'Pembiayaan Rumah', amount: 380000, monthlyPayment: 2100, interestRate: 4.2 }
+    ],
+    income: [
+        { id: 'i1', owner: 'husband', name: 'Gaji Suami', category: 'Gaji', amount: 6800, grossAmount: 8500, isPassive: false },
+        { id: 'i2', owner: 'husband', name: 'Freelance', category: 'Side Income', amount: 1200, grossAmount: 1200, isPassive: false },
+        { id: 'i3', owner: 'wife', name: 'Gaji Isteri', category: 'Gaji', amount: 5800, grossAmount: 7200, isPassive: false },
+        { id: 'i4', owner: 'wife', name: 'Bisnes Online', category: 'Bisnes', amount: 1500, grossAmount: 1500, isPassive: false }
+    ],
+    expenses: [
+        { id: 'e1', owner: 'shared', name: 'Pembiayaan Rumah', category: 'Rumah / Sewa', amount: 2100, isFixed: true, linkedLiabilityId: 'l4' },
+        { id: 'e2', owner: 'shared', name: 'Barang Dapur', category: 'Makanan & Dapur', amount: 1000, isFixed: false },
+        { id: 'e2b', owner: 'shared', name: 'Utiliti & Internet', category: 'Utiliti & Bil', amount: 300, isFixed: true },
+        { id: 'e3', owner: 'shared', name: 'Takaful Keluarga', category: 'Takaful / Insurans', amount: 650, isFixed: true },
+        { id: 'e4', owner: 'shared', name: 'Zakat & Sedekah', category: 'Zakat & Sedekah', amount: 400, isFixed: true },
+        { id: 'e5', owner: 'husband', name: 'Honda City', category: 'Kenderaan', amount: 780, isFixed: true, linkedLiabilityId: 'l1' },
+        { id: 'e6', owner: 'husband', name: 'PTPTN Suami', category: 'Pendidikan', amount: 150, isFixed: true, linkedLiabilityId: 'l2' },
+        { id: 'e7', owner: 'husband', name: 'Belanja Peribadi Suami', category: 'Peribadi', amount: 900, isFixed: false },
+        { id: 'e8', owner: 'wife', name: 'Perodua Ativa', category: 'Kenderaan', amount: 620, isFixed: true, linkedLiabilityId: 'l3' },
+        { id: 'e9', owner: 'wife', name: 'Belanja Peribadi Isteri', category: 'Peribadi', amount: 800, isFixed: false }
+    ]
+};
+
+/* =====================================================================
+   UTILITIES
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const n = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+const sum = (arr, key = 'amount') => arr.reduce((s, i) => s + n(i[key]), 0);
+const uid = (p) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+// XSS guard: every user string goes through this before hitting innerHTML
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"'`]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
+}
+function formatRM(v) {
+    const x = n(v);
+    const s = 'RM ' + Math.abs(Math.round(x)).toLocaleString('en-MY');
+    return x < 0 ? '−' + s : s;
+}
+const pct = (v, d = 1) => `${n(v).toFixed(d)}%`;
+const cleanText = (s, max = 80) => String(s ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, max);
+
+function showToast(msg, type = 'info') {
+    const colors = { success: '#2d6a4f', warning: '#b7791f', error: '#b4233c', info: '#334155' };
+    const t = document.createElement('div');
+    t.className = 'text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg pointer-events-auto transition-all duration-300 opacity-0 translate-y-2';
+    t.style.background = colors[type] || colors.info;
+    t.textContent = msg;                 // textContent = safe
+    $('toasts').appendChild(t);
+    requestAnimationFrame(() => t.classList.remove('opacity-0', 'translate-y-2'));
+    setTimeout(() => { t.classList.add('opacity-0'); setTimeout(() => t.remove(), 300); }, 3200);
+}
+
+let confirmCb = null;
+function confirmDialog(title, text, onYes, yesLabel = 'Ya, teruskan') {
+    $('confirm-title').textContent = title;
+    $('confirm-text').textContent = text;
+    $('confirm-yes').textContent = yesLabel;
+    confirmCb = onYes;
+    openModal('modal-confirm');
+}
+
+/* =====================================================================
+   STATE: load, migrate, validate, save
+   ===================================================================== */
+// Map old free-text categories (v1 Gemini data) to the fixed list
+function mapAssetCategory(cat, name) {
+    const s = `${cat} ${name}`.toLowerCase();
+    if (/kwsp|epf/.test(s)) return 'KWSP';
+    if (/hartanah|rumah|kediaman|property/.test(s)) return 'Hartanah';
+    if (/tabung haji|\bth\b/.test(s)) return 'Tabung Haji';
+    if (/asb|asn|amanah saham/.test(s)) return 'ASB / ASN';
+    if (/\bemas\b|\bgold\b|\bgap\b/.test(s)) return 'Emas';   // word boundary: "kecEMASan" must not match
+    if (/robo|unit amanah|unit trust/.test(s)) return 'Unit Amanah / Robo';
+    if (/saham|ekuiti|etf|stock/.test(s)) return 'Saham & ETF';
+    if (/tunai|cash|simpanan|liquid|kecemasan/.test(s)) return 'Tunai & Simpanan';
+    return 'Lain-lain';
+}
+function mapLiabCategory(cat) {
+    const s = String(cat).toLowerCase();
+    if (/mortgage|rumah/.test(s)) return 'Pembiayaan Rumah';
+    if (/sewa beli|kereta|kenderaan|hire/.test(s)) return 'Sewa Beli Kenderaan';
+    if (/ptptn|pendidikan/.test(s)) return 'PTPTN';
+    if (/asb/.test(s)) return 'Pembiayaan ASB';
+    if (/kad|credit/.test(s)) return 'Kad Kredit';
+    if (/peribadi|personal/.test(s)) return 'Pembiayaan Peribadi';
+    return CATEGORIES.liability.includes(cat) ? cat : 'Lain-lain';
+}
+function mapIncomeCategory(cat) {
+    const s = String(cat).toLowerCase();
+    if (/gaji|salary/.test(s)) return 'Gaji';
+    if (/side|freelance/.test(s)) return 'Side Income';
+    if (/bisnes|commerce|jualan/.test(s)) return 'Bisnes';
+    if (/dividen|hibah/.test(s)) return 'Dividen / Hibah';
+    if (/sewa/.test(s)) return 'Sewa';
+    return CATEGORIES.income.includes(cat) ? cat : 'Lain-lain';
+}
+function mapExpenseCategory(cat, name) {
+    if (CATEGORIES.expense.includes(cat)) return cat;
+    const s = `${cat} ${name}`.toLowerCase();
+    if (/mortgage|rumah|sewa rumah/.test(s)) return 'Rumah / Sewa';
+    if (/kenderaan|kereta|petrol|tol/.test(s)) return 'Kenderaan';
+    if (/dapur|makan|keperluan/.test(s)) return 'Makanan & Dapur';
+    if (/utiliti|bil|internet/.test(s)) return 'Utiliti & Bil';
+    if (/takaful|insurans|perlindungan/.test(s)) return 'Takaful / Insurans';
+    if (/zakat|sedekah|spiritual/.test(s)) return 'Zakat & Sedekah';
+    if (/pendidikan|ptptn|sekolah/.test(s)) return 'Pendidikan';
+    if (/peribadi/.test(s)) return 'Peribadi';
+    return 'Lain-lain';
+}
+
+const OWNERS = ['husband', 'wife', 'shared'];
+const safeOwner = (o) => OWNERS.includes(o) ? o : 'shared';
+const safeId = (id, p) => (typeof id === 'string' && /^[\w-]{1,40}$/.test(id)) ? id : uid(p);
+
+// Validates + normalises any incoming data (localStorage, import). Unknown fields dropped.
+function normaliseState(raw) {
+    if (!raw || typeof raw !== 'object') throw new Error('Bukan objek JSON');
+    const arr = (x) => Array.isArray(x) ? x : [];
+    const s = raw.settings || {};
+    const settings = {
+        ...DEFAULT_SETTINGS,
+        fireMultiplier: n(s.fireMultiplier) || 25,
+        inflationRate: s.inflationRate != null ? n(s.inflationRate) : 3,
+        expectedReturn: s.expectedReturn != null ? n(s.expectedReturn) : 6,
+        theme: s.theme === 'light' ? 'light' : 'dark',
+        sharedSplitRatio: Math.min(1, Math.max(0, s.sharedSplitRatio != null ? n(s.sharedSplitRatio) : 0.5)),
+        nisab: s.nisab != null ? n(s.nisab) : DEFAULT_SETTINGS.nisab,
+        zakatMethod: s.zakatMethod === 'kasar' ? 'kasar' : 'tolakan',
+        hadKifayah: { husband: n(s.hadKifayah?.husband), wife: n(s.hadKifayah?.wife) },
+        epfTarget: s.epfTarget != null ? n(s.epfTarget) : DEFAULT_SETTINGS.epfTarget,
+        mcYears: Math.min(50, Math.max(1, n(s.mcYears) || 20)),
+        mcVolatility: Math.min(40, Math.max(1, n(s.mcVolatility) || 10)),
+        lastBackupAt: typeof s.lastBackupAt === 'string' ? s.lastBackupAt : null
+    };
+    const isV1 = n(raw.schemaVersion) < 2;
+
+    const assets = arr(raw.assets).map((a) => {
+        const category = CATEGORIES.asset.includes(a.category) ? a.category : mapAssetCategory(a.category || '', a.name || '');
+        const def = ASSET_DEFAULTS[category];
+        return {
+            id: safeId(a.id, 'a'), owner: safeOwner(a.owner), name: cleanText(a.name) || 'Aset', category,
+            amount: Math.max(0, n(a.amount)), yieldPercent: n(a.yieldPercent),
+            isLocked: isV1 ? (def.locked || !!a.isLocked) : !!a.isLocked,
+            zakatType: ['simpanan', 'emas', 'tiada'].includes(a.zakatType) ? a.zakatType : def.zakat
+        };
+    });
+    const liabilities = arr(raw.liabilities).map((l) => ({
+        id: safeId(l.id, 'l'), owner: safeOwner(l.owner), name: cleanText(l.name) || 'Liabiliti',
+        category: mapLiabCategory(l.category || ''), amount: Math.max(0, n(l.amount)),
+        monthlyPayment: Math.max(0, n(l.monthlyPayment)), interestRate: Math.max(0, n(l.interestRate))
+    }));
+    const liabIds = new Set(liabilities.map((l) => l.id));
+    const income = arr(raw.income).map((i) => ({
+        id: safeId(i.id, 'i'), owner: safeOwner(i.owner), name: cleanText(i.name) || 'Pendapatan',
+        category: mapIncomeCategory(i.category || ''), amount: Math.max(0, n(i.amount)),
+        grossAmount: Math.max(0, n(i.grossAmount) || n(i.amount)), isPassive: !!i.isPassive
+    }));
+    const expenses = arr(raw.expenses).map((e) => ({
+        id: safeId(e.id, 'e'), owner: safeOwner(e.owner),
+        name: cleanText(String(e.name || '').replace(/\s*\(Auto Sync\)\s*/i, '')) || 'Belanja',
+        category: mapExpenseCategory(e.category || '', e.name || ''), amount: Math.max(0, n(e.amount)),
+        isFixed: !!e.isFixed,
+        linkedLiabilityId: liabIds.has(e.linkedLiabilityId) ? e.linkedLiabilityId : undefined
+    }));
+    const historySnapshots = arr(raw.historySnapshots).map((h) => ({
+        id: safeId(h.id, 'snap'), key: typeof h.key === 'string' ? h.key : '', dateLabel: cleanText(h.dateLabel, 20),
+        netWorth: n(h.netWorth), liquidAssets: n(h.liquidAssets), income: n(h.income), expenses: n(h.expenses), savings: n(h.savings)
+    }));
+    const tr = raw.taxRelief || {};
+    const cleanTax = (o) => Object.fromEntries(TAX_RELIEFS.map((r) => [r.key, Math.max(0, n(o?.[r.key]))]));
+    const taxRelief = { year: n(tr.year) || new Date().getFullYear(), husband: cleanTax(tr.husband), wife: cleanTax(tr.wife) };
+
+    const state = { schemaVersion: SCHEMA_VERSION, settings, assets, liabilities, income, expenses, historySnapshots, taxRelief };
+    syncLinkedExpenses(state);
+    return state;
+}
+
+// Ensures every liability with monthlyPayment > 0 has exactly one linked expense, kept in sync
+function syncLinkedExpenses(state) {
+    const byLiab = new Map();
+    state.expenses = state.expenses.filter((e) => {
+        if (!e.linkedLiabilityId) return true;
+        if (byLiab.has(e.linkedLiabilityId)) return false;    // drop duplicates
+        byLiab.set(e.linkedLiabilityId, e);
+        return true;
+    });
+    state.liabilities.forEach((l) => {
+        const exp = byLiab.get(l.id);
+        if (l.monthlyPayment > 0) {
+            if (exp) Object.assign(exp, { owner: l.owner, name: l.name, amount: l.monthlyPayment, isFixed: true, category: LIAB_TO_EXP_CAT[l.category] || 'Hutang Lain' });
+            else state.expenses.push({ id: uid('e'), owner: l.owner, name: l.name, category: LIAB_TO_EXP_CAT[l.category] || 'Hutang Lain', amount: l.monthlyPayment, isFixed: true, linkedLiabilityId: l.id });
+        } else if (exp) {
+            state.expenses = state.expenses.filter((e) => e !== exp);
+        }
+    });
+    const ids = new Set(state.liabilities.map((l) => l.id));
+    state.expenses = state.expenses.filter((e) => !e.linkedLiabilityId || ids.has(e.linkedLiabilityId)); // remove orphans
+}
+
+function loadState() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return normaliseState(JSON.parse(saved));
+    } catch (e) {
+        console.error('Load failed', e);
+        showToast('Data tersimpan rosak, guna data contoh. Import backup JSON kau.', 'error');
+    }
+    return normaliseState(clone(SAMPLE_DATA));
+}
+function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); }
+    catch (e) { console.error(e); showToast('Gagal simpan (storage penuh / mod private?)', 'error'); }
+}
+
+let appState = null;
+let activeProfile = 'combined';
+let activeTab = 'dashboard';
+let editing = null;      // { collection, id }
+let privacyOn = false;
+const charts = {};
+
+/* =====================================================================
+   CORE MATHS
+   ===================================================================== */
+// Share of an item that belongs to a profile. Shared split: husband = ratio, wife = 1 - ratio (sums to 100%)
+function shareFor(item, profile) {
+    if (profile === 'combined') return 1;
+    if (item.owner === profile) return 1;
+    if (item.owner === 'shared') { const r = appState.settings.sharedSplitRatio; return profile === 'husband' ? r : 1 - r; }
+    return 0;
+}
+function scoped(list, profile) {
+    return list.map((i) => {
+        const s = shareFor(i, profile);
+        if (!s) return null;
+        return { ...i, _share: s, amount: n(i.amount) * s, monthlyPayment: n(i.monthlyPayment) * s, grossAmount: n(i.grossAmount) * s };
+    }).filter(Boolean);
+}
+
+function yearsToTarget(current, target, monthlySave, realAnnualPct) {
+    if (target <= 0) return 0;
+    if (current >= target) return 0;
+    if (monthlySave <= 0 && realAnnualPct <= 0) return Infinity;
+    const r = realAnnualPct / 100 / 12;
+    let bal = current, m = 0;
+    while (bal < target && m < 1200) { bal = bal * (1 + r) + monthlySave; m++; }
+    return m >= 1200 ? Infinity : m / 12;
+}
+const fmtYears = (y) => !Number.isFinite(y) ? '>100 thn' : y === 0 ? 'Dah capai' : `~${y.toFixed(1)} thn`;
+
+function computeMetrics(profile) {
+    const st = appState.settings;
+    const assets = scoped(appState.assets, profile);
+    const liabilities = scoped(appState.liabilities, profile);
+    const income = scoped(appState.income, profile);
+    const expenses = scoped(appState.expenses, profile);
+
+    const liquid = sum(assets.filter((a) => !a.isLocked));
+    const locked = sum(assets.filter((a) => a.isLocked));
+    const totalAssets = liquid + locked;
+    const totalLiab = sum(liabilities);
+    const netIncome = sum(income);
+    const totalExp = sum(expenses);
+    const savings = netIncome - totalExp;                 // NOT clamped: deficit must show
+    const savingsRate = netIncome > 0 ? savings / netIncome * 100 : 0;
+    const fixedExp = sum(expenses.filter((e) => e.isFixed));
+    const emergencyCash = sum(assets.filter((a) => a.category === 'Tunai & Simpanan'));
+    const runway = totalExp > 0 ? emergencyCash / totalExp : 0;
+    const passive = sum(income.filter((i) => i.isPassive));
+    const passiveCoverage = totalExp > 0 ? passive / totalExp * 100 : 0;
+    const debtPayments = sum(liabilities, 'monthlyPayment');
+    const dsr = netIncome > 0 ? debtPayments / netIncome * 100 : 0;
+    const fiTarget = totalExp * 12 * st.fireMultiplier;
+    const fiProgress = fiTarget > 0 ? Math.min(100, liquid / fiTarget * 100) : 0;
+    const realReturn = st.expectedReturn - st.inflationRate;
+    const yrs = yearsToTarget(liquid, fiTarget, savings, realReturn);
+    const gold = sum(assets.filter((a) => a.category === 'Emas'));
+    const asbTh = assets.filter((a) => a.category === 'ASB / ASN' || a.category === 'Tabung Haji');
+
+    return {
+        assets, liabilities, income, expenses,
+        liquid, locked, totalAssets, totalLiab, netWorth: totalAssets - totalLiab,
+        netIncome, totalExp, savings, savingsRate, fixedExp, variableExp: totalExp - fixedExp,
+        emergencyCash, runway, passive, passiveCoverage, debtPayments, dsr,
+        fiTarget, fiGap: Math.max(0, fiTarget - liquid), fiProgress, realReturn, yrs,
+        gold, goldPctOfLiquid: liquid > 0 ? gold / liquid * 100 : 0,
+        asbThTotal: sum(asbTh), asbThDividend: asbTh.reduce((s, a) => s + a.amount * n(a.yieldPercent) / 100, 0),
+        highInterest: liabilities.filter((l) => l.interestRate >= 8 || l.category === 'Kad Kredit')
+    };
+}
+
+// Zakat per individual (zakat is fard 'ain, never combined across spouses)
+function computeZakat(person) {
+    const st = appState.settings;
+    const assets = scoped(appState.assets, person);
+    const income = scoped(appState.income, person);
+    const harta = sum(assets.filter((a) => a.zakatType === 'simpanan' && !a.isLocked));
+    const emas = sum(assets.filter((a) => a.zakatType === 'emas' && !a.isLocked));
+    const grossAnnual = sum(income.filter((i) => !i.isPassive), 'grossAmount') * 12;
+    const hk = st.zakatMethod === 'tolakan' ? n(st.hadKifayah[person]) : 0;
+    const incomeBase = Math.max(0, grossAnnual - hk);
+    const zIncome = incomeBase >= st.nisab && st.nisab > 0 ? incomeBase * 0.025 : 0;
+    const zHarta = harta >= st.nisab && st.nisab > 0 ? harta * 0.025 : 0;
+    const zEmas = emas >= st.nisab && st.nisab > 0 ? emas * 0.025 : 0;
+    return { harta, emas, grossAnnual, hk, incomeBase, zIncome, zHarta, zEmas, total: zIncome + zHarta + zEmas };
+}
+
+// Seeded RNG so the Monte Carlo % does not jump every re-render
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function monteCarlo(start, target, monthlySave, realMeanPct, volPct, years, runs = 1000) {
+    if (target <= 0) return null;
+    const rnd = mulberry32(20261017);
+    const gauss = () => { let u = 0, v = 0; while (u === 0) u = rnd(); while (v === 0) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    let ok = 0;
+    for (let k = 0; k < runs; k++) {
+        let bal = start;
+        for (let y = 0; y < years; y++) {
+            const r = Math.max(-0.95, realMeanPct / 100 + gauss() * volPct / 100);
+            bal = bal * (1 + r) + monthlySave * 12;   // annual step: contributions at year end (conservative)
+            if (bal >= target) { ok++; break; }
+        }
+    }
+    return ok / runs * 100;
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function setText(id, v) { const el = $(id); if (el) el.textContent = v; }
+function ownerBadge(o) {
+    const cls = o === 'husband' ? 'b-blue' : o === 'wife' ? 'b-pink' : 'b-sage';
+    return `<span class="badge ${cls}">${esc(OWNER_LABEL[o])}</span>`;
+}
+function actionBtns(col, id) {
+    return `<span class="no-print inline-flex gap-1">
+        <button class="btn btn-icon" style="min-height:32px;width:32px" data-action="edit" data-col="${col}" data-id="${esc(id)}" aria-label="Edit"><i class="fa-solid fa-pen text-[11px]"></i></button>
+        <button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete" data-col="${col}" data-id="${esc(id)}" aria-label="Padam"><i class="fa-solid fa-trash text-[11px]"></i></button>
+    </span>`;
+}
+const emptyRow = (cols, msg) => `<tr><td colspan="${cols}" class="text-center t-faint py-6">${esc(msg)}</td></tr>`;
+
+function renderAll() {
+    const m = computeMetrics(activeProfile);
+    renderHero(m);
+    renderKpis(m);
+    renderLevel(m);
+    renderInsights(m);
+    renderDashboardBoxes(m);
+    renderTables(m);
+    renderZakat();
+    renderTax();
+    renderSimulator(m);
+    renderHistory();
+    renderCharts(m);
+}
+
+function renderHero(m) {
+    setText('fi-pct', pct(m.fiProgress));
+    $('fi-bar').style.width = `${m.fiProgress}%`;
+    setText('fi-target', formatRM(m.fiTarget));
+    setText('fi-gap', formatRM(m.fiGap));
+    setText('fi-passive', pct(m.passiveCoverage));
+    setText('fi-liquid', formatRM(m.liquid));
+    setText('fi-locked', formatRM(m.locked));
+    setText('fi-mult-txt', appState.settings.fireMultiplier);
+    setText('fi-eta', m.savings <= 0 && m.fiProgress < 100
+        ? 'Anggaran capai: simpanan bulanan negatif/0'
+        : `Anggaran capai: ${fmtYears(m.yrs)} (real ${pct(m.realReturn)})`);
+    const lean = m.fiTarget > 0 ? m.liquid / (m.fiTarget * 0.75) * 100 : 0;
+    const fat = m.fiTarget > 0 ? m.liquid / (m.fiTarget * 1.5) * 100 : 0;
+    const badge = (id, label, v) => { const el = $(id); el.textContent = `${label}: ${Math.min(999, v).toFixed(0)}%`; el.className = `badge ${v >= 100 ? 'b-sage' : 'b-mute'}`; };
+    badge('b-lean', 'Lean FI (75%)', lean);
+    badge('b-base', 'Base FI', m.fiProgress);
+    badge('b-fat', 'Fat FI (150%)', fat);
+}
+
+function renderKpis(m) {
+    setText('k-networth', formatRM(m.netWorth));
+    setText('k-assets', formatRM(m.totalAssets));
+    setText('k-liab', formatRM(m.totalLiab));
+    setText('k-income', formatRM(m.netIncome));
+    setText('k-passive', formatRM(m.passive));
+    setText('k-expenses', formatRM(m.totalExp));
+    setText('k-fixed', formatRM(m.fixedExp));
+    setText('k-variable', formatRM(m.variableExp));
+    setText('k-srate', pct(m.savingsRate));
+    $('k-srate').className = `text-2xl font-extrabold num mt-1 pv ${m.savings < 0 ? 't-rose' : 't-gold'}`;
+    setText('k-savings', formatRM(m.savings));
+    setText('k-runway', m.runway.toFixed(1));
+}
+
+// Levels are based on liquid FI progress + safety buffers, not net worth (which includes house & EPF)
+function renderLevel(m) {
+    const levels = [
+        { ok: true, t: 'Level 1: Bina Asas', d: 'Kumpul dana kecemasan sekurang-kurangnya 3 bulan belanja (dalam akaun Tunai & Simpanan).' },
+        { ok: m.runway >= 3, t: 'Level 2: Ada Kusyen', d: 'Dana kecemasan ≥ 3 bulan. Sasar 6 bulan dan kadar simpanan ≥ 20%.' },
+        { ok: m.runway >= 6 && m.savingsRate >= 20, t: 'Level 3: Stabil', d: 'Dana 6 bulan + simpan ≥ 20%. Tolak ke 25% progress FI liquid.' },
+        { ok: m.fiProgress >= 25, t: 'Level 4: Momentum', d: 'Seperempat jalan ke FI. Compounding mula buat kerja.' },
+        { ok: m.fiProgress >= 50, t: 'Level 5: Separuh Jalan', d: 'Separuh sasaran FI liquid tercapai.' },
+        { ok: m.fiProgress >= 100, t: 'Level 6: FI Tercapai', d: 'Aset liquid ≥ sasaran. Kerja jadi pilihan, bukan kewajipan.' }
+    ];
+    let lvl = 1;
+    for (let i = 1; i < levels.length; i++) { if (levels[i].ok) lvl = i + 1; else break; }
+    setText('lvl-num', lvl);
+    setText('lvl-title', levels[lvl - 1].t);
+    setText('lvl-desc', levels[lvl - 1].d);
+    $('streak-badge').innerHTML = `<i class="fa-solid fa-bolt"></i>${appState.historySnapshots.length} Snapshot`;
+    const ms = [
+        { name: 'Dana 3 bln', ok: m.runway >= 3, icon: 'fa-shield' },
+        { name: 'Dana 6 bln', ok: m.runway >= 6, icon: 'fa-shield-halved' },
+        { name: 'Simpan ≥ 30%', ok: m.savingsRate >= 30, icon: 'fa-piggy-bank' },
+        { name: 'Liquid RM100k', ok: m.liquid >= 100000, icon: 'fa-seedling' },
+        { name: 'FI 25%', ok: m.fiProgress >= 25, icon: 'fa-tree' }
+    ];
+    $('milestones').innerHTML = ms.map((b) => `<span class="badge ${b.ok ? 'b-sage' : 'b-mute'}" style="${b.ok ? '' : 'opacity:.6'}"><i class="fa-solid ${b.icon}"></i>${esc(b.name)}</span>`).join('');
+}
+
+// Module F Tier 1: local, rule-based remarks
+function renderInsights(m) {
+    const out = [];
+    const add = (sev, title, text, action) => out.push({ sev, title, text, action });
+    const st = appState.settings;
+
+    if (m.savings < 0) add(3, 'Belanja melebihi pendapatan', `Defisit ${formatRM(-m.savings)} sebulan.`, 'Potong belanja variabel atau semak semula komitmen tetap dulu sebelum fikir pelaburan.');
+    else if (m.savingsRate < 20) add(2, 'Kadar simpanan rendah', `${pct(m.savingsRate)} sahaja daripada pendapatan bersih disimpan.`, 'Automasi pindahan ke ASB/TH/robo pada hari gaji supaya simpanan berlaku dulu.');
+    else add(1, 'Kadar simpanan', `${pct(m.savingsRate)} (${formatRM(m.savings)}/bln).`, m.savingsRate >= 50 ? 'Mantap. Pastikan lebihan betul-betul dilabur, bukan duduk dalam akaun semasa.' : 'Setiap +10% kadar simpanan pendekkan masa ke FI dengan ketara (lihat matriks).');
+
+    if (m.runway < 3) add(3, 'Dana kecemasan nipis', `Hanya ${m.runway.toFixed(1)} bulan belanja dalam Tunai & Simpanan.`, 'Bina sekurang-kurangnya 3 bulan dahulu sebelum tambah pelaburan berisiko.');
+    else if (m.runway < 6) add(2, 'Dana kecemasan', `${m.runway.toFixed(1)} bulan liputan.`, 'Sasar 6 bulan, terutama kalau satu pendapatan tidak stabil.');
+
+    if (m.dsr >= 40) add(m.dsr >= 60 ? 3 : 2, 'Komitmen hutang tinggi', `Bayaran hutang ${pct(m.dsr)} daripada gaji bersih (${formatRM(m.debtPayments)}/bln).`, 'Elak ambil pembiayaan baru. Fokus langsaikan yang kadar paling tinggi dulu.');
+    if (m.highInterest.length) add(3, 'Hutang kadar tinggi', `${m.highInterest.map((l) => l.name).join(', ')}.`, 'Kad kredit/pembiayaan ≥ 8% patut dilangsaikan sebelum labur di instrumen ~5–6%.');
+
+    const snaps = [...appState.historySnapshots].sort((a, b) => a.key.localeCompare(b.key));
+    if (snaps.length >= 2 && activeProfile === 'combined') {
+        const a = snaps[snaps.length - 2], b = snaps[snaps.length - 1];
+        const d = b.netWorth - a.netWorth, de = b.expenses - a.expenses;
+        add(d < 0 ? 2 : 1, `Trend ${a.dateLabel} → ${b.dateLabel}`, `Nilai bersih ${d >= 0 ? 'naik' : 'turun'} ${formatRM(Math.abs(d))}; belanja ${de >= 0 ? 'naik' : 'turun'} ${formatRM(Math.abs(de))}.`, d < 0 ? 'Semak sama ada penurunan sebab nilai pasaran atau pengeluaran simpanan.' : 'Teruskan snapshot setiap 25hb untuk lihat corak jangka panjang.');
+    } else if (snaps.length < 2) {
+        add(1, 'Belum ada trend', 'Perlu sekurang-kurangnya 2 snapshot bulanan.', 'Tekan "Simpan Snapshot" di tab Sejarah setiap bulan.');
+    }
+
+    if (m.liquid > 0 && (m.goldPctOfLiquid > 15)) add(2, 'Emas berat dalam portfolio', `Emas ${pct(m.goldPctOfLiquid)} daripada aset liquid.`, 'Emas tiada aliran tunai; pertimbang seimbangkan semula ke 5–10%.');
+
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    const zTotal = persons.reduce((s, p) => s + computeZakat(p).total, 0);
+    if (zTotal > 0) add(1, 'Zakat dianggar wajib', `Anggaran ${formatRM(zTotal)} setahun (${persons.map((p) => OWNER_LABEL[p]).join(' + ')}).`, 'Bandingkan dengan potongan gaji/bayaran sedia ada; sahkan di kalkulator PPZ.');
+
+    const last = st.lastBackupAt ? new Date(st.lastBackupAt) : null;
+    const days = last ? (Date.now() - last.getTime()) / 86400000 : Infinity;
+    if (days > 7) add(2, 'Backup tertunggak', last ? `Backup terakhir ${Math.floor(days)} hari lepas.` : 'Belum pernah backup.', 'Clear cache/tukar phone = data hilang. Muat turun JSON di Tetapan.');
+
+    const sevMeta = { 3: ['Kritikal', 'b-rose'], 2: ['Perhatian', 'b-gold'], 1: ['Info', 'b-blue'] };
+    const top = out.sort((a, b) => b.sev - a.sev).slice(0, 6);
+    $('insights').innerHTML = top.map((i) => `
+        <div class="card-sub p-3 space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+                <h4 class="text-sm font-bold">${esc(i.title)}</h4>
+                <span class="badge ${sevMeta[i.sev][1]}">${sevMeta[i.sev][0]}</span>
+            </div>
+            <p class="text-xs t-muted pv">${esc(i.text)}</p>
+            <p class="text-xs"><i class="fa-solid fa-arrow-right t-sage mr-1"></i>${esc(i.action)}</p>
+        </div>`).join('');
+}
+
+function renderDashboardBoxes(m) {
+    // EPF is per individual, so show each person against target
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    const target = appState.settings.epfTarget;
+    $('epf-box').innerHTML = persons.map((p) => {
+        const v = sum(scoped(appState.assets, p).filter((a) => a.category === 'KWSP'));
+        const pr = target > 0 ? Math.min(100, v / target * 100) : 0;
+        return `<div class="space-y-1">
+            <div class="flex justify-between text-xs"><span class="t-muted">${esc(OWNER_LABEL[p])}</span><span class="num font-semibold pv">${formatRM(v)} <span class="t-faint">/ ${formatRM(target)}</span></span></div>
+            <div class="bar"><div style="width:${pr}%;background:var(--blue)"></div></div></div>`;
+    }).join('');
+    setText('asbth-total', formatRM(m.asbThTotal));
+    setText('asbth-div', `${formatRM(m.asbThDividend)}/thn`);
+    setText('gold-total', formatRM(m.gold));
+    setText('gold-alloc-badge', `${pct(m.goldPctOfLiquid)} drpd liquid`);
+    $('gold-bar').style.width = `${Math.min(100, m.goldPctOfLiquid * 5)}%`;   // bar full at 20%
+}
+
+function renderTables(m) {
+    const byAmt = (a, b) => b.amount - a.amount;
+    const share = (i) => i._share < 1 ? ` <span class="t-faint text-[10px]">(${Math.round(i._share * 100)}%)</span>` : '';
+
+    $('tbody-assets').innerHTML = m.assets.length ? [...m.assets].sort(byAmt).map((a) => `
+        <tr><td>${ownerBadge(a.owner)}</td>
+        <td class="font-semibold">${esc(a.name)}</td>
+        <td class="t-muted">${esc(a.category)}</td>
+        <td>${a.isLocked ? '<span class="badge b-blue"><i class="fa-solid fa-lock"></i>Terkunci</span>' : '<span class="badge b-sage"><i class="fa-solid fa-bolt"></i>Liquid</span>'}</td>
+        <td><span class="badge ${a.zakatType === 'tiada' ? 'b-mute' : 'b-gold'}">${esc({ simpanan: 'Simpanan', emas: 'Emas', tiada: 'Tiada' }[a.zakatType])}</span></td>
+        <td class="text-right num font-bold t-sage pv">${formatRM(a.amount)}${share(a)}</td>
+        <td class="text-right num">${n(a.yieldPercent).toFixed(2)}</td>
+        <td class="text-right">${actionBtns('assets', a.id)}</td></tr>`).join('') : emptyRow(8, 'Tiada rekod aset.');
+
+    $('tbody-liabilities').innerHTML = m.liabilities.length ? [...m.liabilities].sort(byAmt).map((l) => `
+        <tr><td>${ownerBadge(l.owner)}</td>
+        <td class="font-semibold">${esc(l.name)}</td>
+        <td class="t-muted">${esc(l.category)}</td>
+        <td class="text-right num font-bold t-rose pv">${formatRM(l.amount)}${share(l)}</td>
+        <td class="text-right num pv">${formatRM(l.monthlyPayment)}</td>
+        <td class="text-right num ${l.interestRate >= 8 ? 't-rose font-bold' : ''}">${n(l.interestRate).toFixed(2)}</td>
+        <td class="text-right">${actionBtns('liabilities', l.id)}</td></tr>`).join('') : emptyRow(7, 'Tiada rekod hutang.');
+
+    const dsrCls = m.dsr >= 60 ? 't-rose' : m.dsr >= 40 ? 't-gold' : 't-sage';
+    $('dsr-box').innerHTML = `<div class="flex flex-wrap justify-between gap-2">
+        <span class="t-muted">Jumlah bayaran hutang / bulan: <strong class="num pv">${formatRM(m.debtPayments)}</strong></span>
+        <span class="t-muted">Nisbah atas gaji bersih: <strong class="num ${dsrCls}">${pct(m.dsr)}</strong> <span class="t-faint">(sihat &lt; 40%)</span></span></div>`;
+
+    $('tbody-income').innerHTML = m.income.length ? [...m.income].sort(byAmt).map((i) => `
+        <tr><td>${ownerBadge(i.owner)}</td>
+        <td class="font-semibold">${esc(i.name)}</td>
+        <td class="t-muted">${esc(i.category)}</td>
+        <td>${i.isPassive ? '<span class="badge b-sage">Pasif</span>' : '<span class="badge b-mute">Aktif</span>'}</td>
+        <td class="text-right num font-bold t-sage pv">${formatRM(i.amount)}${share(i)}</td>
+        <td class="text-right num t-muted pv">${formatRM(i.grossAmount)}</td>
+        <td class="text-right">${actionBtns('income', i.id)}</td></tr>`).join('') : emptyRow(7, 'Tiada rekod pendapatan.');
+
+    $('tbody-expenses').innerHTML = m.expenses.length ? [...m.expenses].sort(byAmt).map((e) => `
+        <tr><td>${ownerBadge(e.owner)}</td>
+        <td class="font-semibold">${e.linkedLiabilityId ? '<i class="fa-solid fa-link t-faint mr-1" title="Auto-sync dari liabiliti"></i>' : ''}${esc(e.name)}</td>
+        <td class="t-muted">${esc(e.category)}</td>
+        <td>${e.isFixed ? '<span class="badge b-gold">Tetap</span>' : '<span class="badge b-blue">Variabel</span>'}</td>
+        <td class="text-right num font-bold t-rose pv">${formatRM(e.amount)}${share(e)}</td>
+        <td class="text-right">${actionBtns('expenses', e.id)}</td></tr>`).join('') : emptyRow(6, 'Tiada rekod perbelanjaan.');
+}
+
+function renderZakat() {
+    const st = appState.settings;
+    setText('nisab-badge', `Nisab ${formatRM(st.nisab)} · ${st.zakatMethod === 'tolakan' ? 'dgn tolakan' : 'kasar'}`);
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    const line = (label, base, z, note) => `
+        <div class="flex justify-between items-start py-2 border-b bd text-xs gap-3">
+            <div><p class="font-semibold">${esc(label)}</p><p class="t-faint text-[11px] pv">${esc(note)}</p></div>
+            <div class="text-right"><p class="num font-bold ${z > 0 ? 't-sage' : 't-faint'} pv">${formatRM(z)}</p><p class="num text-[11px] t-faint pv">asas ${formatRM(base)}</p></div>
+        </div>`;
+    $('zakat-cards').innerHTML = persons.map((p) => {
+        const z = computeZakat(p);
+        const below = (b) => b < st.nisab ? 'Bawah nisab, tidak wajib' : '≥ nisab × 2.5%';
+        return `<div class="card-sub p-4">
+            <div class="flex justify-between items-center mb-1">${ownerBadge(p)}<span class="text-[11px] t-faint">per tahun</span></div>
+            ${line('Zakat pendapatan', z.incomeBase, z.zIncome, `Kasar ${formatRM(z.grossAnnual)}${z.hk ? ` − had kifayah ${formatRM(z.hk)}` : ''} · ${below(z.incomeBase)}`)}
+            ${line('Zakat simpanan & pelaburan', z.harta, z.zHarta, below(z.harta))}
+            ${line('Zakat emas', z.emas, z.zEmas, below(z.emas))}
+            <div class="flex justify-between items-center pt-3">
+                <span class="text-xs font-semibold uppercase tracking-wider t-muted">Jumlah</span>
+                <span class="text-2xl font-extrabold num t-sage pv">${formatRM(z.total)}</span>
+            </div>
+            <p class="text-[11px] t-faint num pv">≈ ${formatRM(z.total / 12)}/bln jika potongan bulanan</p>
+        </div>`;
+    }).join('');
+}
+
+function renderTax() {
+    const tr = appState.taxRelief;
+    const cell = (p, r) => {
+        const v = n(tr[p][r.key]);
+        const pr = Math.min(100, v / r.limit * 100);
+        const over = v > r.limit;
+        return `<td><div class="space-y-1">
+            <input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="padding:.35rem .5rem;font-size:12px" data-tax-person="${p}" data-tax-key="${r.key}" value="${v || ''}" placeholder="0">
+            <div class="bar"><div style="width:${pr}%;background:${over ? 'var(--rose)' : pr >= 100 ? 'var(--sage)' : 'var(--blue)'}"></div></div>
+            <p class="text-[10px] ${over ? 't-rose' : 't-faint'} num">${over ? `Lebih had ${formatRM(v - r.limit)} (tak boleh tuntut)` : `Baki ruang ${formatRM(r.limit - v)}`}</p>
+        </div></td>`;
+    };
+    const total = (p) => TAX_RELIEFS.reduce((s, r) => s + Math.min(n(tr[p][r.key]), r.limit), 0);
+    $('tbody-tax').innerHTML = TAX_RELIEFS.map((r) => `
+        <tr><td class="font-semibold">${esc(r.label)}</td><td class="text-right num">${formatRM(r.limit)}</td>${cell('husband', r)}${cell('wife', r)}</tr>`).join('') +
+        `<tr><td class="font-bold">Jumlah boleh dituntut</td><td></td><td class="num font-bold t-sage pv">${formatRM(total('husband'))}</td><td class="num font-bold t-sage pv">${formatRM(total('wife'))}</td></tr>`;
+}
+
+function renderSimulator(m) {
+    const st = appState.settings;
+    if (m.netIncome <= 0) {
+        $('thead-sens').innerHTML = '';
+        $('tbody-sens').innerHTML = emptyRow(1, 'Tambah pendapatan untuk lihat matriks.');
+    } else {
+        const rates = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7];
+        const nearest = rates.reduce((best, r) => Math.abs(r * 100 - m.savingsRate) < Math.abs(best * 100 - m.savingsRate) ? r : best, rates[0]);
+        $('thead-sens').innerHTML = `<tr><th class="text-left">Kadar simpanan</th>${rates.map((r) => `<th class="text-center" style="${r === nearest ? 'background:var(--sage-bg);color:var(--sage)' : ''}">${Math.round(r * 100)}%</th>`).join('')}</tr>`;
+        const rowYears = rates.map((r) => {
+            const save = m.netIncome * r;
+            const exp = m.netIncome * (1 - r);               // consistent: spend what you don't save
+            const target = exp * 12 * st.fireMultiplier;
+            return yearsToTarget(m.liquid, target, save, m.realReturn);
+        });
+        const rowTarget = rates.map((r) => m.netIncome * (1 - r) * 12 * st.fireMultiplier);
+        $('tbody-sens').innerHTML =
+            `<tr><td class="text-left font-semibold">Tahun ke FI</td>${rowYears.map((y, i) => `<td class="num font-bold ${rates[i] === nearest ? 't-sage' : ''}">${esc(fmtYears(y))}</td>`).join('')}</tr>` +
+            `<tr><td class="text-left t-muted">Sasaran FI</td>${rowTarget.map((t) => `<td class="num t-muted pv">${formatRM(t)}</td>`).join('')}</tr>`;
+    }
+    const prob = monteCarlo(m.liquid, m.fiTarget, m.savings, m.realReturn, st.mcVolatility, st.mcYears);
+    const el = $('mc-text');
+    if (prob == null) { el.textContent = 'Monte Carlo: tiada sasaran'; el.className = 'badge b-mute'; }
+    else {
+        el.textContent = `Monte Carlo: ${prob.toFixed(0)}% capai FI dalam ${st.mcYears} thn`;
+        el.className = `badge ${prob >= 75 ? 'b-sage' : prob >= 40 ? 'b-gold' : 'b-rose'}`;
+    }
+    setText('mc-note', `1,000 simulasi · pulangan real purata ${pct(m.realReturn)} · volatiliti ${pct(st.mcVolatility, 0)} setahun · simpanan ${formatRM(Math.max(0, m.savings))}/bln kekal. Ini model kasar, bukan jaminan; ubah andaian di Tetapan.`);
+}
+
+function renderHistory() {
+    const snaps = [...appState.historySnapshots].sort((a, b) => a.key.localeCompare(b.key));
+    $('tbody-history').innerHTML = snaps.length ? snaps.slice().reverse().map((s) => `
+        <tr><td class="font-semibold">${esc(s.dateLabel)}</td>
+        <td class="text-right num font-bold pv">${formatRM(s.netWorth)}</td>
+        <td class="text-right num t-sage pv">${formatRM(s.liquidAssets)}</td>
+        <td class="text-right num pv">${formatRM(s.income)}</td>
+        <td class="text-right num t-rose pv">${formatRM(s.expenses)}</td>
+        <td class="text-right num font-bold ${s.savings < 0 ? 't-rose' : 't-gold'} pv">${formatRM(s.savings)}</td>
+        <td class="text-right no-print"><button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete-snap" data-id="${esc(s.id)}" aria-label="Padam"><i class="fa-solid fa-trash text-[11px]"></i></button></td></tr>`).join('')
+        : emptyRow(7, 'Belum ada snapshot. Tekan "Simpan Snapshot Bulan Ini".');
+}
+
+/* =====================================================================
+   CHARTS (recreated on theme change: simpler & avoids stale option objects)
+   ===================================================================== */
+const PALETTE = ['#40916c', '#4a7fb5', '#d4a373', '#c67d5a', '#2a9d8f', '#8d99ae', '#7b6d8d', '#b5838d', '#6b8f71'];
+function chartTheme() {
+    const dark = document.documentElement.classList.contains('dark');
+    return { text: dark ? '#9aa5b1' : '#56626c', grid: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', card: dark ? '#151b22' : '#ffffff' };
+}
+const rmTick = (v) => (Math.abs(v) >= 1e6 ? `RM${(v / 1e6).toFixed(1)}j` : Math.abs(v) >= 1e3 ? `RM${Math.round(v / 1e3)}k` : `RM${v}`);
+
+function renderCharts(m) {
+    if (typeof Chart === 'undefined') return;   // CDN blocked: rest of app still works
+    const th = chartTheme();
+    Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = th.text;
+    const axes = { x: { grid: { color: th.grid }, ticks: { color: th.text } }, y: { grid: { color: th.grid }, ticks: { color: th.text, callback: rmTick } } };
+    const tip = { callbacks: { label: (c) => `${c.dataset.label || c.label}: ${formatRM(c.raw)}` } };
+
+    // Asset allocation
+    const cats = {};
+    m.assets.forEach((a) => { cats[a.category] = (cats[a.category] || 0) + a.amount; });
+    const catEntries = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+    const total = catEntries.reduce((s, [, v]) => s + v, 0);
+    upsertChart('assets', 'chart-assets', {
+        type: 'doughnut',
+        data: { labels: catEntries.map(([k]) => k), datasets: [{ data: catEntries.map(([, v]) => v), backgroundColor: PALETTE, borderColor: th.card, borderWidth: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatRM(c.raw)}` } } } }
+    });
+    $('asset-legend').innerHTML = catEntries.length ? catEntries.map(([k, v], i) => `
+        <div class="flex justify-between items-center text-xs">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:${PALETTE[i % PALETTE.length]}"></span>${esc(k)}</span>
+            <span class="num font-semibold pv">${formatRM(v)} <span class="t-faint">${total ? (v / total * 100).toFixed(1) : 0}%</span></span>
+        </div>`).join('') : '<p class="text-xs t-faint">Tiada data aset.</p>';
+
+    // Cashflow: expenses by category + savings
+    const expCats = {};
+    m.expenses.forEach((e) => { expCats[e.category] = (expCats[e.category] || 0) + e.amount; });
+    const ec = Object.entries(expCats).sort((a, b) => b[1] - a[1]);
+    upsertChart('cashflow', 'chart-cashflow', {
+        type: 'bar',
+        data: {
+            labels: ['Pendapatan', ...ec.map(([k]) => k), m.savings >= 0 ? 'Baki disimpan' : 'Defisit'],
+            datasets: [{ label: 'RM', data: [m.netIncome, ...ec.map(([, v]) => v), m.savings],
+                backgroundColor: ['#40916c', ...ec.map(() => '#c67d5a'), m.savings >= 0 ? '#52b788' : '#d1495b'], borderRadius: 4 }]
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatRM(c.raw) } } },
+            scales: { x: { grid: { color: th.grid }, ticks: { callback: rmTick } }, y: { grid: { display: false } } } }
+    });
+
+    // Scenarios with target line
+    const years = Array.from({ length: 26 }, (_, i) => i);
+    const traj = (rate) => years.map((y) => {
+        const r = rate / 12; let bal = m.liquid;
+        for (let k = 0; k < y * 12; k++) bal = bal * (1 + r) + Math.max(0, m.savings);
+        return Math.round(bal);
+    });
+    upsertChart('scenarios', 'chart-scenarios', {
+        type: 'line',
+        data: {
+            labels: years.map((y) => `T${y}`),
+            datasets: [
+                { label: 'Pesimis (3% real)', data: traj(0.03), borderColor: '#d1495b', pointRadius: 0, tension: .25 },
+                { label: 'Base (5% real)', data: traj(0.05), borderColor: '#40916c', borderWidth: 3, pointRadius: 0, tension: .25 },
+                { label: 'Optimis (7% real)', data: traj(0.07), borderColor: '#4a7fb5', pointRadius: 0, tension: .25 },
+                { label: 'Sasaran FI', data: years.map(() => Math.round(m.fiTarget)), borderColor: '#d4a373', borderDash: [6, 4], pointRadius: 0 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { labels: { boxWidth: 12, color: th.text } }, tooltip: tip }, scales: axes }
+    });
+
+    // Trend
+    const snaps = [...appState.historySnapshots].sort((a, b) => a.key.localeCompare(b.key));
+    upsertChart('trend', 'chart-trend', {
+        type: 'line',
+        data: {
+            labels: snaps.map((s) => s.dateLabel),
+            datasets: [
+                { label: 'Nilai bersih', data: snaps.map((s) => s.netWorth), borderColor: '#40916c', backgroundColor: 'rgba(64,145,108,.12)', fill: true, tension: .3 },
+                { label: 'Aset liquid', data: snaps.map((s) => s.liquidAssets), borderColor: '#4a7fb5', tension: .3 },
+                { label: 'Simpanan bulanan', data: snaps.map((s) => s.savings), borderColor: '#d4a373', borderDash: [5, 5], tension: .3 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { labels: { boxWidth: 12, color: th.text } }, tooltip: tip }, scales: axes }
+    });
+}
+function upsertChart(key, canvasId, config) {
+    if (charts[key] && charts[key].config.type === config.type) {
+        charts[key].data = config.data;
+        charts[key].options = config.options;
+        charts[key].update();
+    } else {
+        if (charts[key]) charts[key].destroy();
+        charts[key] = new Chart($(canvasId).getContext('2d'), config);
+    }
+}
+function rebuildCharts() { Object.keys(charts).forEach((k) => { charts[k].destroy(); delete charts[k]; }); renderCharts(computeMetrics(activeProfile)); }
+
+/* =====================================================================
+   MODALS & FORM
+   ===================================================================== */
+function openModal(id) { const el = $(id); el.classList.remove('hidden'); el.classList.add('flex'); }
+function closeModal(id) {
+    const el = $(id); el.classList.add('hidden'); el.classList.remove('flex');
+    if (id === 'modal-entry') { editing = null; $('form-entry').reset(); }
+}
+
+function fillCategoryOptions(type, current) {
+    const opts = [...CATEGORIES[type]];
+    if (current && !opts.includes(current)) opts.push(current);
+    $('in-category').innerHTML = opts.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if (current) $('in-category').value = current;
+}
+
+const HINTS = {
+    asset: 'Nilai semasa aset. KWSP & rumah ditanda terkunci secara automatik.',
+    liability: 'Bayaran bulanan akan auto-masuk ke senarai belanja.',
+    income: 'Bersih = masuk akaun. Kasar = sebelum potongan (untuk zakat pendapatan).',
+    expense: 'Purata bulanan. Untuk belanja tahunan (cukai jalan, insurans kereta), bahagi 12.'
+};
+function applyTypeUI(type) {
+    const show = (id, on) => $(id).classList.toggle('hidden', !on);
+    $('entry-hint').textContent = HINTS[type];
+    show('wrap-locked', type === 'asset');
+    show('wrap-zakat', type === 'asset');
+    show('wrap-passive', type === 'income');
+    show('wrap-fixed', type === 'expense');
+    show('wrap-secondary', type !== 'expense');
+    show('wrap-tertiary', type === 'liability');
+    const labels = {
+        asset: ['Nilai Semasa (RM)', 'Pulangan % p.a'],
+        liability: ['Baki Hutang (RM)', 'Bayaran Bulanan (RM)'],
+        income: ['Bersih / Bulan (RM)', 'Kasar / Bulan (RM)'],
+        expense: ['Jumlah / Bulan (RM)', '']
+    }[type];
+    $('lbl-amount').textContent = labels[0];
+    $('lbl-secondary').textContent = labels[1];
+}
+function applyAssetDefaults() {
+    if ($('in-type').value !== 'asset') return;
+    const d = ASSET_DEFAULTS[$('in-category').value];
+    if (!d) return;
+    $('chk-locked').checked = d.locked;
+    $('in-zakat').value = d.zakat;
+}
+
+function openEntry(type, item = null, collection = null) {
+    $('form-entry').reset();
+    ['in-name', 'in-amount'].forEach((id) => $(id).classList.remove('invalid'));
+    ['err-name', 'err-amount'].forEach((id) => $(id).classList.add('hidden'));
+    editing = item ? { collection, id: item.id } : null;
+    $('entry-title').textContent = item ? 'Kemaskini Rekod' : 'Tambah Rekod';
+    $('in-type').value = type;
+    $('in-type').disabled = !!item;     // type change on edit caused data mixups before
+    fillCategoryOptions(type, item?.category);
+    applyTypeUI(type);
+    if (item) {
+        $('in-owner').value = item.owner;
+        $('in-name').value = item.name;
+        $('in-amount').value = item.amount;
+        if (type === 'asset') { $('in-secondary').value = item.yieldPercent; $('chk-locked').checked = item.isLocked; $('in-zakat').value = item.zakatType; }
+        if (type === 'liability') { $('in-secondary').value = item.monthlyPayment; $('in-tertiary').value = item.interestRate; }
+        if (type === 'income') { $('in-secondary').value = item.grossAmount; $('chk-passive').checked = item.isPassive; }
+        if (type === 'expense') { $('chk-fixed').checked = item.isFixed; }
+    } else {
+        if (activeProfile !== 'combined') $('in-owner').value = activeProfile;
+        applyAssetDefaults();
+    }
+    openModal('modal-entry');
+    setTimeout(() => $('in-name').focus(), 50);
+}
+
+function validateEntry() {
+    const name = cleanText($('in-name').value);
+    const amtRaw = $('in-amount').value;
+    const amount = Number(amtRaw);
+    const okName = name.length > 0;
+    const okAmt = amtRaw !== '' && Number.isFinite(amount) && amount >= 0;
+    $('in-name').classList.toggle('invalid', !okName); $('err-name').classList.toggle('hidden', okName);
+    $('in-amount').classList.toggle('invalid', !okAmt); $('err-amount').classList.toggle('hidden', okAmt);
+    return okName && okAmt ? { name, amount } : null;
+}
+
+function handleEntrySubmit(e) {
+    e.preventDefault();
+    const v = validateEntry();
+    if (!v) return;
+    const type = $('in-type').value;
+    const colMap = { asset: 'assets', liability: 'liabilities', income: 'income', expense: 'expenses' };
+    const col = colMap[type];
+    const base = { owner: safeOwner($('in-owner').value), name: v.name, category: $('in-category').value, amount: v.amount };
+    const sec = Math.max(0, n($('in-secondary').value));
+    let rec;
+    if (type === 'asset') rec = { ...base, yieldPercent: sec, isLocked: $('chk-locked').checked, zakatType: $('in-zakat').value };
+    if (type === 'liability') rec = { ...base, monthlyPayment: sec, interestRate: Math.max(0, n($('in-tertiary').value)) };
+    if (type === 'income') rec = { ...base, grossAmount: sec || v.amount, isPassive: $('chk-passive').checked };
+    if (type === 'expense') rec = { ...base, isFixed: $('chk-fixed').checked };
+
+    const wasEdit = !!editing;
+    if (editing) {
+        const idx = appState[col].findIndex((i) => i.id === editing.id);
+        if (idx >= 0) appState[col][idx] = { ...appState[col][idx], ...rec };
+    } else {
+        appState[col].push({ id: uid(type[0]), ...rec });
+    }
+    if (type === 'liability') syncLinkedExpenses(appState);
+    saveState();
+    closeModal('modal-entry');
+    renderAll();
+    showToast(wasEdit ? 'Rekod dikemaskini.' : 'Rekod disimpan.', 'success');
+}
+
+function editEntry(col, id) {
+    const item = appState[col].find((i) => i.id === id);
+    if (!item) return;
+    if (col === 'expenses' && item.linkedLiabilityId) {
+        const l = appState.liabilities.find((x) => x.id === item.linkedLiabilityId);
+        if (l) { showToast('Belanja ni ikut liabiliti. Edit liabiliti tu.', 'info'); openEntry('liability', l, 'liabilities'); return; }
+    }
+    const typeMap = { assets: 'asset', liabilities: 'liability', income: 'income', expenses: 'expense' };
+    openEntry(typeMap[col], item, col);
+}
+
+function deleteEntry(col, id) {
+    const item = appState[col].find((i) => i.id === id);
+    if (!item) return;
+    const linkedNote = col === 'liabilities' ? ' Bayaran bulanan yang dipaut dalam senarai belanja juga akan dipadam.' : '';
+    if (col === 'expenses' && item.linkedLiabilityId) { showToast('Padam liabiliti berkaitan, bukan belanja ni.', 'warning'); return; }
+    confirmDialog('Padam rekod?', `"${item.name}" akan dipadam.${linkedNote}`, () => {
+        appState[col] = appState[col].filter((i) => i.id !== id);
+        if (col === 'liabilities') syncLinkedExpenses(appState);
+        saveState(); renderAll(); showToast('Rekod dipadam.', 'warning');
+    }, 'Padam');
+}
+
+/* =====================================================================
+   SNAPSHOTS
+   ===================================================================== */
+function takeSnapshot() {
+    const m = computeMetrics('combined');          // always household totals, regardless of active tab
+    const now = new Date();
+    const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const months = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
+    const dateLabel = `${months[now.getMonth()]} ${now.getFullYear()}`;
+    const doSave = () => {
+        appState.historySnapshots = appState.historySnapshots.filter((s) => s.key !== key && s.dateLabel !== dateLabel);
+        appState.historySnapshots.push({ id: uid('snap'), key, dateLabel, netWorth: m.netWorth, liquidAssets: m.liquid, income: m.netIncome, expenses: m.totalExp, savings: m.savings });
+        saveState(); renderAll(); showToast(`Snapshot ${dateLabel} disimpan.`, 'success');
+    };
+    if (appState.historySnapshots.some((s) => s.key === key || s.dateLabel === dateLabel)) {
+        confirmDialog('Ganti snapshot?', `Snapshot ${dateLabel} dah wujud. Ganti dengan angka terkini?`, doSave, 'Ganti');
+    } else doSave();
+}
+
+/* =====================================================================
+   SETTINGS, BACKUP, ICS
+   ===================================================================== */
+function openSettings() {
+    const s = appState.settings;
+    $('s-split').value = Math.round(s.sharedSplitRatio * 100);
+    $('s-mult').value = s.fireMultiplier;
+    $('s-return').value = s.expectedReturn;
+    $('s-infl').value = s.inflationRate;
+    $('s-nisab').value = s.nisab;
+    $('s-zmethod').value = s.zakatMethod;
+    $('s-hk-h').value = s.hadKifayah.husband || '';
+    $('s-hk-w').value = s.hadKifayah.wife || '';
+    $('s-epf').value = s.epfTarget;
+    $('s-mcyears').value = s.mcYears;
+    $('s-mcvol').value = s.mcVolatility;
+    $('last-backup').textContent = s.lastBackupAt ? new Date(s.lastBackupAt).toLocaleString('ms-MY') : 'belum pernah';
+    openModal('modal-settings');
+}
+function saveSettings(e) {
+    e.preventDefault();
+    const s = appState.settings;
+    const clamp = (v, lo, hi, d) => { const x = Number(v); return Number.isFinite(x) && v !== '' ? Math.min(hi, Math.max(lo, x)) : d; };
+    s.sharedSplitRatio = clamp($('s-split').value, 0, 100, 50) / 100;
+    s.fireMultiplier = clamp($('s-mult').value, 10, 50, 25);
+    s.expectedReturn = clamp($('s-return').value, 0, 20, 6);
+    s.inflationRate = clamp($('s-infl').value, 0, 15, 3);
+    s.nisab = clamp($('s-nisab').value, 0, 1e7, DEFAULT_SETTINGS.nisab);
+    s.zakatMethod = $('s-zmethod').value === 'kasar' ? 'kasar' : 'tolakan';
+    s.hadKifayah = { husband: clamp($('s-hk-h').value, 0, 1e7, 0), wife: clamp($('s-hk-w').value, 0, 1e7, 0) };
+    s.epfTarget = clamp($('s-epf').value, 0, 1e8, 390000);
+    s.mcYears = clamp($('s-mcyears').value, 1, 50, 20);
+    s.mcVolatility = clamp($('s-mcvol').value, 1, 40, 10);
+    if (s.expectedReturn <= s.inflationRate) showToast('Amaran: pulangan ≤ inflasi, pulangan real negatif.', 'warning');
+    saveState(); closeModal('modal-settings'); renderAll(); showToast('Tetapan disimpan.', 'success');
+}
+
+function exportJson() { return JSON.stringify(appState, null, 2); }
+function markBackup() { appState.settings.lastBackupAt = new Date().toISOString(); saveState(); setText('last-backup', new Date().toLocaleString('ms-MY')); renderAll(); }
+function downloadBlob(content, filename, type) {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadJson() {
+    markBackup();
+    downloadBlob(exportJson(), `Kewangan_Keluarga_Backup_${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
+    showToast('Backup dimuat turun.', 'success');
+}
+async function copyJson() {
+    try { await navigator.clipboard.writeText(exportJson()); markBackup(); showToast('JSON disalin. Hantar terus ke pasangan sahaja.', 'success'); }
+    catch { showToast('Gagal salin. Guna Muat Turun.', 'error'); }
+}
+function importFrom(text) {
+    let parsed;
+    try { parsed = normaliseState(JSON.parse(text)); }
+    catch (err) { showToast(`JSON tak sah: ${err.message}`, 'error'); return; }
+    const counts = `${parsed.assets.length} aset, ${parsed.liabilities.length} liabiliti, ${parsed.income.length} pendapatan, ${parsed.expenses.length} belanja`;
+    confirmDialog('Ganti semua data?', `Fail mengandungi ${counts}. Data semasa dalam peranti ni akan diganti.`, () => {
+        appState = parsed; saveState(); applyTheme(); closeModal('modal-settings'); renderAll(); rebuildCharts();
+        $('import-text').value = '';
+        showToast('Data diimport.', 'success');
+    }, 'Import');
+}
+
+function downloadIcs() {
+    // Floating local time (no Z) = 9:00 pagi waktu peranti. Old version used 09:00Z = 5:00 petang MYT.
+    const now = new Date();
+    const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    let y = now.getFullYear(), mo = now.getMonth() + 1;
+    if (now.getDate() > 25) { mo++; if (mo > 12) { mo = 1; y++; } }
+    const start = `${y}${String(mo).padStart(2, '0')}25T090000`;
+    const end = `${y}${String(mo).padStart(2, '0')}25T093000`;
+    const ics = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Hub Kewangan Keluarga//MS', 'CALSCALE:GREGORIAN',
+        'BEGIN:VEVENT', `UID:fire-25hb-${stamp}@hub-kewangan.local`, `DTSTAMP:${stamp}`,
+        `DTSTART:${start}`, `DTEND:${end}`, 'RRULE:FREQ=MONTHLY;BYMONTHDAY=25',
+        'SUMMARY:Kemaskini Dashboard Kewangan', 'DESCRIPTION:Kemaskini baki aset & hutang\\, simpan snapshot\\, backup JSON.',
+        'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Kemaskini Dashboard Kewangan', 'END:VALARM',
+        'END:VEVENT', 'END:VCALENDAR'
+    ].join('\r\n');
+    downloadBlob(ics, 'Peringatan_Kewangan_25hb.ics', 'text/calendar');
+    closeModal('modal-ics');
+    showToast('Fail .ics dimuat turun.', 'success');
+}
+
+/* =====================================================================
+   THEME, PRIVACY, NAV
+   ===================================================================== */
+function applyTheme() {
+    const dark = appState.settings.theme !== 'light';
+    document.documentElement.classList.toggle('dark', dark);
+    document.querySelectorAll('.js-theme-icon').forEach((i) => { i.className = `fa-solid ${dark ? 'fa-moon' : 'fa-sun'} js-theme-icon t-gold`; });
+}
+function toggleTheme() {
+    appState.settings.theme = appState.settings.theme === 'light' ? 'dark' : 'light';
+    saveState(); applyTheme(); rebuildCharts();
+}
+function togglePrivacy() {
+    privacyOn = !privacyOn;
+    document.body.classList.toggle('privacy-active', privacyOn);
+    document.querySelectorAll('.js-privacy-icon').forEach((i) => { i.className = `fa-solid ${privacyOn ? 'fa-eye-slash t-gold' : 'fa-eye'} js-privacy-icon`; });
+    showToast(privacyOn ? 'Mod privasi: angka disorok.' : 'Mod privasi dimatikan.');
+}
+function switchProfile(p) {
+    activeProfile = p;
+    document.querySelectorAll('.profile-tab').forEach((b) => b.classList.toggle('active', b.dataset.profile === p));
+    renderAll();
+}
+function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.view-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.view-tab-content').forEach((c) => c.classList.toggle('hidden', c.id !== `tab-${tab}`));
+    document.querySelectorAll('.mnav').forEach((b) => { b.style.color = b.dataset.tab === tab ? 'var(--sage)' : 'var(--muted)'; });
+    // Chart.js needs a resize when its canvas was hidden
+    Object.values(charts).forEach((c) => c.resize());
+}
+
+/* =====================================================================
+   EVENT WIRING (delegation: no IDs injected into inline onclick strings)
+   ===================================================================== */
+document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-action], [data-profile], [data-tab]');
+    if (!t) {
+        if (e.target.classList?.contains('modal')) closeModal(e.target.id);   // click backdrop
+        return;
+    }
+    if (t.dataset.profile && !t.dataset.action) return switchProfile(t.dataset.profile);
+    if (t.dataset.tab && !t.dataset.action) return switchTab(t.dataset.tab);
+    const a = t.dataset.action;
+    const actions = {
+        'privacy': togglePrivacy,
+        'theme': toggleTheme,
+        'print': () => window.print(),
+        'open-settings': openSettings,
+        'add': () => openEntry(t.dataset.type || 'asset'),
+        'edit': () => editEntry(t.dataset.col, t.dataset.id),
+        'delete': () => deleteEntry(t.dataset.col, t.dataset.id),
+        'delete-snap': () => confirmDialog('Padam snapshot?', 'Snapshot ni akan dibuang dari sejarah.', () => {
+            appState.historySnapshots = appState.historySnapshots.filter((s) => s.id !== t.dataset.id);
+            saveState(); renderAll(); showToast('Snapshot dipadam.', 'warning');
+        }, 'Padam'),
+        'snapshot': takeSnapshot,
+        'open-modal': () => openModal(t.dataset.modal),
+        'close-modal': () => closeModal(t.dataset.modal),
+        'download-json': downloadJson,
+        'copy-json': copyJson,
+        'import-text': () => { const txt = $('import-text').value.trim(); if (txt) importFrom(txt); },
+        'download-ics': downloadIcs,
+        'confirm-yes': () => { const cb = confirmCb; confirmCb = null; closeModal('modal-confirm'); if (cb) cb(); },
+        'confirm-no': () => { confirmCb = null; closeModal('modal-confirm'); },
+        'load-sample': () => confirmDialog('Isi data contoh?', 'Semua data semasa akan diganti dengan data contoh.', () => {
+            appState = normaliseState(clone(SAMPLE_DATA)); saveState(); closeModal('modal-settings'); applyTheme(); renderAll(); rebuildCharts();
+        }, 'Ganti'),
+        'wipe': () => confirmDialog('Padam SEMUA data?', 'Tak boleh undo. Pastikan dah muat turun backup JSON.', () => {
+            const theme = appState.settings.theme;
+            appState = normaliseState({ settings: { ...DEFAULT_SETTINGS, theme } }); saveState(); closeModal('modal-settings'); renderAll();
+            showToast('Semua data dipadam.', 'warning');
+        }, 'Padam semua')
+    };
+    if (actions[a]) actions[a]();
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal:not(.hidden)').forEach((m) => closeModal(m.id));
+});
+
+// Tax inputs: save on change (per person, per relief)
+document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (el.dataset.taxPerson) {
+        appState.taxRelief[el.dataset.taxPerson][el.dataset.taxKey] = Math.max(0, n(el.value));
+        saveState(); renderTax();
+    }
+});
+
+$('form-entry').addEventListener('submit', handleEntrySubmit);
+$('form-settings').addEventListener('submit', saveSettings);
+$('in-type').addEventListener('change', () => { const t = $('in-type').value; fillCategoryOptions(t); applyTypeUI(t); applyAssetDefaults(); });
+$('in-category').addEventListener('change', () => { if (!editing) applyAssetDefaults(); });
+$('in-name').addEventListener('input', () => { if ($('in-name').classList.contains('invalid')) validateEntry(); });
+$('in-amount').addEventListener('input', () => { if ($('in-amount').classList.contains('invalid')) validateEntry(); });
+$('import-file').addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 2 * 1024 * 1024) { showToast('Fail terlalu besar (> 2MB).', 'error'); return; }
+    const r = new FileReader();
+    r.onload = () => importFrom(String(r.result));
+    r.readAsText(f);
+    e.target.value = '';
+});
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    appState = loadState();
+    saveState();                   // persist migrated v2 structure
+    applyTheme();
+    switchTab('dashboard');
+    renderAll();
+    const s = appState.settings;
+    const days = s.lastBackupAt ? (Date.now() - new Date(s.lastBackupAt).getTime()) / 86400000 : Infinity;
+    if (days > 7) setTimeout(() => showToast('Peringatan: buat backup JSON (Tetapan → Muat Turun).', 'warning'), 1200);
+});
+</script>
+</body>
+</html>

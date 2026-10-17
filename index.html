@@ -7,7 +7,7 @@
       CSP: connect-src 'none' = page ni tak boleh hantar data ke mana-mana server (fetch/XHR blocked).
       Data kewangan kekal dalam browser je. 'unsafe-inline' perlu sebab Tailwind CDN + inline handlers.
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
     <meta name="referrer" content="no-referrer">
     <title>Hub Kebebasan Kewangan Keluarga</title>
 
@@ -26,10 +26,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"
             integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG"
             crossorigin="anonymous"></script>
-    <!-- FontAwesome 6.4.0 pinned + SRI -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- Lucide 0.460.0 pinned + SRI: icons jadi inline SVG, tiada webfont (punca icon jadi petak) -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"
+            integrity="sha384-ieG+IKD0d/ZPXyCBTMVAbqsQdns8QGJR/e26WMw7M4fkaI/rHcS/YIoi+ah9WGge"
+            crossorigin="anonymous"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -99,6 +99,13 @@
         .seg-btn { font-size: 12px; font-weight: 600; padding: .4rem .8rem; border-radius: .5rem; color: var(--muted); display: inline-flex; gap: .35rem; align-items: center; }
         .seg-btn.active { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 
+        /* Lucide icons: saiz ikut font-size parent (macam FontAwesome dulu) */
+        svg.lucide { width: 1em; height: 1em; stroke-width: 2.2; flex-shrink: 0; display: inline-block; vertical-align: -0.125em; }
+        .btn svg.lucide { width: 15px; height: 15px; }
+        /* Toggle icons: dua-dua dirender, CSS pilih yang nampak */
+        html.dark .ico-sun, html:not(.dark) .ico-moon { display: none; }
+        body.privacy-active .ico-eye, body:not(.privacy-active) .ico-eye-off { display: none; }
+
         /* Privacy mode: blur angka + chart */
         body.privacy-active .pv { filter: blur(7px); user-select: none; }
         .pv { transition: filter .2s; }
@@ -123,7 +130,7 @@
         <div class="flex items-center justify-between w-full md:w-auto">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white" style="background: linear-gradient(135deg,#2d6a4f,#52b788)">
-                    <i class="fa-solid fa-leaf"></i>
+                    <i data-lucide="leaf"></i>
                 </div>
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold tracking-tight leading-tight">Hub Kewangan Keluarga</h1>
@@ -131,25 +138,25 @@
                 </div>
             </div>
             <div class="flex items-center gap-1.5 md:hidden">
-                <button class="btn btn-icon" data-action="privacy" title="Mod Privasi"><i class="fa-solid fa-eye js-privacy-icon"></i></button>
-                <button class="btn btn-icon" data-action="theme" title="Tukar Tema"><i class="fa-solid fa-moon js-theme-icon t-gold"></i></button>
-                <button class="btn btn-icon" data-action="open-settings" title="Tetapan & Backup"><i class="fa-solid fa-gear"></i></button>
+                <button class="btn btn-icon" data-action="privacy" title="Mod Privasi"><i data-lucide="eye" class="ico-eye"></i><i data-lucide="eye-off" class="ico-eye-off t-gold"></i></button>
+                <button class="btn btn-icon" data-action="theme" title="Tukar Tema"><i data-lucide="moon" class="ico-moon t-gold"></i><i data-lucide="sun" class="ico-sun t-gold"></i></button>
+                <button class="btn btn-icon" data-action="open-settings" title="Tetapan & Backup"><i data-lucide="settings"></i></button>
             </div>
         </div>
 
         <!-- Profile switcher -->
         <div class="flex items-center p-1 rounded-xl w-full md:w-auto justify-center" style="background: var(--track)">
-            <button class="seg-btn profile-tab active" data-profile="combined"><i class="fa-solid fa-users"></i>Gabungan</button>
-            <button class="seg-btn profile-tab" data-profile="husband"><i class="fa-solid fa-user t-blue"></i>Suami</button>
-            <button class="seg-btn profile-tab" data-profile="wife"><i class="fa-solid fa-user" style="color:#c2417a"></i>Isteri</button>
+            <button class="seg-btn profile-tab active" data-profile="combined"><i data-lucide="users"></i>Gabungan</button>
+            <button class="seg-btn profile-tab" data-profile="husband"><i data-lucide="user" class="t-blue"></i><span class="js-name-husband">Suami</span></button>
+            <button class="seg-btn profile-tab" data-profile="wife"><i data-lucide="user" style="color:#c2417a"></i><span class="js-name-wife">Isteri</span></button>
         </div>
 
         <div class="hidden md:flex items-center gap-2">
-            <button class="btn btn-icon" data-action="privacy" title="Mod Privasi (Sorok Angka)"><i class="fa-solid fa-eye js-privacy-icon"></i></button>
-            <button class="btn btn-icon" data-action="theme" title="Tukar Tema"><i class="fa-solid fa-moon js-theme-icon t-gold"></i></button>
-            <button class="btn btn-icon" data-action="open-settings" title="Tetapan & Backup"><i class="fa-solid fa-gear"></i></button>
-            <button class="btn btn-icon" data-action="print" title="Cetak / PDF"><i class="fa-solid fa-print"></i></button>
-            <button class="btn btn-primary" data-action="add" data-type="asset"><i class="fa-solid fa-plus"></i>Tambah Rekod</button>
+            <button class="btn btn-icon" data-action="privacy" title="Mod Privasi (Sorok Angka)"><i data-lucide="eye" class="ico-eye"></i><i data-lucide="eye-off" class="ico-eye-off t-gold"></i></button>
+            <button class="btn btn-icon" data-action="theme" title="Tukar Tema"><i data-lucide="moon" class="ico-moon t-gold"></i><i data-lucide="sun" class="ico-sun t-gold"></i></button>
+            <button class="btn btn-icon" data-action="open-settings" title="Tetapan & Backup"><i data-lucide="settings"></i></button>
+            <button class="btn btn-icon" data-action="print" title="Cetak / PDF"><i data-lucide="printer"></i></button>
+            <button class="btn btn-primary" data-action="add" data-type="asset"><i data-lucide="plus"></i>Tambah Rekod</button>
         </div>
     </div>
 </header>
@@ -165,20 +172,20 @@
             <div>
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 id="lvl-title" class="text-sm font-bold">Level 1</h3>
-                    <span id="streak-badge" class="badge b-gold"><i class="fa-solid fa-bolt"></i>0 Snapshot</span>
+                    <span id="streak-badge" class="badge b-gold"><i data-lucide="zap"></i>0 Snapshot</span>
                 </div>
                 <p id="lvl-desc" class="text-xs t-muted mt-0.5"></p>
             </div>
         </div>
         <div id="milestones" class="flex flex-wrap gap-1.5"></div>
-        <button class="btn whitespace-nowrap no-print" data-action="open-modal" data-modal="modal-ics"><i class="fa-solid fa-bell t-gold"></i>Peringatan 25hb</button>
+        <button class="btn whitespace-nowrap no-print" data-action="open-modal" data-modal="modal-ics"><i data-lucide="bell" class="t-gold"></i>Peringatan 25hb</button>
     </section>
 
     <!-- FIRE hero -->
     <section class="card p-5 md:p-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div class="space-y-1.5 max-w-xl">
-                <span class="badge b-sage"><i class="fa-solid fa-bullseye"></i>Sasaran FI ikut aset liquid</span>
+                <span class="badge b-sage"><i data-lucide="target"></i>Sasaran FI ikut aset liquid</span>
                 <h2 class="text-xl md:text-2xl font-bold">Progress FI: <span id="fi-pct" class="t-sage num pv">0%</span></h2>
                 <p class="text-xs t-muted leading-relaxed">
                     Sasaran = <span id="fi-mult-txt">25</span>× belanja tahunan. Hanya aset liquid dikira (ASB, saham, tunai, robo, TH, emas).
@@ -202,7 +209,7 @@
         </div>
         <div class="mt-5 space-y-2">
             <div class="flex flex-col sm:flex-row justify-between text-xs gap-1">
-                <span class="t-muted">Liquid: <strong id="fi-liquid" class="t-sage num pv">RM 0</strong> · Terkunci (KWSP/Rumah): <strong id="fi-locked" class="t-blue num pv">RM 0</strong></span>
+                <span class="t-muted">Liquid untuk FI: <strong id="fi-liquid" class="t-sage num pv">RM 0</strong><span id="fi-earmark-wrap"> · Diasing utk matlamat: <strong id="fi-earmark" class="t-gold num pv">RM 0</strong></span> · Terkunci: <strong id="fi-locked" class="t-blue num pv">RM 0</strong></span>
                 <span id="fi-eta" class="t-sage font-semibold">Anggaran capai: --</span>
             </div>
             <div class="bar" style="height:10px"><div id="fi-bar" style="width:0;background:linear-gradient(90deg,#2d6a4f,#52b788)"></div></div>
@@ -255,7 +262,7 @@
     <!-- Ulasan lokal (Module F Tier 1) -->
     <section class="card p-4 md:p-5">
         <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-lightbulb t-gold"></i>Ringkasan & Ulasan</h3>
+            <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="lightbulb" class="t-gold"></i>Ringkasan & Ulasan</h3>
             <span class="text-[10px] t-faint font-semibold uppercase tracking-wider">Dikira dalam peranti · tiada AI luar</span>
         </div>
         <div id="insights" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
@@ -264,13 +271,15 @@
     <!-- Tabs -->
     <section class="card overflow-hidden">
         <div class="border-b bd p-2 flex gap-1 scroll-x no-print" style="background: var(--sub)">
-            <button class="tab-btn view-tab active" data-tab="dashboard"><i class="fa-solid fa-chart-pie"></i>Ringkasan</button>
-            <button class="tab-btn view-tab" data-tab="assets"><i class="fa-solid fa-vault"></i>Aset</button>
-            <button class="tab-btn view-tab" data-tab="liabilities"><i class="fa-solid fa-hand-holding-dollar"></i>Liabiliti</button>
-            <button class="tab-btn view-tab" data-tab="cashflow"><i class="fa-solid fa-money-bill-wave"></i>Pendapatan & Belanja</button>
-            <button class="tab-btn view-tab" data-tab="zakat-tax"><i class="fa-solid fa-kaaba"></i>Zakat & Cukai</button>
-            <button class="tab-btn view-tab" data-tab="simulator"><i class="fa-solid fa-calculator"></i>Unjuran FIRE</button>
-            <button class="tab-btn view-tab" data-tab="trend"><i class="fa-solid fa-chart-line"></i>Sejarah</button>
+            <button class="tab-btn view-tab active" data-tab="dashboard"><i data-lucide="chart-pie"></i>Ringkasan</button>
+            <button class="tab-btn view-tab" data-tab="assets"><i data-lucide="vault"></i>Aset</button>
+            <button class="tab-btn view-tab" data-tab="liabilities"><i data-lucide="hand-coins"></i>Liabiliti</button>
+            <button class="tab-btn view-tab" data-tab="cashflow"><i data-lucide="banknote"></i>Pendapatan & Belanja</button>
+            <button class="tab-btn view-tab" data-tab="goals"><i data-lucide="flag"></i>Matlamat</button>
+            <button class="tab-btn view-tab" data-tab="calendar"><i data-lucide="calendar-days"></i>Kalendar</button>
+            <button class="tab-btn view-tab" data-tab="zakat-tax"><i data-lucide="hand-heart"></i>Zakat & Cukai</button>
+            <button class="tab-btn view-tab" data-tab="simulator"><i data-lucide="calculator"></i>Unjuran FIRE</button>
+            <button class="tab-btn view-tab" data-tab="trend"><i data-lucide="chart-line"></i>Sejarah</button>
         </div>
 
         <!-- TAB: Dashboard -->
@@ -294,7 +303,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="card-sub p-4 space-y-2">
                     <div class="flex justify-between items-center">
-                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i class="fa-solid fa-building-columns t-gold mr-1"></i>KWSP</h4>
+                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i data-lucide="landmark" class="t-gold mr-1"></i>KWSP</h4>
                         <span class="badge b-blue">Per individu</span>
                     </div>
                     <div id="epf-box" class="space-y-2"></div>
@@ -302,7 +311,7 @@
                 </div>
                 <div class="card-sub p-4 space-y-2">
                     <div class="flex justify-between items-center">
-                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i class="fa-solid fa-mosque t-sage mr-1"></i>ASB & Tabung Haji</h4>
+                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i data-lucide="wallet" class="t-sage mr-1"></i>ASB & Tabung Haji</h4>
                         <span class="badge b-sage">Liquid</span>
                     </div>
                     <div class="flex justify-between items-baseline">
@@ -317,7 +326,7 @@
                 </div>
                 <div class="card-sub p-4 space-y-2">
                     <div class="flex justify-between items-center">
-                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i class="fa-solid fa-coins t-gold mr-1"></i>Emas</h4>
+                        <h4 class="text-xs font-semibold uppercase tracking-wider t-muted"><i data-lucide="coins" class="t-gold mr-1"></i>Emas</h4>
                         <span id="gold-alloc-badge" class="badge b-gold">0% portfolio</span>
                     </div>
                     <div class="flex justify-between items-baseline">
@@ -337,7 +346,7 @@
                     <h3 class="text-sm font-bold">Portfolio Aset</h3>
                     <p class="text-xs t-muted">Liquid (boleh guna) vs terkunci (KWSP, rumah). Item "Bersama" dibahagi ikut nisbah di Tetapan.</p>
                 </div>
-                <button class="btn btn-primary no-print" data-action="add" data-type="asset"><i class="fa-solid fa-plus"></i>Aset</button>
+                <button class="btn btn-primary no-print" data-action="add" data-type="asset"><i data-lucide="plus"></i>Aset</button>
             </div>
             <div class="scroll-x card-sub">
                 <table class="tbl">
@@ -354,7 +363,7 @@
                     <h3 class="text-sm font-bold">Liabiliti & Pembiayaan</h3>
                     <p class="text-xs t-muted">Bayaran bulanan auto-sync ke senarai belanja. Edit/padam di sini, belanja ikut sekali.</p>
                 </div>
-                <button class="btn btn-primary no-print" data-action="add" data-type="liability"><i class="fa-solid fa-plus"></i>Liabiliti</button>
+                <button class="btn btn-primary no-print" data-action="add" data-type="liability"><i data-lucide="plus"></i>Liabiliti</button>
             </div>
             <div class="scroll-x card-sub">
                 <table class="tbl">
@@ -373,7 +382,7 @@
                         <h3 class="text-sm font-bold">Pendapatan Bulanan</h3>
                         <p class="text-xs t-muted">Isi gaji <strong>bersih</strong> untuk aliran tunai; gaji <strong>kasar</strong> untuk kiraan zakat pendapatan.</p>
                     </div>
-                    <button class="btn btn-primary no-print" data-action="add" data-type="income"><i class="fa-solid fa-plus"></i>Pendapatan</button>
+                    <button class="btn btn-primary no-print" data-action="add" data-type="income"><i data-lucide="plus"></i>Pendapatan</button>
                 </div>
                 <div class="scroll-x card-sub">
                     <table class="tbl">
@@ -386,9 +395,9 @@
                 <div class="flex justify-between items-center gap-3">
                     <div>
                         <h3 class="text-sm font-bold">Perbelanjaan Bulanan</h3>
-                        <p class="text-xs t-muted">Tetap, variabel & bayaran hutang (auto-sync, ikon <i class="fa-solid fa-link"></i>).</p>
+                        <p class="text-xs t-muted">Tetap, variabel & bayaran hutang (auto-sync, ikon <i data-lucide="link"></i>).</p>
                     </div>
-                    <button class="btn btn-primary no-print" data-action="add" data-type="expense"><i class="fa-solid fa-plus"></i>Belanja</button>
+                    <button class="btn btn-primary no-print" data-action="add" data-type="expense"><i data-lucide="plus"></i>Belanja</button>
                 </div>
                 <div class="scroll-x card-sub">
                     <table class="tbl">
@@ -397,13 +406,79 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Budget vs actual -->
+            <div class="space-y-3">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold">Bajet vs Sebenar (Isi Rumah)</h3>
+                        <p class="text-xs t-muted">Bajet = senarai belanja atas. Isi belanja sebenar ikut kategori dari statement bank/e-wallet hujung bulan.</p>
+                    </div>
+                    <div class="flex items-center gap-2 no-print">
+                        <button class="btn btn-icon" data-action="budget-prev" aria-label="Bulan sebelum"><i data-lucide="chevron-left"></i></button>
+                        <input id="budget-month" type="month" class="field" style="width:auto">
+                        <button class="btn btn-icon" data-action="budget-next" aria-label="Bulan seterusnya"><i data-lucide="chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="scroll-x card-sub">
+                    <table class="tbl">
+                        <thead><tr><th>Kategori</th><th class="text-right">Bajet</th><th style="min-width:130px">Sebenar</th><th class="text-right">Beza</th><th style="min-width:120px">Guna</th></tr></thead>
+                        <tbody id="tbody-budget"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Goals (Matlamat) + Checklist -->
+        <div id="tab-goals" class="view-tab-content hidden p-4 md:p-6 space-y-6">
+            <div class="flex justify-between items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-bold">Matlamat Bertarikh</h3>
+                    <p class="text-xs t-muted">Haji, rumah, honeymoon, anak. Duit yang dah ada tujuan boleh diasingkan daripada kiraan FI.</p>
+                </div>
+                <button class="btn btn-primary no-print" data-action="add-goal"><i data-lucide="plus"></i>Matlamat</button>
+            </div>
+            <div id="goals-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+            <div id="goals-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+            <div class="space-y-3 pt-2">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="clipboard-check" class="t-sage"></i>Checklist Lepas Kahwin</h3>
+                    <span id="checklist-progress" class="badge b-sage">0/0</span>
+                </div>
+                <p class="text-xs t-muted">Perkahwinan tak auto-kemaskini penama. Tanda bila dah buat; tarikh direkod automatik.</p>
+                <div class="scroll-x card-sub">
+                    <table class="tbl">
+                        <thead><tr><th>Perkara</th><th id="cl-h-name">Suami</th><th id="cl-w-name">Isteri</th></tr></thead>
+                        <tbody id="tbody-checklist"></tbody>
+                    </table>
+                </div>
+                <p class="text-[11px] t-faint">Untuk Muslim, penama KWSP/TH/ASNB bertindak sebagai wasi (pentadbir); harta tetap dibahagi ikut faraid. Kalau nak pasangan terima terus, bincang hibah dengan pihak berkaitan.</p>
+            </div>
+        </div>
+
+        <!-- TAB: Calendar -->
+        <div id="tab-calendar" class="view-tab-content hidden p-4 md:p-6 space-y-5">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-bold">Kalendar Kewangan 12 Bulan</h3>
+                    <p class="text-xs t-muted">Tarikh tetap + bayaran tahunan kau. Bayaran tahunan ditukar jadi simpanan bulanan (sinking fund).</p>
+                </div>
+                <div class="flex gap-2 no-print">
+                    <button class="btn" data-action="ics-all"><i data-lucide="calendar-plus"></i>Eksport .ics</button>
+                    <button class="btn btn-primary" data-action="add-event"><i data-lucide="plus"></i>Tarikh</button>
+                </div>
+            </div>
+            <div id="sinking-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+            <div id="calendar-list" class="space-y-2"></div>
+            <p class="text-[11px] t-faint">Tarikh Hijrah dikira ikut kalendar Umm al-Qura dalam browser; tarikh rasmi Malaysia boleh beza 1–2 hari. Tarikh pengumuman dividen ialah anggaran biasa, bukan tarikh rasmi.</p>
         </div>
 
         <!-- TAB: Zakat & Tax -->
         <div id="tab-zakat-tax" class="view-tab-content hidden p-4 md:p-6 space-y-6">
             <div class="space-y-3">
                 <div class="flex flex-wrap justify-between items-center gap-2">
-                    <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-kaaba t-sage"></i>Anggaran Zakat (per individu)</h3>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="hand-heart" class="t-sage"></i>Anggaran Zakat (per individu)</h3>
                     <span id="nisab-badge" class="badge b-sage">Nisab RM 0</span>
                 </div>
                 <div id="zakat-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -419,7 +494,7 @@
 
             <div class="space-y-3">
                 <div class="flex flex-wrap justify-between items-center gap-2">
-                    <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar t-blue"></i>Penjejak Pelepasan Cukai LHDN</h3>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="receipt" class="t-blue"></i>Penjejak Pelepasan Cukai LHDN</h3>
                     <span class="badge b-blue">Had YA 2026 · per individu</span>
                 </div>
                 <p class="text-xs t-muted">Isi jumlah yang dah dibelanjakan/dicarum tahun ni. Bar tunjuk baki ruang pelepasan. Pelepasan kurangkan pendapatan bercukai, bukan potong cukai terus.</p>
@@ -448,6 +523,14 @@
                 <p id="mc-note" class="text-[11px] t-faint"></p>
             </div>
             <div class="card-sub p-4 space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <h4 class="text-[11px] font-semibold uppercase tracking-wider t-muted">Unjuran Persaraan per Individu</h4>
+                    <span class="badge b-blue">Nilai ringgit hari ini</span>
+                </div>
+                <div id="retire-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <p class="text-[11px] t-faint">KWSP: caruman pekerja 11% + majikan 13% (gaji ≤ RM5,000) atau 12%, atas gaji kasar kategori "Gaji". Gaji dianggap naik seiring inflasi sahaja. Isi tahun lahir & skim di Tetapan.</p>
+            </div>
+            <div class="card-sub p-4 space-y-3">
                 <h4 class="text-[11px] font-semibold uppercase tracking-wider t-muted">Matriks: Kadar Simpanan vs Tahun ke FI</h4>
                 <p class="text-xs t-muted">Andaian: apa yang tak disimpan = dibelanja. Simpan lebih → belanja kurang → sasaran FI pun mengecil. Kolum bertanda = kadar semasa kau.</p>
                 <div class="scroll-x">
@@ -466,7 +549,7 @@
                     <h3 class="text-sm font-bold">Sejarah Snapshot Bulanan (Gabungan)</h3>
                     <p class="text-xs t-muted">Snapshot sentiasa simpan angka isi rumah penuh, tak kira tab profil yang aktif.</p>
                 </div>
-                <button class="btn btn-primary no-print" data-action="snapshot"><i class="fa-solid fa-camera"></i>Simpan Snapshot Bulan Ini</button>
+                <button class="btn btn-primary no-print" data-action="snapshot"><i data-lucide="camera"></i>Simpan Snapshot Bulan Ini</button>
             </div>
             <div class="card-sub p-4 relative h-72 pv"><canvas id="chart-trend"></canvas></div>
             <div class="scroll-x card-sub">
@@ -482,11 +565,11 @@
 <!-- Mobile bottom nav -->
 <nav class="md:hidden fixed bottom-0 inset-x-0 border-t bd px-2 py-2 z-40 no-print" style="background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(12px);">
     <div class="flex justify-around items-center text-[10px] font-semibold">
-        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="dashboard"><i class="fa-solid fa-chart-pie text-base"></i>Ringkasan</button>
-        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="assets"><i class="fa-solid fa-vault text-base"></i>Aset</button>
-        <button data-action="add" data-type="asset" class="w-11 h-11 rounded-xl flex items-center justify-center text-white" style="background:#40916c" aria-label="Tambah rekod"><i class="fa-solid fa-plus"></i></button>
-        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="cashflow"><i class="fa-solid fa-money-bill-wave text-base"></i>Belanja</button>
-        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="zakat-tax"><i class="fa-solid fa-kaaba text-base"></i>Zakat</button>
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="dashboard"><i data-lucide="chart-pie" class="text-base"></i>Ringkasan</button>
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="assets"><i data-lucide="vault" class="text-base"></i>Aset</button>
+        <button data-action="add" data-type="asset" class="w-11 h-11 rounded-xl flex items-center justify-center text-white" style="background:#40916c" aria-label="Tambah rekod"><i data-lucide="plus"></i></button>
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="cashflow"><i data-lucide="banknote" class="text-base"></i>Belanja</button>
+        <button class="mnav flex flex-col items-center gap-1 min-w-[56px] min-h-[44px] justify-center" data-tab="goals"><i data-lucide="flag" class="text-base"></i>Matlamat</button>
     </div>
 </nav>
 
@@ -497,7 +580,7 @@
 <!-- ================= MODAL: Add/Edit ================= -->
 <div id="modal-entry" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
     <div class="card w-full max-w-lg p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
-        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-entry" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-entry" aria-label="Tutup"><i data-lucide="x"></i></button>
         <div>
             <h3 id="entry-title" class="text-sm font-bold">Tambah Rekod</h3>
             <p id="entry-hint" class="text-xs t-muted"></p>
@@ -515,11 +598,7 @@
                 </div>
                 <div>
                     <label class="lbl" for="in-owner">Pemilik</label>
-                    <select id="in-owner" class="field">
-                        <option value="husband">Suami</option>
-                        <option value="wife">Isteri</option>
-                        <option value="shared">Bersama</option>
-                    </select>
+                    <select id="in-owner" class="field js-owner-select"></select>
                 </div>
             </div>
             <div>
@@ -570,13 +649,39 @@
 <!-- ================= MODAL: Settings & Backup ================= -->
 <div id="modal-settings" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
     <div class="card w-full max-w-xl p-5 space-y-5 max-h-[92vh] overflow-y-auto relative">
-        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-settings" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-settings" aria-label="Tutup"><i data-lucide="x"></i></button>
         <div>
             <h3 class="text-sm font-bold">Tetapan & Backup</h3>
             <p class="text-xs t-muted">Andaian kiraan. Semua disimpan dalam peranti ni.</p>
         </div>
         <form id="form-settings" class="grid grid-cols-2 gap-3">
-            <div><label class="lbl" for="s-split">Bahagian Suami utk item Bersama (%)</label><input id="s-split" type="number" min="0" max="100" step="1" class="field"></div>
+            <div class="col-span-2 text-xs font-bold pt-1">Profil kami</div>
+            <div><label class="lbl" for="s-name-h">Nama paparan suami</label><input id="s-name-h" type="text" maxlength="20" class="field" placeholder="Suami"></div>
+            <div><label class="lbl" for="s-name-w">Nama paparan isteri</label><input id="s-name-w" type="text" maxlength="20" class="field" placeholder="Isteri"></div>
+            <div><label class="lbl" for="s-by-h">Tahun lahir suami</label><input id="s-by-h" type="number" min="1940" max="2015" class="field" placeholder="1996"></div>
+            <div><label class="lbl" for="s-by-w">Tahun lahir isteri</label><input id="s-by-w" type="number" min="1940" max="2015" class="field" placeholder="1997"></div>
+            <div><label class="lbl" for="s-scheme-h">Skim persaraan suami</label>
+                <select id="s-scheme-h" class="field"><option value="kwsp">KWSP</option><option value="pencen">Pencen kerajaan</option></select></div>
+            <div><label class="lbl" for="s-scheme-w">Skim persaraan isteri</label>
+                <select id="s-scheme-w" class="field"><option value="kwsp">KWSP</option><option value="pencen">Pencen kerajaan</option></select></div>
+            <div><label class="lbl" for="s-ra-h">Umur bersara suami</label><input id="s-ra-h" type="number" min="40" max="70" class="field"></div>
+            <div><label class="lbl" for="s-ra-w">Umur bersara isteri</label><input id="s-ra-w" type="number" min="40" max="70" class="field"></div>
+            <div><label class="lbl" for="s-svc-h">Tahun mula khidmat (pencen sahaja)</label><input id="s-svc-h" type="number" min="1970" max="2040" class="field"></div>
+            <div><label class="lbl" for="s-svc-w">Tahun mula khidmat (pencen sahaja)</label><input id="s-svc-w" type="number" min="1970" max="2040" class="field"></div>
+
+            <div class="col-span-2 text-xs font-bold pt-3 border-t bd">Pembahagian item "Bersama"</div>
+            <div><label class="lbl" for="s-splitmode">Belanja bersama ditanggung</label>
+                <select id="s-splitmode" class="field">
+                    <option value="income">Ikut nisbah gaji bersih (auto)</option>
+                    <option value="nafkah">Nafkah: suami tanggung penuh</option>
+                    <option value="equal">50/50</option>
+                    <option value="manual">Manual (guna % pemilikan)</option>
+                </select>
+                <p id="s-split-preview" class="text-[11px] t-faint mt-1"></p></div>
+            <div><label class="lbl" for="s-split">Pemilikan aset/hutang Bersama: suami (%)</label><input id="s-split" type="number" min="0" max="100" step="1" class="field"></div>
+
+            <div class="col-span-2 text-xs font-bold pt-3 border-t bd">Andaian kiraan</div>
+            <div><label class="lbl" for="s-epfdiv">Dividen KWSP jangkaan (%)</label><input id="s-epfdiv" type="number" min="0" max="15" step="0.05" class="field"></div>
             <div><label class="lbl" for="s-mult">Gandaan FI (×)</label><input id="s-mult" type="number" min="10" max="50" step="1" class="field"></div>
             <div><label class="lbl" for="s-return">Pulangan nominal jangkaan (%)</label><input id="s-return" type="number" min="0" max="20" step="0.1" class="field"></div>
             <div><label class="lbl" for="s-infl">Inflasi (%)</label><input id="s-infl" type="number" min="0" max="15" step="0.1" class="field"></div>
@@ -589,39 +694,115 @@
             <div><label class="lbl" for="s-mcyears">Horizon Monte Carlo (thn)</label><input id="s-mcyears" type="number" min="1" max="50" step="1" class="field"></div>
             <div><label class="lbl" for="s-mcvol">Volatiliti tahunan (%)</label><input id="s-mcvol" type="number" min="1" max="40" step="0.5" class="field"></div>
             <div class="col-span-2 text-[11px] t-faint">Nisab default = RM33,996 (WP 2026, 85g emas). Had kifayah: isi ikut kalkulator PPZ (tolakan diri, pasangan, anak, caruman KWSP dll). Kosongkan = 0.</div>
-            <div class="col-span-2 flex justify-end"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i>Simpan Tetapan</button></div>
+            <div class="col-span-2 flex justify-end"><button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Simpan Tetapan</button></div>
         </form>
 
         <div class="border-t bd pt-4 space-y-3">
             <h4 class="text-xs font-semibold uppercase tracking-wider t-muted">Backup / Kongsi dengan pasangan</h4>
             <p class="text-xs t-muted">Backup terakhir: <strong id="last-backup">belum pernah</strong>. Fail JSON ni ada <strong>semua</strong> angka kewangan. Hantar terus ke pasangan je, jangan letak dalam group.</p>
             <div class="flex flex-wrap gap-2">
-                <button class="btn btn-primary" data-action="download-json"><i class="fa-solid fa-download"></i>Muat Turun JSON</button>
-                <button class="btn" data-action="copy-json"><i class="fa-solid fa-copy"></i>Salin JSON</button>
-                <label class="btn cursor-pointer"><i class="fa-solid fa-upload"></i>Import Fail<input id="import-file" type="file" accept=".json,application/json" class="hidden"></label>
+                <button class="btn btn-primary" data-action="download-json"><i data-lucide="download"></i>Muat Turun JSON</button>
+                <button class="btn" data-action="copy-json"><i data-lucide="copy"></i>Salin JSON</button>
+                <label class="btn cursor-pointer"><i data-lucide="upload"></i>Import Fail<input id="import-file" type="file" accept=".json,application/json" class="hidden"></label>
             </div>
             <textarea id="import-text" rows="3" class="field num text-[11px]" placeholder="Atau tampal teks JSON di sini…"></textarea>
-            <button class="btn w-full" data-action="import-text"><i class="fa-solid fa-file-import"></i>Import dari teks</button>
+            <button class="btn w-full" data-action="import-text"><i data-lucide="file-input"></i>Import dari teks</button>
             <p class="text-[11px] t-faint">Import akan <strong>ganti</strong> semua data semasa. Muat turun backup dulu kalau ragu.</p>
         </div>
 
         <div class="border-t bd pt-4 flex flex-wrap gap-2">
-            <button class="btn" data-action="load-sample"><i class="fa-solid fa-flask"></i>Isi data contoh</button>
-            <button class="btn btn-danger" data-action="wipe"><i class="fa-solid fa-trash"></i>Padam semua data</button>
+            <button class="btn" data-action="load-sample"><i data-lucide="flask-conical"></i>Isi data contoh</button>
+            <button class="btn btn-danger" data-action="wipe"><i data-lucide="trash-2"></i>Padam semua data</button>
         </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: Goal ================= -->
+<div id="modal-goal" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-lg p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-goal" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div>
+            <h3 id="goal-title" class="text-sm font-bold">Tambah Matlamat</h3>
+            <p class="text-xs t-muted">Kos sasaran dalam ringgit hari ini. Semak kos sebenar (pakej haji, harga rumah) dan kemaskini selalu.</p>
+        </div>
+        <form id="form-goal" novalidate class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="lbl" for="g-kind">Jenis</label>
+                    <select id="g-kind" class="field"></select></div>
+                <div><label class="lbl" for="g-owner">Untuk</label>
+                    <select id="g-owner" class="field js-owner-select"></select></div>
+            </div>
+            <div><label class="lbl" for="g-name">Nama</label><input id="g-name" type="text" maxlength="60" class="field" placeholder="Contoh: Haji berdua">
+                <p id="err-g-name" class="text-[11px] t-rose mt-1 hidden">Nama wajib diisi.</p></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="lbl" for="g-target">Sasaran (RM)</label><input id="g-target" type="number" min="0" step="1" inputmode="decimal" class="field">
+                    <p id="err-g-target" class="text-[11px] t-rose mt-1 hidden">Sasaran mesti &gt; 0.</p></div>
+                <div><label class="lbl" for="g-month">Sasaran tarikh</label><input id="g-month" type="month" class="field">
+                    <p id="err-g-month" class="text-[11px] t-rose mt-1 hidden">Pilih bulan/tahun.</p></div>
+            </div>
+            <div><label class="lbl" for="g-asset">Sumber dana</label>
+                <select id="g-asset" class="field"></select>
+                <p class="text-[11px] t-faint mt-1">Pilih akaun khas (contoh: Tabung Haji) supaya baki auto ikut aset tu, atau isi manual.</p></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div id="wrap-g-saved"><label class="lbl" for="g-saved">Dah terkumpul (RM)</label><input id="g-saved" type="number" min="0" step="1" inputmode="decimal" class="field"></div>
+                <div><label class="lbl" for="g-plan">Rancang simpan / bln (RM)</label><input id="g-plan" type="number" min="0" step="1" inputmode="decimal" class="field"></div>
+            </div>
+            <label class="flex items-center gap-2 text-xs"><input id="g-exclude" type="checkbox" class="w-4 h-4 accent-emerald-600" checked>Asingkan daripada kiraan FI (duit ni ada tujuan sendiri)</label>
+            <div class="flex justify-between gap-2 pt-2">
+                <button type="button" id="g-delete" class="btn btn-danger hidden" data-action="delete-goal"><i data-lucide="trash-2"></i>Padam</button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" class="btn" data-action="close-modal" data-modal="modal-goal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL: Calendar event ================= -->
+<div id="modal-event" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-md p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-event" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div>
+            <h3 id="event-title" class="text-sm font-bold">Tambah Tarikh</h3>
+            <p class="text-xs t-muted">Bayaran tahunan atau tarikh penting. Pilih template cepat atau isi sendiri.</p>
+        </div>
+        <div id="event-presets" class="flex flex-wrap gap-1.5"></div>
+        <form id="form-event" novalidate class="space-y-3">
+            <div><label class="lbl" for="ev-name">Nama</label><input id="ev-name" type="text" maxlength="60" class="field">
+                <p id="err-ev-name" class="text-[11px] t-rose mt-1 hidden">Nama wajib diisi.</p></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="lbl" for="ev-date">Tarikh</label><input id="ev-date" type="date" class="field">
+                    <p id="err-ev-date" class="text-[11px] t-rose mt-1 hidden">Pilih tarikh.</p></div>
+                <div><label class="lbl" for="ev-amount">Jumlah (RM, pilihan)</label><input id="ev-amount" type="number" min="0" step="1" inputmode="decimal" class="field"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="lbl" for="ev-owner">Untuk</label><select id="ev-owner" class="field js-owner-select"></select></div>
+                <div><label class="lbl" for="ev-repeat">Ulang</label>
+                    <select id="ev-repeat" class="field"><option value="yearly">Setiap tahun</option><option value="once">Sekali sahaja</option></select></div>
+            </div>
+            <label class="flex items-center gap-2 text-xs"><input id="ev-inbudget" type="checkbox" class="w-4 h-4 accent-emerald-600">Dah termasuk dalam belanja bulanan (jangan kira sinking fund)</label>
+            <div class="flex justify-between gap-2 pt-2">
+                <button type="button" id="ev-delete" class="btn btn-danger hidden" data-action="delete-event"><i data-lucide="trash-2"></i>Padam</button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" class="btn" data-action="close-modal" data-modal="modal-event">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
 <!-- ================= MODAL: ICS ================= -->
 <div id="modal-ics" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
     <div class="card w-full max-w-sm p-5 space-y-4 text-center relative">
-        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-ics" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-        <div class="w-12 h-12 rounded-xl mx-auto flex items-center justify-center b-gold text-xl"><i class="fa-solid fa-calendar-check"></i></div>
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-ics" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div class="w-12 h-12 rounded-xl mx-auto flex items-center justify-center b-gold text-xl"><i data-lucide="calendar-check"></i></div>
         <div>
             <h3 class="text-sm font-bold">Peringatan Bulanan 25hb, 9:00 pagi</h3>
             <p class="text-xs t-muted mt-1">Fail .ics untuk Google/Apple Calendar: kemaskini angka, ambil snapshot, backup JSON.</p>
         </div>
-        <button class="btn btn-primary w-full" data-action="download-ics"><i class="fa-solid fa-calendar-plus"></i>Muat Turun .ics</button>
+        <button class="btn btn-primary w-full" data-action="download-ics"><i data-lucide="calendar-plus"></i>Muat Turun .ics</button>
     </div>
 </div>
 
@@ -646,9 +827,13 @@
    ===================================================================== */
 const DATA_CLASSIFICATION = 'Sensitive';      // household salary/assets: local only, never synced
 const STORAGE_KEY = 'fire_hub_malaysia_data'; // same key as old version so existing data migrates
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
-const OWNER_LABEL = { husband: 'Suami', wife: 'Isteri', shared: 'Bersama' };
+// Display names come from Tetapan (personalised), fallback Suami/Isteri
+function ownerLabel(o) {
+    if (o === 'shared') return 'Bersama';
+    return appState?.settings?.people?.[o]?.name || (o === 'husband' ? 'Suami' : 'Isteri');
+}
 
 // Fixed category lists: kills the old fragile "category text contains 'tunai'" matching
 const CATEGORIES = {
@@ -682,19 +867,63 @@ const TAX_RELIEFS = [
     { key: 'perkeso',   label: 'PERKESO / SIP',                       limit: 350 }
 ];
 
+const GOAL_KINDS = {
+    haji:      { label: 'Haji / Umrah',   icon: 'moon-star' },
+    rumah:     { label: 'Rumah pertama',  icon: 'house' },
+    honeymoon: { label: 'Honeymoon / Cuti', icon: 'plane' },
+    anak:      { label: 'Anak / Bersalin', icon: 'baby' },
+    kereta:    { label: 'Kenderaan',      icon: 'car' },
+    kecemasan: { label: 'Dana kecemasan', icon: 'shield-check' },
+    lain:      { label: 'Lain-lain',      icon: 'flag' }
+};
+
+const CHECKLIST = [
+    { key: 'kwsp',    label: 'Kemaskini penama KWSP' },
+    { key: 'th',      label: 'Kemaskini penama Tabung Haji' },
+    { key: 'asnb',    label: 'Kemaskini penama ASNB (ASB/ASN)' },
+    { key: 'takaful', label: 'Penerima manfaat takaful / insurans hayat' },
+    { key: 'hr',      label: 'Status perkahwinan & waris dengan majikan / HR' },
+    { key: 'wasiat',  label: 'Wasiat / hibah ditulis' },
+    { key: 'senarai', label: 'Senarai akaun & dokumen penting disimpan (pasangan tahu di mana)' }
+];
+
+// Quick-add templates for the calendar (user still picks the real date)
+const EVENT_PRESETS = [
+    'Cukai jalan', 'Insurans / takaful kereta', 'Hibah Tabung Haji', 'Ulang tahun perkahwinan',
+    'Takaful tahunan', 'Servis kereta', 'Duit raya', 'Korban'
+];
+
+const DEFAULT_PEOPLE = {
+    husband: { name: 'Suami',  birthYear: null, scheme: 'kwsp', retireAge: 60, serviceStartYear: null },
+    wife:    { name: 'Isteri', birthYear: null, scheme: 'kwsp', retireAge: 60, serviceStartYear: null }
+};
+
 const DEFAULT_SETTINGS = {
     fireMultiplier: 25, inflationRate: 3.0, expectedReturn: 6.0,
     theme: 'dark', sharedSplitRatio: 0.5,
+    splitMode: 'income', epfDividend: 5.5,
+    people: clonePeople(DEFAULT_PEOPLE),
     nisab: 33996, zakatMethod: 'tolakan', hadKifayah: { husband: 0, wife: 0 },
     epfTarget: 390000, mcYears: 20, mcVolatility: 10,
     lastBackupAt: null
 };
 
+function clonePeople(p) { return JSON.parse(JSON.stringify(p)); }
+
 const SAMPLE_DATA = {
     schemaVersion: SCHEMA_VERSION,
-    settings: { ...DEFAULT_SETTINGS },
+    settings: { ...DEFAULT_SETTINGS, people: clonePeople(DEFAULT_PEOPLE) },
     historySnapshots: [],
     taxRelief: { year: 2026, husband: {}, wife: {} },
+    goals: [
+        { id: 'g1', kind: 'haji', name: 'Haji berdua', owner: 'shared', target: 60000, targetMonth: '2032-06', linkedAssetId: 'a6', saved: 0, monthlyPlan: 400, excludeFromFI: true },
+        { id: 'g2', kind: 'rumah', name: 'Deposit + kos rumah pertama', owner: 'shared', target: 70000, targetMonth: '2029-12', linkedAssetId: null, saved: 15000, monthlyPlan: 1200, excludeFromFI: true }
+    ],
+    events: [
+        { id: 'ev1', name: 'Cukai jalan + insurans Honda City', date: '2026-03-15', amount: 1400, owner: 'husband', repeat: 'yearly', inBudget: false }
+    ],
+    actuals: {},
+    checklist: { husband: {}, wife: {} },
     assets: [
         { id: 'a1', owner: 'husband', name: 'KWSP Suami', category: 'KWSP', amount: 145000, yieldPercent: 5.5, isLocked: true, zakatType: 'tiada' },
         { id: 'a2', owner: 'husband', name: 'ASB Suami', category: 'ASB / ASN', amount: 65000, yieldPercent: 5.25, isLocked: false, zakatType: 'simpanan' },
@@ -845,7 +1074,10 @@ function normaliseState(raw) {
         epfTarget: s.epfTarget != null ? n(s.epfTarget) : DEFAULT_SETTINGS.epfTarget,
         mcYears: Math.min(50, Math.max(1, n(s.mcYears) || 20)),
         mcVolatility: Math.min(40, Math.max(1, n(s.mcVolatility) || 10)),
-        lastBackupAt: typeof s.lastBackupAt === 'string' ? s.lastBackupAt : null
+        lastBackupAt: typeof s.lastBackupAt === 'string' ? s.lastBackupAt : null,
+        splitMode: ['income', 'nafkah', 'equal', 'manual'].includes(s.splitMode) ? s.splitMode : 'income',
+        epfDividend: s.epfDividend != null ? n(s.epfDividend) : 5.5,
+        people: normalisePeople(s.people)
     };
     const isV1 = n(raw.schemaVersion) < 2;
 
@@ -885,9 +1117,51 @@ function normaliseState(raw) {
     const cleanTax = (o) => Object.fromEntries(TAX_RELIEFS.map((r) => [r.key, Math.max(0, n(o?.[r.key]))]));
     const taxRelief = { year: n(tr.year) || new Date().getFullYear(), husband: cleanTax(tr.husband), wife: cleanTax(tr.wife) };
 
-    const state = { schemaVersion: SCHEMA_VERSION, settings, assets, liabilities, income, expenses, historySnapshots, taxRelief };
+    const assetIds = new Set(assets.map((a) => a.id));
+    const monthRe = /^\d{4}-(0[1-9]|1[0-2])$/;
+    const dateRe = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+    const goals = arr(raw.goals).map((g) => ({
+        id: safeId(g.id, 'g'), kind: GOAL_KINDS[g.kind] ? g.kind : 'lain', name: cleanText(g.name, 60) || 'Matlamat',
+        owner: safeOwner(g.owner), target: Math.max(0, n(g.target)),
+        targetMonth: monthRe.test(g.targetMonth) ? g.targetMonth : '',
+        linkedAssetId: assetIds.has(g.linkedAssetId) ? g.linkedAssetId : null,
+        saved: Math.max(0, n(g.saved)), monthlyPlan: Math.max(0, n(g.monthlyPlan)), excludeFromFI: g.excludeFromFI !== false
+    }));
+    const events = arr(raw.events).filter((e) => dateRe.test(e.date)).map((e) => ({
+        id: safeId(e.id, 'ev'), name: cleanText(e.name, 60) || 'Tarikh', date: e.date, amount: Math.max(0, n(e.amount)),
+        owner: safeOwner(e.owner), repeat: e.repeat === 'once' ? 'once' : 'yearly', inBudget: !!e.inBudget
+    }));
+    // actuals: { 'YYYY-MM': { category: amount } } household-level only
+    const actuals = {};
+    Object.entries(raw.actuals && typeof raw.actuals === 'object' ? raw.actuals : {}).forEach(([k, v]) => {
+        if (!monthRe.test(k) || !v || typeof v !== 'object') return;
+        const row = {};
+        Object.entries(v).forEach(([cat, amt]) => { const c = cleanText(cat, 40); if (c && amt !== '' && amt != null) row[c] = Math.max(0, n(amt)); });
+        if (Object.keys(row).length) actuals[k] = row;
+    });
+    const cl = raw.checklist || {};
+    const cleanCl = (o) => Object.fromEntries(CHECKLIST.map((c) => [c.key, typeof o?.[c.key] === 'string' && dateRe.test(o[c.key]) ? o[c.key] : '']));
+    const checklist = { husband: cleanCl(cl.husband), wife: cleanCl(cl.wife) };
+
+    const state = { schemaVersion: SCHEMA_VERSION, settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, checklist };
     syncLinkedExpenses(state);
     return state;
+}
+
+function normalisePeople(p) {
+    const out = clonePeople(DEFAULT_PEOPLE);
+    ['husband', 'wife'].forEach((k) => {
+        const src = p?.[k] || {};
+        const yr = (v, lo, hi) => { const x = Math.round(n(v)); return x >= lo && x <= hi ? x : null; };
+        out[k] = {
+            name: cleanText(src.name, 20) || DEFAULT_PEOPLE[k].name,
+            birthYear: yr(src.birthYear, 1940, 2015),
+            scheme: src.scheme === 'pencen' ? 'pencen' : 'kwsp',
+            retireAge: yr(src.retireAge, 40, 70) || 60,
+            serviceStartYear: yr(src.serviceStartYear, 1970, 2040)
+        };
+    });
+    return out;
 }
 
 // Ensures every liability with monthlyPayment > 0 has exactly one linked expense, kept in sync
@@ -938,15 +1212,28 @@ const charts = {};
    CORE MATHS
    ===================================================================== */
 // Share of an item that belongs to a profile. Shared split: husband = ratio, wife = 1 - ratio (sums to 100%)
-function shareFor(item, profile) {
+// Husband's share of "Bersama" items.
+//  - kind 'own' (assets, liabilities, shared income): ownership % from Tetapan
+//  - kind 'spend' (expenses): depends on splitMode (income ratio / nafkah / 50-50 / manual)
+function husbandShare(kind = 'own') {
+    const st = appState.settings;
+    if (kind !== 'spend' || st.splitMode === 'manual') return st.sharedSplitRatio;
+    if (st.splitMode === 'nafkah') return 1;
+    if (st.splitMode === 'equal') return 0.5;
+    // income: ratio of each person's own net income (shared income excluded to avoid circularity)
+    const h = sum(appState.income.filter((i) => i.owner === 'husband'));
+    const w = sum(appState.income.filter((i) => i.owner === 'wife'));
+    return h + w > 0 ? h / (h + w) : 0.5;
+}
+function shareFor(item, profile, kind = 'own') {
     if (profile === 'combined') return 1;
     if (item.owner === profile) return 1;
-    if (item.owner === 'shared') { const r = appState.settings.sharedSplitRatio; return profile === 'husband' ? r : 1 - r; }
+    if (item.owner === 'shared') { const r = husbandShare(kind); return profile === 'husband' ? r : 1 - r; }
     return 0;
 }
-function scoped(list, profile) {
+function scoped(list, profile, kind = 'own') {
     return list.map((i) => {
-        const s = shareFor(i, profile);
+        const s = shareFor(i, profile, kind);
         if (!s) return null;
         return { ...i, _share: s, amount: n(i.amount) * s, monthlyPayment: n(i.monthlyPayment) * s, grossAmount: n(i.grossAmount) * s };
     }).filter(Boolean);
@@ -968,11 +1255,15 @@ function computeMetrics(profile) {
     const assets = scoped(appState.assets, profile);
     const liabilities = scoped(appState.liabilities, profile);
     const income = scoped(appState.income, profile);
-    const expenses = scoped(appState.expenses, profile);
+    const expenses = scoped(appState.expenses, profile, 'spend');
 
-    const liquid = sum(assets.filter((a) => !a.isLocked));
+    const liquidRaw = sum(assets.filter((a) => !a.isLocked));
     const locked = sum(assets.filter((a) => a.isLocked));
-    const totalAssets = liquid + locked;
+    const totalAssets = liquidRaw + locked;
+    // Money already earmarked for dated goals (Haji, rumah...) is not FI money
+    const goals = computeGoals(profile);
+    const earmarked = Math.min(liquidRaw, goals.earmarked);
+    const liquid = liquidRaw - earmarked;
     const totalLiab = sum(liabilities);
     const netIncome = sum(income);
     const totalExp = sum(expenses);
@@ -988,7 +1279,9 @@ function computeMetrics(profile) {
     const fiTarget = totalExp * 12 * st.fireMultiplier;
     const fiProgress = fiTarget > 0 ? Math.min(100, liquid / fiTarget * 100) : 0;
     const realReturn = st.expectedReturn - st.inflationRate;
-    const yrs = yearsToTarget(liquid, fiTarget, savings, realReturn);
+    // Goal contributions come out of monthly savings, so only the rest compounds toward FI
+    const savingsFI = savings - goals.monthlyPlanActive;
+    const yrs = yearsToTarget(liquid, fiTarget, savingsFI, realReturn);
     const gold = sum(assets.filter((a) => a.category === 'Emas'));
     const asbTh = assets.filter((a) => a.category === 'ASB / ASN' || a.category === 'Tabung Haji');
 
@@ -998,10 +1291,51 @@ function computeMetrics(profile) {
         netIncome, totalExp, savings, savingsRate, fixedExp, variableExp: totalExp - fixedExp,
         emergencyCash, runway, passive, passiveCoverage, debtPayments, dsr,
         fiTarget, fiGap: Math.max(0, fiTarget - liquid), fiProgress, realReturn, yrs,
-        gold, goldPctOfLiquid: liquid > 0 ? gold / liquid * 100 : 0,
+        liquidRaw, earmarked, goals, savingsFI,
+        gold, goldPctOfLiquid: liquidRaw > 0 ? gold / liquidRaw * 100 : 0,
         asbThTotal: sum(asbTh), asbThDividend: asbTh.reduce((s, a) => s + a.amount * n(a.yieldPercent) / 100, 0),
         highInterest: liabilities.filter((l) => l.interestRate >= 8 || l.category === 'Kad Kredit')
     };
+}
+
+// Months from now until 'YYYY-MM' (end of that month). Negative = overdue.
+function monthsUntil(ym) {
+    if (!ym) return null;
+    const [y, m] = ym.split('-').map(Number);
+    const now = new Date();
+    return (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
+}
+
+// Goal progress for a profile. Shared goals are split by ownership %.
+function computeGoals(profile) {
+    const assetById = new Map(appState.assets.map((a) => [a.id, a]));
+    const countedAssets = new Set();
+    let earmarked = 0, monthlyPlanActive = 0, monthlyNeededActive = 0;
+    const list = appState.goals.map((g) => {
+        const share = shareFor(g, profile);
+        if (!share) return null;
+        const asset = g.linkedAssetId ? assetById.get(g.linkedAssetId) : null;
+        // linked asset: use that asset's (profile-scoped) value; otherwise manual saved amount
+        const current = asset ? n(asset.amount) * shareFor(asset, profile) : g.saved * share;
+        const target = g.target * share;
+        const left = Math.max(0, target - current);
+        const mLeft = monthsUntil(g.targetMonth);
+        const done = left <= 0;
+        const overdue = !done && mLeft != null && mLeft < 0;
+        const needed = done ? 0 : left / Math.max(1, mLeft ?? 1);
+        const plan = g.monthlyPlan * share;
+        if (g.excludeFromFI) {
+            if (asset) { if (!countedAssets.has(asset.id) && !asset.isLocked) { earmarked += current; countedAssets.add(asset.id); } }
+            else earmarked += current;
+        }
+        if (!done) { monthlyPlanActive += plan; monthlyNeededActive += needed; }
+        return { ...g, share, asset, current, targetScoped: target, left, mLeft, done, overdue, needed, plan,
+            pct: target > 0 ? Math.min(100, current / target * 100) : 0,
+            status: done ? 'done' : overdue ? 'overdue' : plan + 0.5 >= needed ? 'ok' : 'behind' };
+    }).filter(Boolean);
+    const sharedAssetGoals = appState.goals.filter((g) => g.linkedAssetId).map((g) => g.linkedAssetId);
+    const dupAsset = sharedAssetGoals.length !== new Set(sharedAssetGoals).size;
+    return { list, earmarked, monthlyPlanActive, monthlyNeededActive, dupAsset };
 }
 
 // Zakat per individual (zakat is fard 'ain, never combined across spouses)
@@ -1044,17 +1378,18 @@ function monteCarlo(start, target, monthlySave, realMeanPct, volPct, years, runs
 function setText(id, v) { const el = $(id); if (el) el.textContent = v; }
 function ownerBadge(o) {
     const cls = o === 'husband' ? 'b-blue' : o === 'wife' ? 'b-pink' : 'b-sage';
-    return `<span class="badge ${cls}">${esc(OWNER_LABEL[o])}</span>`;
+    return `<span class="badge ${cls}">${esc(ownerLabel(o))}</span>`;
 }
 function actionBtns(col, id) {
     return `<span class="no-print inline-flex gap-1">
-        <button class="btn btn-icon" style="min-height:32px;width:32px" data-action="edit" data-col="${col}" data-id="${esc(id)}" aria-label="Edit"><i class="fa-solid fa-pen text-[11px]"></i></button>
-        <button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete" data-col="${col}" data-id="${esc(id)}" aria-label="Padam"><i class="fa-solid fa-trash text-[11px]"></i></button>
+        <button class="btn btn-icon" style="min-height:32px;width:32px" data-action="edit" data-col="${col}" data-id="${esc(id)}" aria-label="Edit"><i data-lucide="pencil" class="text-[11px]"></i></button>
+        <button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete" data-col="${col}" data-id="${esc(id)}" aria-label="Padam"><i data-lucide="trash-2" class="text-[11px]"></i></button>
     </span>`;
 }
 const emptyRow = (cols, msg) => `<tr><td colspan="${cols}" class="text-center t-faint py-6">${esc(msg)}</td></tr>`;
 
 function renderAll() {
+    renderNames();
     const m = computeMetrics(activeProfile);
     renderHero(m);
     renderKpis(m);
@@ -1066,7 +1401,20 @@ function renderAll() {
     renderTax();
     renderSimulator(m);
     renderHistory();
+    renderGoals(m);
+    renderChecklist();
+    renderCalendar();
+    renderBudget();
+    renderRetirement();
     renderCharts(m);
+    refreshIcons();
+}
+
+// Converts every <i data-lucide="..."> (static + newly injected rows) into inline SVG.
+// If the CDN is blocked, icons just stay empty instead of showing tofu boxes.
+function refreshIcons() {
+    try { if (window.lucide) window.lucide.createIcons({ attrs: { 'aria-hidden': 'true' } }); }
+    catch (e) { console.warn('Lucide failed', e); }
 }
 
 function renderHero(m) {
@@ -1076,11 +1424,13 @@ function renderHero(m) {
     setText('fi-gap', formatRM(m.fiGap));
     setText('fi-passive', pct(m.passiveCoverage));
     setText('fi-liquid', formatRM(m.liquid));
+    setText('fi-earmark', formatRM(m.earmarked));
+    $('fi-earmark-wrap').classList.toggle('hidden', m.earmarked <= 0);
     setText('fi-locked', formatRM(m.locked));
     setText('fi-mult-txt', appState.settings.fireMultiplier);
-    setText('fi-eta', m.savings <= 0 && m.fiProgress < 100
-        ? 'Anggaran capai: simpanan bulanan negatif/0'
-        : `Anggaran capai: ${fmtYears(m.yrs)} (real ${pct(m.realReturn)})`);
+    setText('fi-eta', m.savingsFI <= 0 && m.fiProgress < 100
+        ? 'Anggaran capai: tiada baki simpanan untuk FI (selepas matlamat)'
+        : `Anggaran capai: ${fmtYears(m.yrs)}${Number.isFinite(m.yrs) && m.yrs > 0 ? ` (≈ tahun ${new Date().getFullYear() + Math.ceil(m.yrs)})` : ''} · real ${pct(m.realReturn)}`);
     const lean = m.fiTarget > 0 ? m.liquid / (m.fiTarget * 0.75) * 100 : 0;
     const fat = m.fiTarget > 0 ? m.liquid / (m.fiTarget * 1.5) * 100 : 0;
     const badge = (id, label, v) => { const el = $(id); el.textContent = `${label}: ${Math.min(999, v).toFixed(0)}%`; el.className = `badge ${v >= 100 ? 'b-sage' : 'b-mute'}`; };
@@ -1119,21 +1469,22 @@ function renderLevel(m) {
     setText('lvl-num', lvl);
     setText('lvl-title', levels[lvl - 1].t);
     setText('lvl-desc', levels[lvl - 1].d);
-    $('streak-badge').innerHTML = `<i class="fa-solid fa-bolt"></i>${appState.historySnapshots.length} Snapshot`;
+    $('streak-badge').innerHTML = `<i data-lucide="zap"></i>${appState.historySnapshots.length} Snapshot`;
     const ms = [
-        { name: 'Dana 3 bln', ok: m.runway >= 3, icon: 'fa-shield' },
-        { name: 'Dana 6 bln', ok: m.runway >= 6, icon: 'fa-shield-halved' },
-        { name: 'Simpan ≥ 30%', ok: m.savingsRate >= 30, icon: 'fa-piggy-bank' },
-        { name: 'Liquid RM100k', ok: m.liquid >= 100000, icon: 'fa-seedling' },
-        { name: 'FI 25%', ok: m.fiProgress >= 25, icon: 'fa-tree' }
+        { name: 'Dana 3 bln', ok: m.runway >= 3, icon: 'shield' },
+        { name: 'Dana 6 bln', ok: m.runway >= 6, icon: 'shield-check' },
+        { name: 'Simpan ≥ 30%', ok: m.savingsRate >= 30, icon: 'piggy-bank' },
+        { name: 'Liquid RM100k', ok: m.liquidRaw >= 100000, icon: 'sprout' },
+        { name: 'FI 25%', ok: m.fiProgress >= 25, icon: 'tree-pine' }
     ];
-    $('milestones').innerHTML = ms.map((b) => `<span class="badge ${b.ok ? 'b-sage' : 'b-mute'}" style="${b.ok ? '' : 'opacity:.6'}"><i class="fa-solid ${b.icon}"></i>${esc(b.name)}</span>`).join('');
+    $('milestones').innerHTML = ms.map((b) => `<span class="badge ${b.ok ? 'b-sage' : 'b-mute'}" style="${b.ok ? '' : 'opacity:.6'}"><i data-lucide="${b.icon}"></i>${esc(b.name)}</span>`).join('');
 }
 
 // Module F Tier 1: local, rule-based remarks
 function renderInsights(m) {
     const out = [];
     const add = (sev, title, text, action) => out.push({ sev, title, text, action });
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
     const st = appState.settings;
 
     if (m.savings < 0) add(3, 'Belanja melebihi pendapatan', `Defisit ${formatRM(-m.savings)} sebulan.`, 'Potong belanja variabel atau semak semula komitmen tetap dulu sebelum fikir pelaburan.');
@@ -1155,18 +1506,41 @@ function renderInsights(m) {
         add(1, 'Belum ada trend', 'Perlu sekurang-kurangnya 2 snapshot bulanan.', 'Tekan "Simpan Snapshot" di tab Sejarah setiap bulan.');
     }
 
-    if (m.liquid > 0 && (m.goldPctOfLiquid > 15)) add(2, 'Emas berat dalam portfolio', `Emas ${pct(m.goldPctOfLiquid)} daripada aset liquid.`, 'Emas tiada aliran tunai; pertimbang seimbangkan semula ke 5–10%.');
+    if (m.liquidRaw > 0 && (m.goldPctOfLiquid > 15)) add(2, 'Emas berat dalam portfolio', `Emas ${pct(m.goldPctOfLiquid)} daripada aset liquid.`, 'Emas tiada aliran tunai; pertimbang seimbangkan semula ke 5–10%.');
 
-    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
     const zTotal = persons.reduce((s, p) => s + computeZakat(p).total, 0);
-    if (zTotal > 0) add(1, 'Zakat dianggar wajib', `Anggaran ${formatRM(zTotal)} setahun (${persons.map((p) => OWNER_LABEL[p]).join(' + ')}).`, 'Bandingkan dengan potongan gaji/bayaran sedia ada; sahkan di kalkulator PPZ.');
+    if (zTotal > 0) add(1, 'Zakat dianggar wajib', `Anggaran ${formatRM(zTotal)} setahun (${persons.map((p) => ownerLabel(p)).join(' + ')}).`, 'Bandingkan dengan potongan gaji/bayaran sedia ada; sahkan di kalkulator PPZ.');
+
+    // Goals
+    const gl = m.goals;
+    const overdue = gl.list.filter((x) => x.status === 'overdue');
+    const behind = gl.list.filter((x) => x.status === 'behind');
+    if (gl.monthlyPlanActive > Math.max(0, m.savings) + 1) add(3, 'Matlamat melebihi simpanan', `Rancangan matlamat ${formatRM(gl.monthlyPlanActive)}/bln tapi simpanan cuma ${formatRM(m.savings)}/bln.`, 'Lanjutkan tarikh sasaran, kecilkan sasaran, atau kurangkan belanja variabel.');
+    if (overdue.length) add(3, 'Matlamat lewat tarikh', overdue.map((x) => x.name).join(', ') + ' belum capai sasaran.', 'Kemaskini tarikh baharu supaya kiraan simpanan bulanan jadi realistik.');
+    else if (behind.length) add(2, 'Matlamat ketinggalan', behind.map((x) => `${x.name} (perlu ${formatRM(x.needed)}/bln)`).join(', ') + '.', 'Naikkan simpanan bulanan untuk matlamat ini atau ubah tarikh.');
+    if (gl.dupAsset) add(2, 'Satu aset untuk dua matlamat', 'Ada aset yang dipaut ke lebih daripada satu matlamat; progress dikira dua kali.', 'Pisahkan akaun atau guna simpanan manual untuk salah satu.');
+    // Calendar
+    const sk = sinkingSummary(activeProfile);
+    if (sk.next30.length) add(2, 'Bayaran dalam 30 hari', sk.next30.map((i) => `${i.name} ${formatRM(i.amount)} (${i.days} hari)`).join(', ') + '.', 'Pastikan duit dah diasingkan dalam akaun sinking fund.');
+    // Budget vs actual: previous month with entries
+    const prevYM = (() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
+    const over = budgetRows(prevYM).filter((r) => r.has && r.actual > r.budget * 1.1 && r.actual - r.budget >= 50).sort((a, b) => (b.actual - b.budget) - (a.actual - a.budget));
+    if (over.length) add(2, `Terlebih bajet ${ymLabel(prevYM)}`, over.slice(0, 3).map((r) => `${r.cat} +${formatRM(r.actual - r.budget)}`).join(', ') + '.', 'Sama ada bajet tak realistik (naikkan) atau belanja perlu dikawal.');
+    // Checklist
+    const clDone = CHECKLIST.reduce((s2, c) => s2 + (appState.checklist.husband[c.key] ? 1 : 0) + (appState.checklist.wife[c.key] ? 1 : 0), 0);
+    if (clDone < CHECKLIST.length * 2) add(1, 'Checklist penama belum lengkap', `${clDone}/${CHECKLIST.length * 2} perkara selesai.`, 'Mula dengan penama KWSP dan TH — boleh buat online.');
+    // Retirement
+    persons.forEach((p) => {
+        const r = computeRetirement(p);
+        if (r.scheme === 'kwsp' && r.projected < r.target) add(1, `KWSP ${ownerLabel(p)} bawah sasaran`, `Unjuran ${formatRM(r.projected)} pada ${r.retireYear} vs sasaran ${formatRM(r.target)}.`, 'Pertimbang i-Saraan / caruman sukarela, atau bergantung lebih pada aset FI liquid.');
+    });
 
     const last = st.lastBackupAt ? new Date(st.lastBackupAt) : null;
     const days = last ? (Date.now() - last.getTime()) / 86400000 : Infinity;
     if (days > 7) add(2, 'Backup tertunggak', last ? `Backup terakhir ${Math.floor(days)} hari lepas.` : 'Belum pernah backup.', 'Clear cache/tukar phone = data hilang. Muat turun JSON di Tetapan.');
 
     const sevMeta = { 3: ['Kritikal', 'b-rose'], 2: ['Perhatian', 'b-gold'], 1: ['Info', 'b-blue'] };
-    const top = out.sort((a, b) => b.sev - a.sev).slice(0, 6);
+    const top = out.sort((a, b) => b.sev - a.sev).slice(0, 9);
     $('insights').innerHTML = top.map((i) => `
         <div class="card-sub p-3 space-y-1.5">
             <div class="flex items-center justify-between gap-2">
@@ -1174,7 +1548,7 @@ function renderInsights(m) {
                 <span class="badge ${sevMeta[i.sev][1]}">${sevMeta[i.sev][0]}</span>
             </div>
             <p class="text-xs t-muted pv">${esc(i.text)}</p>
-            <p class="text-xs"><i class="fa-solid fa-arrow-right t-sage mr-1"></i>${esc(i.action)}</p>
+            <p class="text-xs"><i data-lucide="arrow-right" class="t-sage mr-1"></i>${esc(i.action)}</p>
         </div>`).join('');
 }
 
@@ -1186,7 +1560,7 @@ function renderDashboardBoxes(m) {
         const v = sum(scoped(appState.assets, p).filter((a) => a.category === 'KWSP'));
         const pr = target > 0 ? Math.min(100, v / target * 100) : 0;
         return `<div class="space-y-1">
-            <div class="flex justify-between text-xs"><span class="t-muted">${esc(OWNER_LABEL[p])}</span><span class="num font-semibold pv">${formatRM(v)} <span class="t-faint">/ ${formatRM(target)}</span></span></div>
+            <div class="flex justify-between text-xs"><span class="t-muted">${esc(ownerLabel(p))}</span><span class="num font-semibold pv">${formatRM(v)} <span class="t-faint">/ ${formatRM(target)}</span></span></div>
             <div class="bar"><div style="width:${pr}%;background:var(--blue)"></div></div></div>`;
     }).join('');
     setText('asbth-total', formatRM(m.asbThTotal));
@@ -1204,7 +1578,7 @@ function renderTables(m) {
         <tr><td>${ownerBadge(a.owner)}</td>
         <td class="font-semibold">${esc(a.name)}</td>
         <td class="t-muted">${esc(a.category)}</td>
-        <td>${a.isLocked ? '<span class="badge b-blue"><i class="fa-solid fa-lock"></i>Terkunci</span>' : '<span class="badge b-sage"><i class="fa-solid fa-bolt"></i>Liquid</span>'}</td>
+        <td>${a.isLocked ? '<span class="badge b-blue"><i data-lucide="lock"></i>Terkunci</span>' : '<span class="badge b-sage"><i data-lucide="zap"></i>Liquid</span>'}</td>
         <td><span class="badge ${a.zakatType === 'tiada' ? 'b-mute' : 'b-gold'}">${esc({ simpanan: 'Simpanan', emas: 'Emas', tiada: 'Tiada' }[a.zakatType])}</span></td>
         <td class="text-right num font-bold t-sage pv">${formatRM(a.amount)}${share(a)}</td>
         <td class="text-right num">${n(a.yieldPercent).toFixed(2)}</td>
@@ -1235,7 +1609,7 @@ function renderTables(m) {
 
     $('tbody-expenses').innerHTML = m.expenses.length ? [...m.expenses].sort(byAmt).map((e) => `
         <tr><td>${ownerBadge(e.owner)}</td>
-        <td class="font-semibold">${e.linkedLiabilityId ? '<i class="fa-solid fa-link t-faint mr-1" title="Auto-sync dari liabiliti"></i>' : ''}${esc(e.name)}</td>
+        <td class="font-semibold">${e.linkedLiabilityId ? '<i data-lucide="link" class="t-faint mr-1" title="Auto-sync dari liabiliti"></i>' : ''}${esc(e.name)}</td>
         <td class="t-muted">${esc(e.category)}</td>
         <td>${e.isFixed ? '<span class="badge b-gold">Tetap</span>' : '<span class="badge b-blue">Variabel</span>'}</td>
         <td class="text-right num font-bold t-rose pv">${formatRM(e.amount)}${share(e)}</td>
@@ -1296,7 +1670,7 @@ function renderSimulator(m) {
         const nearest = rates.reduce((best, r) => Math.abs(r * 100 - m.savingsRate) < Math.abs(best * 100 - m.savingsRate) ? r : best, rates[0]);
         $('thead-sens').innerHTML = `<tr><th class="text-left">Kadar simpanan</th>${rates.map((r) => `<th class="text-center" style="${r === nearest ? 'background:var(--sage-bg);color:var(--sage)' : ''}">${Math.round(r * 100)}%</th>`).join('')}</tr>`;
         const rowYears = rates.map((r) => {
-            const save = m.netIncome * r;
+            const save = m.netIncome * r - m.goals.monthlyPlanActive;   // goals funded first
             const exp = m.netIncome * (1 - r);               // consistent: spend what you don't save
             const target = exp * 12 * st.fireMultiplier;
             return yearsToTarget(m.liquid, target, save, m.realReturn);
@@ -1306,14 +1680,14 @@ function renderSimulator(m) {
             `<tr><td class="text-left font-semibold">Tahun ke FI</td>${rowYears.map((y, i) => `<td class="num font-bold ${rates[i] === nearest ? 't-sage' : ''}">${esc(fmtYears(y))}</td>`).join('')}</tr>` +
             `<tr><td class="text-left t-muted">Sasaran FI</td>${rowTarget.map((t) => `<td class="num t-muted pv">${formatRM(t)}</td>`).join('')}</tr>`;
     }
-    const prob = monteCarlo(m.liquid, m.fiTarget, m.savings, m.realReturn, st.mcVolatility, st.mcYears);
+    const prob = monteCarlo(m.liquid, m.fiTarget, m.savingsFI, m.realReturn, st.mcVolatility, st.mcYears);
     const el = $('mc-text');
     if (prob == null) { el.textContent = 'Monte Carlo: tiada sasaran'; el.className = 'badge b-mute'; }
     else {
         el.textContent = `Monte Carlo: ${prob.toFixed(0)}% capai FI dalam ${st.mcYears} thn`;
         el.className = `badge ${prob >= 75 ? 'b-sage' : prob >= 40 ? 'b-gold' : 'b-rose'}`;
     }
-    setText('mc-note', `1,000 simulasi · pulangan real purata ${pct(m.realReturn)} · volatiliti ${pct(st.mcVolatility, 0)} setahun · simpanan ${formatRM(Math.max(0, m.savings))}/bln kekal. Ini model kasar, bukan jaminan; ubah andaian di Tetapan.`);
+    setText('mc-note', `1,000 simulasi · pulangan real purata ${pct(m.realReturn)} · volatiliti ${pct(st.mcVolatility, 0)} setahun · simpanan ke FI ${formatRM(Math.max(0, m.savingsFI))}/bln (selepas ${formatRM(m.goals.monthlyPlanActive)} untuk matlamat). Ini model kasar, bukan jaminan; ubah andaian di Tetapan.`);
 }
 
 function renderHistory() {
@@ -1325,8 +1699,261 @@ function renderHistory() {
         <td class="text-right num pv">${formatRM(s.income)}</td>
         <td class="text-right num t-rose pv">${formatRM(s.expenses)}</td>
         <td class="text-right num font-bold ${s.savings < 0 ? 't-rose' : 't-gold'} pv">${formatRM(s.savings)}</td>
-        <td class="text-right no-print"><button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete-snap" data-id="${esc(s.id)}" aria-label="Padam"><i class="fa-solid fa-trash text-[11px]"></i></button></td></tr>`).join('')
+        <td class="text-right no-print"><button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete-snap" data-id="${esc(s.id)}" aria-label="Padam"><i data-lucide="trash-2" class="text-[11px]"></i></button></td></tr>`).join('')
         : emptyRow(7, 'Belum ada snapshot. Tekan "Simpan Snapshot Bulan Ini".');
+}
+
+/* =====================================================================
+   PERSONALISED SECTIONS: names, goals, checklist, calendar, budget, retirement
+   ===================================================================== */
+const MONTHS_MS = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
+const ymLabel = (ym) => { if (!ym) return '—'; const [y, m] = ym.split('-').map(Number); return `${MONTHS_MS[m - 1]} ${y}`; };
+const dLabel = (d) => `${d.getDate()} ${MONTHS_MS[d.getMonth()]} ${d.getFullYear()}`;
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const currentYM = () => todayISO().slice(0, 7);
+
+function renderNames() {
+    document.querySelectorAll('.js-name-husband').forEach((el) => { el.textContent = ownerLabel('husband'); });
+    document.querySelectorAll('.js-name-wife').forEach((el) => { el.textContent = ownerLabel('wife'); });
+    document.querySelectorAll('.js-owner-select').forEach((sel) => {
+        const v = sel.value;
+        sel.innerHTML = ['husband', 'wife', 'shared'].map((o) => `<option value="${o}">${esc(ownerLabel(o))}</option>`).join('');
+        if (v) sel.value = v;
+    });
+    setText('cl-h-name', ownerLabel('husband'));
+    setText('cl-w-name', ownerLabel('wife'));
+}
+
+function renderGoals(m) {
+    const g = m.goals;
+    const statusMeta = {
+        done: ['Tercapai', 'b-sage'], ok: ['On track', 'b-sage'], behind: ['Ketinggalan', 'b-gold'], overdue: ['Lewat tarikh', 'b-rose']
+    };
+    $('goals-summary').innerHTML = `
+        <div class="card kpi p-3" style="--stripe:#d4a373"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Dirancang / bln</p><p class="text-xl font-extrabold num pv">${formatRM(g.monthlyPlanActive)}</p></div>
+        <div class="card kpi p-3" style="--stripe:${g.monthlyNeededActive > g.monthlyPlanActive + 1 ? '#d1495b' : '#40916c'}"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Sebenarnya perlu / bln</p><p class="text-xl font-extrabold num pv">${formatRM(g.monthlyNeededActive)}</p></div>
+        <div class="card kpi p-3" style="--stripe:#4a7fb5"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Baki simpanan ke FI</p><p class="text-xl font-extrabold num pv ${m.savingsFI < 0 ? 't-rose' : ''}">${formatRM(m.savingsFI)}</p></div>`;
+    $('goals-grid').innerHTML = g.list.length ? g.list.map((x) => {
+        const k = GOAL_KINDS[x.kind];
+        const [sLabel, sCls] = statusMeta[x.status];
+        const src = x.asset ? `Ikut aset: ${esc(x.asset.name)}` : 'Simpanan manual';
+        return `<div class="card-sub p-4 space-y-2.5">
+            <div class="flex justify-between items-start gap-2">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center b-sage"><i data-lucide="${k.icon}"></i></div>
+                    <div><h4 class="text-sm font-bold">${esc(x.name)}</h4>
+                    <p class="text-[11px] t-faint">${esc(k.label)} · ${ownerBadge(x.owner)}${x.share < 1 ? ` <span class="t-faint">(${Math.round(x.share * 100)}%)</span>` : ''}</p></div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="badge ${sCls}">${sLabel}</span>
+                    <button class="btn btn-icon no-print" style="min-height:30px;width:30px" data-action="edit-goal" data-id="${esc(x.id)}" aria-label="Edit"><i data-lucide="pencil" class="text-[11px]"></i></button>
+                </div>
+            </div>
+            <div class="flex justify-between items-baseline">
+                <span class="text-lg font-extrabold num pv">${formatRM(x.current)}</span>
+                <span class="text-xs t-muted num pv">/ ${formatRM(x.targetScoped)} · ${x.pct.toFixed(0)}%</span>
+            </div>
+            <div class="bar"><div style="width:${x.pct}%;background:${x.status === 'overdue' ? 'var(--rose)' : x.status === 'behind' ? 'var(--gold)' : 'var(--sage)'}"></div></div>
+            <div class="grid grid-cols-3 gap-2 text-[11px]">
+                <div><p class="t-faint uppercase font-semibold tracking-wider">Sasaran</p><p class="font-semibold">${esc(ymLabel(x.targetMonth))}</p><p class="t-faint">${x.mLeft == null ? '' : x.mLeft < 0 ? `${-x.mLeft} bln lepas` : `${x.mLeft} bln lagi`}</p></div>
+                <div><p class="t-faint uppercase font-semibold tracking-wider">Perlu / bln</p><p class="font-semibold num pv">${formatRM(x.needed)}</p></div>
+                <div><p class="t-faint uppercase font-semibold tracking-wider">Rancang / bln</p><p class="font-semibold num pv ${x.status === 'behind' ? 't-gold' : ''}">${formatRM(x.plan)}</p></div>
+            </div>
+            <p class="text-[11px] t-faint">${src}${x.excludeFromFI ? ' · diasing dari FI' : ''}</p>
+        </div>`;
+    }).join('') : `<div class="card-sub p-6 text-center text-xs t-faint md:col-span-2">Belum ada matlamat. Mula dengan Haji atau deposit rumah.</div>`;
+}
+
+function renderChecklist() {
+    const cl = appState.checklist;
+    let done = 0;
+    const cell = (p, key) => {
+        const d = cl[p][key];
+        if (d) done++;
+        return `<td><label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" class="w-4 h-4 accent-emerald-600" data-cl-person="${p}" data-cl-key="${key}" ${d ? 'checked' : ''}>
+            <span class="text-[11px] ${d ? 't-sage' : 't-faint'}">${d ? esc(d) : 'Belum'}</span></label></td>`;
+    };
+    $('tbody-checklist').innerHTML = CHECKLIST.map((c) => `<tr><td class="font-semibold">${esc(c.label)}</td>${cell('husband', c.key)}${cell('wife', c.key)}</tr>`).join('');
+    const total = CHECKLIST.length * 2;
+    const el = $('checklist-progress');
+    el.textContent = `${done}/${total} selesai`;
+    el.className = `badge ${done === total ? 'b-sage' : 'b-gold'}`;
+    return { done, total };
+}
+
+// ---- Calendar ----
+let hijriFmt = null;
+function hijriParts(d) {
+    try {
+        hijriFmt = hijriFmt || new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { day: 'numeric', month: 'numeric' });
+        const p = hijriFmt.formatToParts(d);
+        return { m: Number(p.find((x) => x.type === 'month')?.value), d: Number(p.find((x) => x.type === 'day')?.value) };
+    } catch { return null; }
+}
+const FIXED_EVENTS = [
+    { m: 2, d: 28, name: 'Anggaran pengumuman dividen KWSP (biasanya Feb–Mac)', icon: 'landmark' },
+    { m: 4, d: 30, name: 'Akhir hantar borang BE manual', icon: 'receipt' },
+    { m: 5, d: 15, name: 'Akhir e-Filing BE', icon: 'receipt' },
+    { m: 12, d: 15, name: 'Guna baki pelepasan cukai sebelum 31 Dis (gaya hidup, SSPN, sukan)', icon: 'receipt' },
+    { m: 12, d: 30, name: 'Anggaran pengumuman dividen ASB (biasanya hujung Dis)', icon: 'wallet' }
+];
+const HIJRI_EVENTS = [
+    { hm: 9, hd: 1, name: 'Awal Ramadan · bajet Ramadan & zakat fitrah', icon: 'moon-star' },
+    { hm: 10, hd: 1, name: 'Hari Raya Aidilfitri · duit raya, balik kampung', icon: 'moon-star' },
+    { hm: 12, hd: 10, name: 'Hari Raya Aidiladha · korban', icon: 'moon-star' }
+];
+function buildCalendar() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const end = new Date(today); end.setDate(end.getDate() + 366);
+    const items = [];
+    const nextYearly = (mo, d) => {
+        let dt = new Date(today.getFullYear(), mo - 1, d);
+        if (dt < today) dt = new Date(today.getFullYear() + 1, mo - 1, d);
+        return dt;
+    };
+    FIXED_EVENTS.forEach((e) => items.push({ date: nextYearly(e.m, e.d), name: e.name, icon: e.icon, kind: 'fixed', owner: 'shared', amount: 0 }));
+    // Hijri: scan day by day for the next occurrence (approximate, Umm al-Qura)
+    const found = new Set();
+    for (let dt = new Date(today); dt <= end && found.size < HIJRI_EVENTS.length; dt.setDate(dt.getDate() + 1)) {
+        const h = hijriParts(dt);
+        if (!h) break;
+        HIJRI_EVENTS.forEach((e, i) => {
+            if (!found.has(i) && h.m === e.hm && h.d === e.hd) { found.add(i); items.push({ date: new Date(dt), name: e.name, icon: e.icon, kind: 'hijri', owner: 'shared', amount: 0 }); }
+        });
+    }
+    appState.events.forEach((e) => {
+        const [y, mo, d] = e.date.split('-').map(Number);
+        const dt = e.repeat === 'yearly' ? nextYearly(mo, d) : new Date(y, mo - 1, d);
+        if (dt >= today && dt <= end) items.push({ date: dt, name: e.name, icon: 'calendar-days', kind: 'custom', id: e.id, owner: e.owner, amount: e.amount, inBudget: e.inBudget, repeat: e.repeat });
+    });
+    items.forEach((i) => {
+        i.days = Math.round((i.date - today) / 86400000);
+        const months = Math.max(1, (i.date.getFullYear() - today.getFullYear()) * 12 + i.date.getMonth() - today.getMonth());
+        i.saveMonthly = i.amount && !i.inBudget ? i.amount / months : 0;
+    });
+    return items.sort((a, b) => a.date - b.date);
+}
+function sinkingSummary(profile) {
+    const yearly = appState.events.filter((e) => e.repeat === 'yearly' && e.amount > 0 && !e.inBudget);
+    const share = (e) => shareFor(e, profile, 'spend');
+    const annual = yearly.reduce((s, e) => s + e.amount * share(e), 0);
+    const cal = buildCalendar().filter((i) => i.kind === 'custom' && i.days <= 90);
+    const next90 = cal.reduce((s, i) => s + i.amount * shareFor(i, profile, 'spend'), 0);
+    return { annual, monthly: annual / 12, next90, next30: buildCalendar().filter((i) => i.kind === 'custom' && i.amount > 0 && i.days <= 30) };
+}
+function renderCalendar() {
+    const s = sinkingSummary(activeProfile);
+    $('sinking-summary').innerHTML = `
+        <div class="card kpi p-3" style="--stripe:#d4a373"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Bayaran tahunan</p><p class="text-xl font-extrabold num pv">${formatRM(s.annual)}</p></div>
+        <div class="card kpi p-3" style="--stripe:#40916c"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Sinking fund / bln</p><p class="text-xl font-extrabold num t-sage pv">${formatRM(s.monthly)}</p></div>
+        <div class="card kpi p-3" style="--stripe:#d1495b"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Jatuh tempo 90 hari</p><p class="text-xl font-extrabold num pv">${formatRM(s.next90)}</p></div>`;
+    const items = buildCalendar().filter((i) => activeProfile === 'combined' || i.owner === 'shared' || i.owner === activeProfile);
+    let lastMonth = '';
+    $('calendar-list').innerHTML = items.length ? items.map((i) => {
+        const mk = `${MONTHS_MS[i.date.getMonth()]} ${i.date.getFullYear()}`;
+        const head = mk !== lastMonth ? `<p class="text-[11px] font-semibold uppercase tracking-wider t-muted pt-2">${mk}</p>` : '';
+        lastMonth = mk;
+        const soon = i.days <= 30;
+        return `${head}<div class="card-sub p-3 flex items-center gap-3">
+            <div class="w-12 text-center shrink-0"><p class="text-lg font-extrabold num leading-none">${i.date.getDate()}</p><p class="text-[10px] t-faint uppercase">${MONTHS_MS[i.date.getMonth()]}</p></div>
+            <i data-lucide="${i.icon}" class="t-faint"></i>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold">${esc(i.name)}</p>
+                <p class="text-[11px] t-faint">${i.kind === 'hijri' ? 'Anggaran Hijrah · ' : i.kind === 'fixed' ? 'Tarikh tetap · ' : `${esc(ownerLabel(i.owner))} · ${i.repeat === 'yearly' ? 'tahunan' : 'sekali'} · `}${i.saveMonthly ? `<span class="num pv">simpan ${formatRM(i.saveMonthly)}/bln dari sekarang</span>` : i.inBudget ? 'dalam bajet bulanan' : ''}</p>
+            </div>
+            <div class="text-right shrink-0">
+                ${i.amount ? `<p class="text-sm font-bold num pv">${formatRM(i.amount)}</p>` : ''}
+                <span class="badge ${soon ? 'b-rose' : 'b-mute'}">${i.days === 0 ? 'Hari ini' : `${i.days} hari`}</span>
+            </div>
+            ${i.kind === 'custom' ? `<button class="btn btn-icon no-print" style="min-height:30px;width:30px" data-action="edit-event" data-id="${esc(i.id)}" aria-label="Edit"><i data-lucide="pencil" class="text-[11px]"></i></button>` : ''}
+        </div>`;
+    }).join('') : '<p class="text-xs t-faint">Tiada tarikh dalam 12 bulan.</p>';
+}
+
+// ---- Budget vs actual (household level) ----
+function budgetMonth() { return $('budget-month').value || currentYM(); }
+function budgetRows(ym) {
+    const budget = {};
+    appState.expenses.forEach((e) => { budget[e.category] = (budget[e.category] || 0) + n(e.amount); });
+    const actual = appState.actuals[ym] || {};
+    const cats = [...new Set([...Object.keys(budget), ...Object.keys(actual)])].sort((a, b) => (budget[b] || 0) - (budget[a] || 0));
+    return cats.map((c) => ({ cat: c, budget: budget[c] || 0, actual: actual[c], has: actual[c] != null }));
+}
+function renderBudget() {
+    const ym = budgetMonth();
+    if (!$('budget-month').value) $('budget-month').value = ym;
+    const rows = budgetRows(ym);
+    let tb = 0, ta = 0, anyActual = false;
+    $('tbody-budget').innerHTML = rows.map((r) => {
+        tb += r.budget;
+        if (r.has) { ta += r.actual; anyActual = true; }
+        const diff = r.has ? r.budget - r.actual : null;
+        const used = r.has && r.budget > 0 ? r.actual / r.budget * 100 : r.has && r.actual > 0 ? 999 : 0;
+        return `<tr><td class="font-semibold">${esc(r.cat)}</td>
+            <td class="text-right num pv">${formatRM(r.budget)}</td>
+            <td><input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="padding:.35rem .5rem;font-size:12px" data-actual-cat="${esc(r.cat)}" value="${r.has ? r.actual : ''}" placeholder="—"></td>
+            <td class="text-right num font-semibold pv ${diff == null ? 't-faint' : diff < 0 ? 't-rose' : 't-sage'}">${diff == null ? '—' : (diff < 0 ? 'Lebih ' : 'Baki ') + formatRM(Math.abs(diff))}</td>
+            <td><div class="bar"><div style="width:${Math.min(100, used)}%;background:${used > 100 ? 'var(--rose)' : used > 90 ? 'var(--gold)' : 'var(--sage)'}"></div></div></td></tr>`;
+    }).join('') + `<tr><td class="font-bold">Jumlah</td><td class="text-right num font-bold pv">${formatRM(tb)}</td><td class="num font-bold pv">${anyActual ? formatRM(ta) : '—'}</td>
+        <td class="text-right num font-bold pv ${!anyActual ? 't-faint' : tb - ta < 0 ? 't-rose' : 't-sage'}">${anyActual ? (tb - ta < 0 ? 'Lebih ' : 'Baki ') + formatRM(Math.abs(tb - ta)) : '—'}</td><td></td></tr>`;
+}
+function shiftBudgetMonth(delta) {
+    const [y, m] = budgetMonth().split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    $('budget-month').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    renderBudget(); refreshIcons();
+}
+
+// ---- Retirement projection per person (KWSP or pension) ----
+function computeRetirement(person) {
+    const st = appState.settings;
+    const p = st.people[person];
+    const nowY = new Date().getFullYear();
+    const gross = sum(appState.income.filter((i) => i.owner === person && i.category === 'Gaji'), 'grossAmount');
+    if (!p.birthYear) return { person, missing: 'Isi tahun lahir di Tetapan untuk unjuran.' };
+    const age = nowY - p.birthYear;
+    const years = Math.max(0, p.retireAge - age);
+    const retireYear = nowY + years;
+    if (p.scheme === 'pencen') {
+        if (!p.serviceStartYear) return { person, missing: 'Isi tahun mula khidmat di Tetapan untuk kiraan pencen.' };
+        const months = Math.min(360, Math.max(0, (retireYear - p.serviceStartYear) * 12));
+        const pension = months / 600 * gross;              // 1/600 × bulan khidmat × gaji akhir, max 60%
+        return { person, scheme: 'pencen', age, years, retireYear, gross, months, pension };
+    }
+    const bal0 = sum(scoped(appState.assets, person).filter((a) => a.category === 'KWSP'));
+    const er = gross <= 5000 ? 0.13 : 0.12;
+    const contrib = gross * (0.11 + er);
+    const real = (st.epfDividend - st.inflationRate) / 100 / 12;
+    let bal = bal0;
+    for (let k = 0; k < years * 12; k++) bal = bal * (1 + real) + contrib;
+    const nDraw = 240;                                     // spread over 20 years
+    const draw = real > 0 ? bal * real / (1 - Math.pow(1 + real, -nDraw)) : bal / nDraw;
+    return { person, scheme: 'kwsp', age, years, retireYear, gross, bal0, contrib, er, projected: bal, draw, target: st.epfTarget };
+}
+function renderRetirement() {
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    $('retire-grid').innerHTML = persons.map((p) => {
+        const r = computeRetirement(p);
+        const head = `<div class="flex justify-between items-center mb-2">${ownerBadge(p)}${r.retireYear ? `<span class="text-[11px] t-faint">Umur ${r.age} → bersara ${r.retireYear}</span>` : ''}</div>`;
+        if (r.missing) return `<div class="card p-3">${head}<p class="text-xs t-faint">${esc(r.missing)}</p></div>`;
+        if (r.scheme === 'pencen') return `<div class="card p-3 space-y-1">${head}
+            <p class="text-xs t-muted">Pencen bulanan anggaran (${Math.round(r.months / 12)} thn khidmat)</p>
+            <p class="text-2xl font-extrabold num t-sage pv">${formatRM(r.pension)}/bln</p>
+            <p class="text-[11px] t-faint">Formula 1/600 × bulan khidmat × gaji akhir (maks 60%). Guna gaji hakiki sebenar untuk ketepatan.</p></div>`;
+        const pr = r.target > 0 ? Math.min(100, r.projected / r.target * 100) : 0;
+        return `<div class="card p-3 space-y-2">${head}
+            <div class="flex justify-between items-baseline"><span class="text-xs t-muted">KWSP dijangka umur ${appState.settings.people[p].retireAge}</span>
+            <span class="text-2xl font-extrabold num pv ${r.projected >= r.target ? 't-sage' : 't-gold'}">${formatRM(r.projected)}</span></div>
+            <div class="bar"><div style="width:${pr}%;background:${r.projected >= r.target ? 'var(--sage)' : 'var(--gold)'}"></div></div>
+            <div class="grid grid-cols-3 gap-2 text-[11px]">
+                <div><p class="t-faint uppercase font-semibold tracking-wider">Sekarang</p><p class="num font-semibold pv">${formatRM(r.bal0)}</p></div>
+                <div><p class="t-faint uppercase font-semibold tracking-wider">Caruman / bln</p><p class="num font-semibold pv">${formatRM(r.contrib)}</p><p class="t-faint">11% + ${Math.round(r.er * 100)}%</p></div>
+                <div><p class="t-faint uppercase font-semibold tracking-wider">≈ Pendapatan</p><p class="num font-semibold pv">${formatRM(r.draw)}/bln</p><p class="t-faint">selama 20 thn</p></div>
+            </div>
+            ${r.gross === 0 ? '<p class="text-[11px] t-rose">Tiada gaji kasar kategori "Gaji" untuk orang ni, caruman dikira 0.</p>' : ''}
+        </div>`;
+    }).join('');
 }
 
 /* =====================================================================
@@ -1379,17 +2006,18 @@ function renderCharts(m) {
             scales: { x: { grid: { color: th.grid }, ticks: { callback: rmTick } }, y: { grid: { display: false } } } }
     });
 
-    // Scenarios with target line
+    // Scenarios with target line. X-axis = real calendar years (2026, 2027, ...) instead of T0, T1
     const years = Array.from({ length: 26 }, (_, i) => i);
+    const startYear = new Date().getFullYear();
     const traj = (rate) => years.map((y) => {
         const r = rate / 12; let bal = m.liquid;
-        for (let k = 0; k < y * 12; k++) bal = bal * (1 + r) + Math.max(0, m.savings);
+        for (let k = 0; k < y * 12; k++) bal = bal * (1 + r) + Math.max(0, m.savingsFI);
         return Math.round(bal);
     });
     upsertChart('scenarios', 'chart-scenarios', {
         type: 'line',
         data: {
-            labels: years.map((y) => `T${y}`),
+            labels: years.map((y) => String(startYear + y)),
             datasets: [
                 { label: 'Pesimis (3% real)', data: traj(0.03), borderColor: '#d1495b', pointRadius: 0, tension: .25 },
                 { label: 'Base (5% real)', data: traj(0.05), borderColor: '#40916c', borderWidth: 3, pointRadius: 0, tension: .25 },
@@ -1436,6 +2064,8 @@ function openModal(id) { const el = $(id); el.classList.remove('hidden'); el.cla
 function closeModal(id) {
     const el = $(id); el.classList.add('hidden'); el.classList.remove('flex');
     if (id === 'modal-entry') { editing = null; $('form-entry').reset(); }
+    if (id === 'modal-goal') editingGoalId = null;
+    if (id === 'modal-event') editingEventId = null;
 }
 
 function fillCategoryOptions(type, current) {
@@ -1577,7 +2207,7 @@ function takeSnapshot() {
     const dateLabel = `${months[now.getMonth()]} ${now.getFullYear()}`;
     const doSave = () => {
         appState.historySnapshots = appState.historySnapshots.filter((s) => s.key !== key && s.dateLabel !== dateLabel);
-        appState.historySnapshots.push({ id: uid('snap'), key, dateLabel, netWorth: m.netWorth, liquidAssets: m.liquid, income: m.netIncome, expenses: m.totalExp, savings: m.savings });
+        appState.historySnapshots.push({ id: uid('snap'), key, dateLabel, netWorth: m.netWorth, liquidAssets: m.liquidRaw, income: m.netIncome, expenses: m.totalExp, savings: m.savings });
         saveState(); renderAll(); showToast(`Snapshot ${dateLabel} disimpan.`, 'success');
     };
     if (appState.historySnapshots.some((s) => s.key === key || s.dateLabel === dateLabel)) {
@@ -1590,6 +2220,17 @@ function takeSnapshot() {
    ===================================================================== */
 function openSettings() {
     const s = appState.settings;
+    const pp = s.people;
+    [['h', 'husband'], ['w', 'wife']].forEach(([k, who]) => {
+        $(`s-name-${k}`).value = pp[who].name === DEFAULT_PEOPLE[who].name ? '' : pp[who].name;
+        $(`s-by-${k}`).value = pp[who].birthYear || '';
+        $(`s-scheme-${k}`).value = pp[who].scheme;
+        $(`s-ra-${k}`).value = pp[who].retireAge;
+        $(`s-svc-${k}`).value = pp[who].serviceStartYear || '';
+    });
+    $('s-splitmode').value = s.splitMode;
+    $('s-epfdiv').value = s.epfDividend;
+    updateSplitPreview();
     $('s-split').value = Math.round(s.sharedSplitRatio * 100);
     $('s-mult').value = s.fireMultiplier;
     $('s-return').value = s.expectedReturn;
@@ -1609,6 +2250,18 @@ function saveSettings(e) {
     const s = appState.settings;
     const clamp = (v, lo, hi, d) => { const x = Number(v); return Number.isFinite(x) && v !== '' ? Math.min(hi, Math.max(lo, x)) : d; };
     s.sharedSplitRatio = clamp($('s-split').value, 0, 100, 50) / 100;
+    s.splitMode = ['income', 'nafkah', 'equal', 'manual'].includes($('s-splitmode').value) ? $('s-splitmode').value : 'income';
+    s.epfDividend = clamp($('s-epfdiv').value, 0, 15, 5.5);
+    const yr = (v, lo, hi) => { const x = Math.round(Number(v)); return v !== '' && x >= lo && x <= hi ? x : null; };
+    [['h', 'husband'], ['w', 'wife']].forEach(([k, who]) => {
+        s.people[who] = {
+            name: cleanText($(`s-name-${k}`).value, 20) || DEFAULT_PEOPLE[who].name,
+            birthYear: yr($(`s-by-${k}`).value, 1940, 2015),
+            scheme: $(`s-scheme-${k}`).value === 'pencen' ? 'pencen' : 'kwsp',
+            retireAge: yr($(`s-ra-${k}`).value, 40, 70) || 60,
+            serviceStartYear: yr($(`s-svc-${k}`).value, 1970, 2040)
+        };
+    });
     s.fireMultiplier = clamp($('s-mult').value, 10, 50, 25);
     s.expectedReturn = clamp($('s-return').value, 0, 20, 6);
     s.inflationRate = clamp($('s-infl').value, 0, 15, 3);
@@ -1620,6 +2273,118 @@ function saveSettings(e) {
     s.mcVolatility = clamp($('s-mcvol').value, 1, 40, 10);
     if (s.expectedReturn <= s.inflationRate) showToast('Amaran: pulangan ≤ inflasi, pulangan real negatif.', 'warning');
     saveState(); closeModal('modal-settings'); renderAll(); showToast('Tetapan disimpan.', 'success');
+}
+
+function updateSplitPreview() {
+    const mode = $('s-splitmode').value;
+    const prev = appState.settings.splitMode;
+    appState.settings.splitMode = mode;                 // temporary, to reuse the same maths
+    const own = appState.settings.sharedSplitRatio;
+    if (mode === 'manual') appState.settings.sharedSplitRatio = clampPct($('s-split').value) / 100;
+    const r = husbandShare('spend');
+    appState.settings.splitMode = prev;
+    appState.settings.sharedSplitRatio = own;
+    setText('s-split-preview', `Belanja bersama: ${ownerLabel('husband')} ${Math.round(r * 100)}% · ${ownerLabel('wife')} ${Math.round((1 - r) * 100)}%`);
+}
+const clampPct = (v) => { const x = Number(v); return Number.isFinite(x) && v !== '' ? Math.min(100, Math.max(0, x)) : 50; };
+
+/* ---------- Goal modal ---------- */
+let editingGoalId = null;
+function openGoal(id = null) {
+    const g = id ? appState.goals.find((x) => x.id === id) : null;
+    editingGoalId = g ? g.id : null;
+    $('form-goal').reset();
+    ['g-name', 'g-target', 'g-month'].forEach((k) => { $(k).classList.remove('invalid'); $(`err-${k}`).classList.add('hidden'); });
+    renderNames();
+    $('g-kind').innerHTML = Object.entries(GOAL_KINDS).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
+    const liquidAssets = appState.assets.filter((a) => !a.isLocked);
+    $('g-asset').innerHTML = `<option value="">Manual (isi jumlah terkumpul)</option>` +
+        liquidAssets.map((a) => `<option value="${esc(a.id)}">${esc(a.name)} · ${esc(ownerLabel(a.owner))} · ${formatRM(a.amount)}</option>`).join('');
+    $('goal-title').textContent = g ? 'Kemaskini Matlamat' : 'Tambah Matlamat';
+    $('g-delete').classList.toggle('hidden', !g);
+    if (g) {
+        $('g-kind').value = g.kind; $('g-owner').value = g.owner; $('g-name').value = g.name;
+        $('g-target').value = g.target; $('g-month').value = g.targetMonth; $('g-asset').value = g.linkedAssetId || '';
+        $('g-saved').value = g.saved || ''; $('g-plan').value = g.monthlyPlan || ''; $('g-exclude').checked = g.excludeFromFI;
+    } else {
+        $('g-owner').value = activeProfile === 'combined' ? 'shared' : activeProfile;
+        $('g-exclude').checked = true;
+    }
+    toggleGoalSaved();
+    openModal('modal-goal');
+    refreshIcons();
+}
+function toggleGoalSaved() { $('wrap-g-saved').classList.toggle('hidden', !!$('g-asset').value); }
+function handleGoalSubmit(e) {
+    e.preventDefault();
+    const name = cleanText($('g-name').value, 60), target = Number($('g-target').value), month = $('g-month').value;
+    const checks = [['g-name', !!name], ['g-target', Number.isFinite(target) && target > 0], ['g-month', /^\d{4}-\d{2}$/.test(month)]];
+    checks.forEach(([k, ok]) => { $(k).classList.toggle('invalid', !ok); $(`err-${k}`).classList.toggle('hidden', ok); });
+    if (!checks.every(([, ok]) => ok)) return;
+    const rec = {
+        kind: GOAL_KINDS[$('g-kind').value] ? $('g-kind').value : 'lain', name, owner: safeOwner($('g-owner').value),
+        target, targetMonth: month, linkedAssetId: $('g-asset').value || null,
+        saved: Math.max(0, n($('g-saved').value)), monthlyPlan: Math.max(0, n($('g-plan').value)), excludeFromFI: $('g-exclude').checked
+    };
+    if (editingGoalId) Object.assign(appState.goals.find((x) => x.id === editingGoalId), rec);
+    else appState.goals.push({ id: uid('g'), ...rec });
+    saveState(); closeModal('modal-goal'); renderAll();
+    showToast('Matlamat disimpan.', 'success');
+}
+
+/* ---------- Event modal ---------- */
+let editingEventId = null;
+function openEvent(id = null) {
+    const ev = id ? appState.events.find((x) => x.id === id) : null;
+    editingEventId = ev ? ev.id : null;
+    $('form-event').reset();
+    ['ev-name', 'ev-date'].forEach((k) => { $(k).classList.remove('invalid'); $(`err-${k}`).classList.add('hidden'); });
+    renderNames();
+    $('event-title').textContent = ev ? 'Kemaskini Tarikh' : 'Tambah Tarikh';
+    $('ev-delete').classList.toggle('hidden', !ev);
+    $('event-presets').innerHTML = ev ? '' : EVENT_PRESETS.map((p) => `<button type="button" class="badge b-mute" style="cursor:pointer;padding:.3rem .6rem" data-action="event-preset" data-name="${esc(p)}">${esc(p)}</button>`).join('');
+    if (ev) {
+        $('ev-name').value = ev.name; $('ev-date').value = ev.date; $('ev-amount').value = ev.amount || '';
+        $('ev-owner').value = ev.owner; $('ev-repeat').value = ev.repeat; $('ev-inbudget').checked = ev.inBudget;
+    } else {
+        $('ev-owner').value = activeProfile === 'combined' ? 'shared' : activeProfile;
+        $('ev-repeat').value = 'yearly';
+    }
+    openModal('modal-event');
+    refreshIcons();
+}
+function handleEventSubmit(e) {
+    e.preventDefault();
+    const name = cleanText($('ev-name').value, 60), date = $('ev-date').value;
+    const checks = [['ev-name', !!name], ['ev-date', /^\d{4}-\d{2}-\d{2}$/.test(date)]];
+    checks.forEach(([k, ok]) => { $(k).classList.toggle('invalid', !ok); $(`err-${k}`).classList.toggle('hidden', ok); });
+    if (!checks.every(([, ok]) => ok)) return;
+    const rec = { name, date, amount: Math.max(0, n($('ev-amount').value)), owner: safeOwner($('ev-owner').value),
+        repeat: $('ev-repeat').value === 'once' ? 'once' : 'yearly', inBudget: $('ev-inbudget').checked };
+    if (editingEventId) Object.assign(appState.events.find((x) => x.id === editingEventId), rec);
+    else appState.events.push({ id: uid('ev'), ...rec });
+    saveState(); closeModal('modal-event'); renderAll();
+    showToast('Tarikh disimpan.', 'success');
+}
+
+/* ---------- Full-calendar .ics export ---------- */
+function icsEscape(t) { return String(t).replace(/\\/g, '\\\\').replace(/[,;]/g, (c) => '\\' + c).replace(/\n/g, '\\n'); }
+function downloadAllIcs() {
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const ymd = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Hub Kewangan Keluarga//MS', 'CALSCALE:GREGORIAN'];
+    buildCalendar().forEach((i, k) => {
+        const end = new Date(i.date); end.setDate(end.getDate() + 1);
+        lines.push('BEGIN:VEVENT', `UID:hkk-${k}-${ymd(i.date)}@hub-kewangan.local`, `DTSTAMP:${stamp}`,
+            `DTSTART;VALUE=DATE:${ymd(i.date)}`, `DTEND;VALUE=DATE:${ymd(end)}`,
+            `SUMMARY:${icsEscape(i.name + (i.amount ? ` (RM ${Math.round(i.amount)})` : ''))}`);
+        if (i.kind === 'custom' && i.repeat === 'yearly') lines.push('RRULE:FREQ=YEARLY');
+        if (i.amount) lines.push('BEGIN:VALARM', 'TRIGGER:-P14D', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape(i.name)}`, 'END:VALARM');
+        lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    downloadBlob(lines.join('\r\n'), 'Kalendar_Kewangan_Keluarga.ics', 'text/calendar');
+    showToast('Kalendar .ics dimuat turun (peringatan 14 hari sebelum bayaran).', 'success');
 }
 
 function exportJson() { return JSON.stringify(appState, null, 2); }
@@ -1678,7 +2443,6 @@ function downloadIcs() {
 function applyTheme() {
     const dark = appState.settings.theme !== 'light';
     document.documentElement.classList.toggle('dark', dark);
-    document.querySelectorAll('.js-theme-icon').forEach((i) => { i.className = `fa-solid ${dark ? 'fa-moon' : 'fa-sun'} js-theme-icon t-gold`; });
 }
 function toggleTheme() {
     appState.settings.theme = appState.settings.theme === 'light' ? 'dark' : 'light';
@@ -1687,7 +2451,6 @@ function toggleTheme() {
 function togglePrivacy() {
     privacyOn = !privacyOn;
     document.body.classList.toggle('privacy-active', privacyOn);
-    document.querySelectorAll('.js-privacy-icon').forEach((i) => { i.className = `fa-solid ${privacyOn ? 'fa-eye-slash t-gold' : 'fa-eye'} js-privacy-icon`; });
     showToast(privacyOn ? 'Mod privasi: angka disorok.' : 'Mod privasi dimatikan.');
 }
 function switchProfile(p) {
@@ -1729,6 +2492,18 @@ document.addEventListener('click', (e) => {
             saveState(); renderAll(); showToast('Snapshot dipadam.', 'warning');
         }, 'Padam'),
         'snapshot': takeSnapshot,
+        'add-goal': () => openGoal(),
+        'edit-goal': () => openGoal(t.dataset.id),
+        'delete-goal': () => { const id = editingGoalId; confirmDialog('Padam matlamat?', 'Matlamat ni akan dibuang. Aset berkaitan tidak terjejas.', () => {
+            appState.goals = appState.goals.filter((g) => g.id !== id); saveState(); closeModal('modal-goal'); renderAll(); showToast('Matlamat dipadam.', 'warning'); }, 'Padam'); },
+        'add-event': () => openEvent(),
+        'edit-event': () => openEvent(t.dataset.id),
+        'event-preset': () => { $('ev-name').value = t.dataset.name; $('ev-date').focus(); },
+        'delete-event': () => { const id = editingEventId; confirmDialog('Padam tarikh?', 'Tarikh ni akan dibuang dari kalendar.', () => {
+            appState.events = appState.events.filter((x) => x.id !== id); saveState(); closeModal('modal-event'); renderAll(); showToast('Tarikh dipadam.', 'warning'); }, 'Padam'); },
+        'ics-all': downloadAllIcs,
+        'budget-prev': () => shiftBudgetMonth(-1),
+        'budget-next': () => shiftBudgetMonth(1),
         'open-modal': () => openModal(t.dataset.modal),
         'close-modal': () => closeModal(t.dataset.modal),
         'download-json': downloadJson,
@@ -1756,6 +2531,22 @@ document.addEventListener('keydown', (e) => {
 // Tax inputs: save on change (per person, per relief)
 document.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.dataset.actualCat != null) {
+        const ym = budgetMonth();
+        const row = appState.actuals[ym] || (appState.actuals[ym] = {});
+        if (el.value === '') delete row[el.dataset.actualCat]; else row[el.dataset.actualCat] = Math.max(0, n(el.value));
+        if (!Object.keys(row).length) delete appState.actuals[ym];
+        saveState(); renderBudget(); renderInsights(computeMetrics(activeProfile)); refreshIcons();
+        return;
+    }
+    if (el.dataset.clPerson) {
+        appState.checklist[el.dataset.clPerson][el.dataset.clKey] = el.checked ? todayISO() : '';
+        saveState(); renderChecklist(); renderInsights(computeMetrics(activeProfile)); refreshIcons();
+        return;
+    }
+    if (el.id === 'budget-month') { renderBudget(); refreshIcons(); return; }
+    if (el.id === 's-splitmode' || el.id === 's-split') { updateSplitPreview(); return; }
+    if (el.id === 'g-asset') { toggleGoalSaved(); return; }
     if (el.dataset.taxPerson) {
         appState.taxRelief[el.dataset.taxPerson][el.dataset.taxKey] = Math.max(0, n(el.value));
         saveState(); renderTax();
@@ -1764,6 +2555,8 @@ document.addEventListener('change', (e) => {
 
 $('form-entry').addEventListener('submit', handleEntrySubmit);
 $('form-settings').addEventListener('submit', saveSettings);
+$('form-goal').addEventListener('submit', handleGoalSubmit);
+$('form-event').addEventListener('submit', handleEventSubmit);
 $('in-type').addEventListener('change', () => { const t = $('in-type').value; fillCategoryOptions(t); applyTypeUI(t); applyAssetDefaults(); });
 $('in-category').addEventListener('change', () => { if (!editing) applyAssetDefaults(); });
 $('in-name').addEventListener('input', () => { if ($('in-name').classList.contains('invalid')) validateEntry(); });

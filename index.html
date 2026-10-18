@@ -178,7 +178,10 @@
             </div>
         </div>
         <div id="milestones" class="flex flex-wrap gap-1.5"></div>
-        <button class="btn whitespace-nowrap no-print" data-action="open-modal" data-modal="modal-ics"><i data-lucide="bell" class="t-gold"></i>Peringatan 25hb</button>
+        <div class="flex gap-2 no-print">
+            <button class="btn whitespace-nowrap" data-action="share"><i data-lucide="message-circle" class="t-sage"></i>Ringkasan</button>
+            <button class="btn whitespace-nowrap" data-action="open-modal" data-modal="modal-ics"><i data-lucide="bell" class="t-gold"></i>Peringatan 25hb</button>
+        </div>
     </section>
 
     <!-- FIRE hero -->
@@ -236,6 +239,7 @@
         </div>
         <div class="card kpi p-4" style="--stripe:#40916c">
             <p class="text-xs font-semibold uppercase tracking-wider t-muted">Pendapatan Bersih / Bln</p>
+            <p id="k-income-note" class="text-[10px] t-faint hidden"></p>
             <p id="k-income" class="text-2xl font-extrabold num t-sage mt-1 pv">RM 0</p>
             <div class="mt-3 pt-2.5 border-t bd text-xs t-muted flex justify-between">
                 <span>Pasif liquid</span><strong id="k-passive" class="num t-teal pv">RM 0</strong>
@@ -354,6 +358,48 @@
                     <tbody id="tbody-assets"></tbody>
                 </table>
             </div>
+
+            <!-- Target allocation -->
+            <div class="card-sub p-4 space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                        <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="scale" class="t-sage"></i>Sasaran Agihan & Rebalance</h3>
+                        <p class="text-xs t-muted">Aset liquid sahaja (KWSP & rumah tak dikira). Duit yang dipaut ke matlamat diasingkan.</p>
+                    </div>
+                    <span id="alloc-sum" class="badge b-sage">Jumlah 100%</span>
+                </div>
+                <div class="scroll-x">
+                    <table class="tbl">
+                        <thead><tr><th>Kelas</th><th class="text-right">Nilai</th><th class="text-right">Sebenar</th><th style="min-width:90px">Sasaran %</th><th class="text-right">Beza</th><th class="text-right">Tindakan</th></tr></thead>
+                        <tbody id="tbody-alloc"></tbody>
+                    </table>
+                </div>
+                <div id="alloc-advice" class="text-xs space-y-1"></div>
+            </div>
+
+            <!-- Dividend records -->
+            <div class="card-sub p-4 space-y-3">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="coins" class="t-gold"></i>Rekod Dividen / Hibah Sebenar</h3>
+                    <p class="text-xs t-muted">Rekod apa yang betul-betul masuk (termasuk yang dilabur semula auto). Bandingkan dengan % p.a yang kau andaikan.</p>
+                </div>
+                <form id="form-div" novalidate class="grid grid-cols-2 md:grid-cols-5 gap-2 items-end no-print">
+                    <div class="col-span-2"><label class="lbl" for="div-asset">Aset</label><select id="div-asset" class="field"></select></div>
+                    <div><label class="lbl" for="div-date">Tarikh</label><input id="div-date" type="date" class="field"></div>
+                    <div><label class="lbl" for="div-amount">Jumlah (RM)</label><input id="div-amount" type="number" min="0" step="0.01" inputmode="decimal" class="field num"></div>
+                    <button type="submit" class="btn btn-primary"><i data-lucide="plus"></i>Rekod</button>
+                </form>
+                <div class="scroll-x">
+                    <table class="tbl">
+                        <thead><tr><th>Aset</th><th class="text-right">Nilai</th><th class="text-right">Andaian % p.a</th><th class="text-right">Dijangka 12 bln</th><th class="text-right">Diterima 12 bln</th><th class="text-right">Hasil sebenar</th></tr></thead>
+                        <tbody id="tbody-div-summary"></tbody>
+                    </table>
+                </div>
+                <details class="text-xs">
+                    <summary class="cursor-pointer t-muted font-semibold">Semua rekod (<span id="div-count">0</span>)</summary>
+                    <div class="scroll-x mt-2"><table class="tbl"><thead><tr><th>Tarikh</th><th>Aset</th><th class="text-right">Jumlah</th><th class="text-right no-print"></th></tr></thead><tbody id="tbody-div-list"></tbody></table></div>
+                </details>
+            </div>
         </div>
 
         <!-- TAB: Liabilities -->
@@ -372,6 +418,14 @@
                 </table>
             </div>
             <div id="dsr-box" class="card-sub p-4 text-xs"></div>
+            <div class="card-sub p-4 space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="umbrella" class="t-blue"></i>Jurang Perlindungan Takaful Hayat</h3>
+                    <button class="badge b-mute no-print" style="cursor:pointer" data-action="open-settings">Ubah andaian di Tetapan</button>
+                </div>
+                <div id="takaful-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <p class="text-[11px] t-faint">Panduan kasar: (hutang + gantian pendapatan + kos urusan) − (aset liquid + KWSP + takaful sedia ada). Takaful dengan penama <strong>hibah</strong> terus ke pasangan; aset & KWSP lain dibahagi ikut faraid, jadi pasangan mungkin tak dapat semua. Masukkan GTL/GHS majikan dalam "perlindungan sedia ada". Bincang dengan perunding berlesen sebelum beli.</p>
+            </div>
         </div>
 
         <!-- TAB: Cashflow -->
@@ -380,7 +434,7 @@
                 <div class="flex justify-between items-center gap-3">
                     <div>
                         <h3 class="text-sm font-bold">Pendapatan Bulanan</h3>
-                        <p class="text-xs t-muted">Isi gaji <strong>bersih</strong> untuk aliran tunai; gaji <strong>kasar</strong> untuk kiraan zakat pendapatan.</p>
+                        <p class="text-xs t-muted">Isi gaji <strong>masuk akaun</strong> (ikut slip, lepas potongan). Pembiayaan potong gaji ditanda di tab Liabiliti dan ditambah balik automatik. Gaji <strong>kasar</strong> untuk zakat & had potongan; gaji <strong>kasar</strong> untuk kiraan zakat pendapatan.</p>
                     </div>
                     <button class="btn btn-primary no-print" data-action="add" data-type="income"><i data-lucide="plus"></i>Pendapatan</button>
                 </div>
@@ -490,6 +544,7 @@
                 <div id="calendar-list" class="space-y-2"></div>
             </div>
             <p class="text-[11px] t-faint">Tarikh Hijrah dikira ikut kalendar Umm al-Qura dalam browser; tarikh rasmi Malaysia boleh beza 1–2 hari. Tarikh pengumuman dividen ialah anggaran biasa, bukan tarikh rasmi.</p>
+            <p class="text-[11px] t-faint">Rumah strata Selangor: cukai pintu dibil Jan & Jul, bayar sebelum akhir Feb & akhir Ogos (lepas tu jadi tunggakan). Cukai petak bayar sebelum 31 Mei. Caj penyelenggaraan & sinking fund JMB/MC ialah bayaran bulanan, masukkan dalam senarai Belanja, bukan sini.</p>
         </div>
 
         <!-- TAB: Zakat & Tax -->
@@ -513,7 +568,11 @@
             <div class="space-y-3">
                 <div class="flex flex-wrap justify-between items-center gap-2">
                     <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="receipt" class="t-blue"></i>Penjejak Pelepasan Cukai LHDN</h3>
-                    <span class="badge b-blue">Had YA 2026 · per individu</span>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[11px] t-muted" for="tax-year">Tahun taksiran</label>
+                        <input id="tax-year" type="number" min="2020" max="2100" class="field num" style="width:90px;padding:.3rem .5rem;font-size:12px">
+                        <button class="btn no-print" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="tax-edit-limits"><i data-lucide="pencil"></i><span id="tax-edit-label">Edit had</span></button>
+                    </div>
                 </div>
                 <p class="text-xs t-muted">Isi jumlah yang dah dibelanjakan/dicarum tahun ni. Bar tunjuk baki ruang pelepasan. Pelepasan kurangkan pendapatan bercukai, bukan potong cukai terus.</p>
                 <div class="scroll-x card-sub">
@@ -522,7 +581,7 @@
                         <tbody id="tbody-tax"></tbody>
                     </table>
                 </div>
-                <p class="text-[11px] t-faint">Had ikut ringkasan pelepasan YA 2026 (KWSP RM4k + insurans hayat RM3k = had gabungan RM7k; SSPN dijadual tamat YA 2027). Semak hasil.gov.my sebelum e-Filing.</p>
+                <p class="text-[11px] t-faint">Had default ikut ringkasan pelepasan YA 2026; tekan "Edit had" bila LHDN umum perubahan Belanjawan. Tukar tahun taksiran = mula rekod baru (rekod lama dibuang, backup dulu) (KWSP RM4k + insurans hayat RM3k = had gabungan RM7k; SSPN dijadual tamat YA 2027). Semak hasil.gov.my sebelum e-Filing.</p>
             </div>
         </div>
 
@@ -539,14 +598,46 @@
                 </div>
                 <div class="relative h-72 pv"><canvas id="chart-scenarios"></canvas></div>
                 <p id="mc-note" class="text-[11px] t-faint"></p>
+                <div id="med-note" class="card p-3 text-xs"></div>
             </div>
+            <div class="card-sub p-4 space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                        <h4 class="text-sm font-bold flex items-center gap-2"><i data-lucide="sliders-horizontal" class="t-sage"></i>What-if: Uji Senario</h4>
+                        <p class="text-xs t-muted">Main-main angka tanpa ubah data sebenar. Ikut profil yang aktif.</p>
+                    </div>
+                    <button class="btn no-print" data-action="whatif-reset"><i data-lucide="rotate-ccw"></i>Reset</button>
+                </div>
+                <form id="form-whatif" class="grid grid-cols-2 md:grid-cols-4 gap-3 no-print" novalidate>
+                    <div><label class="lbl" for="wi-crash">Pasaran jatuh (%)</label><input id="wi-crash" type="number" min="0" max="90" step="5" class="field num" placeholder="0"></div>
+                    <div><label class="lbl" for="wi-infl">Inflasi tambahan (+%)</label><input id="wi-infl" type="number" min="0" max="10" step="0.5" class="field num" placeholder="0"></div>
+                    <div><label class="lbl" for="wi-loss-who">Hilang pendapatan</label>
+                        <select id="wi-loss-who" class="field"><option value="">Tiada</option><option value="husband" class="js-name-husband">Suami</option><option value="wife" class="js-name-wife">Isteri</option></select></div>
+                    <div><label class="lbl" for="wi-loss-months">Berapa lama (bln, 0 = kekal)</label><input id="wi-loss-months" type="number" min="0" max="60" step="1" class="field num" placeholder="6"></div>
+                    <div><label class="lbl" for="wi-house">Beli rumah: harga (RM)</label><input id="wi-house" type="number" min="0" step="10000" class="field num" placeholder="0"></div>
+                    <div><label class="lbl" for="wi-dp">Deposit (%)</label><input id="wi-dp" type="number" min="0" max="100" step="1" class="field num" placeholder="10"></div>
+                    <div><label class="lbl" for="wi-rate">Kadar pembiayaan (%) / tempoh (thn)</label>
+                        <div class="flex gap-1"><input id="wi-rate" type="number" min="0" max="15" step="0.05" class="field num" placeholder="4.2"><input id="wi-tenure" type="number" min="5" max="35" step="1" class="field num" placeholder="35"></div></div>
+                    <div><label class="lbl" for="wi-rent">Sewa sekarang yang tak perlu bayar lagi (RM/bln)</label><input id="wi-rent" type="number" min="0" step="50" class="field num" placeholder="0"></div>
+                    <div><label class="lbl" for="wi-extra">Belanja tambahan / bln (RM)</label><input id="wi-extra" type="number" min="-50000" step="100" class="field num" placeholder="0 (contoh: anak)"></div>
+                    <div><label class="lbl" for="wi-raise">Kenaikan pendapatan / bln (RM)</label><input id="wi-raise" type="number" min="-50000" step="100" class="field num" placeholder="0"></div>
+                </form>
+                <div class="scroll-x">
+                    <table class="tbl">
+                        <thead><tr><th>Ukuran</th><th class="text-right">Sekarang</th><th class="text-right">Senario</th><th class="text-right">Beza</th></tr></thead>
+                        <tbody id="tbody-whatif"></tbody>
+                    </table>
+                </div>
+                <div id="whatif-notes" class="text-[11px] t-faint space-y-0.5"></div>
+            </div>
+
             <div class="card-sub p-4 space-y-3">
                 <div class="flex flex-wrap justify-between items-center gap-2">
                     <h4 class="text-[11px] font-semibold uppercase tracking-wider t-muted">Unjuran Persaraan per Individu</h4>
                     <span class="badge b-blue">Nilai ringgit hari ini</span>
                 </div>
                 <div id="retire-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-                <p class="text-[11px] t-faint">KWSP: caruman pekerja 11% + majikan 13% (gaji ≤ RM5,000) atau 12%, atas gaji kasar kategori "Gaji". Gaji dianggap naik seiring inflasi sahaja. Isi tahun lahir & skim di Tetapan.</p>
+                <p class="text-[11px] t-faint">KWSP: caruman pekerja 11% + majikan 13% (gaji ≤ RM5,000) atau 12%, atas gaji kasar kategori "Gaji". Kenaikan gaji real & tempoh guna KWSP ikut Tetapan. Isi tahun lahir & skim di Tetapan.</p>
             </div>
             <div class="card-sub p-4 space-y-3">
                 <h4 class="text-[11px] font-semibold uppercase tracking-wider t-muted">Matriks: Kadar Simpanan vs Tahun ke FI</h4>
@@ -567,12 +658,15 @@
                     <h3 class="text-sm font-bold">Sejarah Snapshot Bulanan (Gabungan)</h3>
                     <p class="text-xs t-muted">Snapshot sentiasa simpan angka isi rumah penuh, tak kira tab profil yang aktif.</p>
                 </div>
-                <button class="btn btn-primary no-print" data-action="snapshot"><i data-lucide="camera"></i>Simpan Snapshot Bulan Ini</button>
+                <div class="flex gap-2 no-print w-full sm:w-auto">
+                    <input id="snap-note" type="text" maxlength="120" class="field" placeholder="Nota bulan ni (pilihan): contoh beli kereta" style="min-width:220px">
+                    <button class="btn btn-primary whitespace-nowrap" data-action="snapshot"><i data-lucide="camera"></i>Snapshot</button>
+                </div>
             </div>
             <div class="card-sub p-4 relative h-72 pv"><canvas id="chart-trend"></canvas></div>
             <div class="scroll-x card-sub">
                 <table class="tbl">
-                    <thead><tr><th>Bulan</th><th class="text-right">Nilai Bersih</th><th class="text-right">Liquid</th><th class="text-right">Pendapatan</th><th class="text-right">Belanja</th><th class="text-right">Simpanan</th><th class="text-right no-print">Tindakan</th></tr></thead>
+                    <thead><tr><th>Bulan</th><th class="text-right">Nilai Bersih</th><th class="text-right">Liquid</th><th class="text-right">Pendapatan</th><th class="text-right">Belanja</th><th class="text-right">Simpanan</th><th style="min-width:200px">Nota</th><th class="text-right no-print">Tindakan</th></tr></thead>
                     <tbody id="tbody-history"></tbody>
                 </table>
             </div>
@@ -642,6 +736,16 @@
             <div id="wrap-tertiary" class="hidden">
                 <label class="lbl" for="in-tertiary">Kadar Keuntungan / Faedah % p.a</label>
                 <input id="in-tertiary" type="number" step="0.01" min="0" inputmode="decimal" class="field" placeholder="Contoh: 4.20">
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div><label class="lbl" for="in-paymethod">Cara bayar</label>
+                        <select id="in-paymethod" class="field">
+                            <option value="debit">Auto-debit / bayar sendiri</option>
+                            <option value="salary">Potong gaji (slip / Biro Angkasa)</option>
+                        </select></div>
+                    <div id="wrap-payer" class="hidden"><label class="lbl" for="in-payer">Dipotong dari gaji</label>
+                        <select id="in-payer" class="field"><option value="husband" class="js-name-husband">Suami</option><option value="wife" class="js-name-wife">Isteri</option></select></div>
+                </div>
+                <p id="hint-paymethod" class="text-[11px] t-faint mt-1 hidden">Gaji bersih dalam slip dah ditolak bayaran ni, jadi dashboard tambah balik untuk kiraan DSR & kadar simpanan (elak kira dua kali).</p>
             </div>
             <div id="wrap-zakat">
                 <label class="lbl" for="in-zakat">Jenis Zakat</label>
@@ -703,15 +807,40 @@
             <div><label class="lbl" for="s-mult">Gandaan FI (×)</label><input id="s-mult" type="number" min="10" max="50" step="1" class="field"></div>
             <div><label class="lbl" for="s-return">Pulangan nominal jangkaan (%)</label><input id="s-return" type="number" min="0" max="20" step="0.1" class="field"></div>
             <div><label class="lbl" for="s-infl">Inflasi (%)</label><input id="s-infl" type="number" min="0" max="15" step="0.1" class="field"></div>
-            <div><label class="lbl" for="s-nisab">Nisab zakat (RM)</label><input id="s-nisab" type="number" min="0" step="1" class="field"></div>
+            <div><label class="lbl" for="s-mcyears">Horizon Monte Carlo (thn)</label><input id="s-mcyears" type="number" min="1" max="50" step="1" class="field"></div>
+            <div><label class="lbl" for="s-mcvol">Volatiliti tahunan (%)</label><input id="s-mcvol" type="number" min="1" max="40" step="0.5" class="field"></div>
+
+            <div class="col-span-2 text-xs font-bold pt-3 border-t bd">Persaraan & perubatan</div>
+            <div><label class="lbl" for="s-sg-h">Kenaikan gaji real suami (% > inflasi)</label><input id="s-sg-h" type="number" min="-5" max="10" step="0.5" class="field"></div>
+            <div><label class="lbl" for="s-sg-w">Kenaikan gaji real isteri (% > inflasi)</label><input id="s-sg-w" type="number" min="-5" max="10" step="0.5" class="field"></div>
+            <div><label class="lbl" for="s-epf">Sasaran KWSP / orang (RM)</label><input id="s-epf" type="number" min="0" step="1000" class="field"></div>
+            <div><label class="lbl" for="s-drawdown">Tempoh guna KWSP selepas bersara (thn)</label><input id="s-drawdown" type="number" min="5" max="45" step="1" class="field"></div>
+            <div><label class="lbl" for="s-medinfl">Inflasi perubatan (%)</label><input id="s-medinfl" type="number" min="0" max="25" step="0.5" class="field"></div>
+            <div><label class="lbl" for="s-medshare">Bahagian belanja perubatan/takaful (%)</label><input id="s-medshare" type="number" min="0" max="60" step="1" class="field"></div>
+
+            <div class="col-span-2 text-xs font-bold pt-3 border-t bd">Sasaran keselamatan</div>
+            <div><label class="lbl" for="s-em-min">Dana kecemasan minimum (bln)</label><input id="s-em-min" type="number" min="1" max="24" step="1" class="field"></div>
+            <div><label class="lbl" for="s-em-ideal">Dana kecemasan ideal (bln)</label><input id="s-em-ideal" type="number" min="1" max="36" step="1" class="field"></div>
+            <div><label class="lbl" for="s-dsr-target">DSR sasaran peribadi (%)</label><input id="s-dsr-target" type="number" min="10" max="80" step="1" class="field"></div>
+            <div><label class="lbl" for="s-dsr-max">DSR bahaya / had bank (%)</label><input id="s-dsr-max" type="number" min="20" max="90" step="1" class="field"></div>
+
+            <div class="col-span-2 text-xs font-bold pt-3 border-t bd">Takaful hayat (untuk kiraan jurang)</div>
+            <div><label class="lbl" for="s-lc-h">Perlindungan hayat sedia ada suami (RM)</label><input id="s-lc-h" type="number" min="0" step="1000" class="field" placeholder="Jumlah semua polisi"></div>
+            <div><label class="lbl" for="s-lc-w">Perlindungan hayat sedia ada isteri (RM)</label><input id="s-lc-w" type="number" min="0" step="1000" class="field" placeholder="Jumlah semua polisi"></div>
+            <div><label class="lbl" for="s-replace">Gantian pendapatan (thn)</label><input id="s-replace" type="number" min="0" max="30" step="1" class="field"></div>
+            <div><label class="lbl" for="s-final">Kos pengurusan jenazah & urusan (RM)</label><input id="s-final" type="number" min="0" step="500" class="field"></div>
+            <label class="col-span-2 flex items-center gap-2 text-xs"><input id="s-mrtt" type="checkbox" class="w-4 h-4 accent-emerald-600">Pembiayaan rumah dilindungi MRTT/MLTA (baki rumah tak perlu dikira dalam jurang)</label>
+            <label class="col-span-2 flex items-center gap-2 text-xs"><input id="s-kwsp-avail" type="checkbox" class="w-4 h-4 accent-emerald-600">Kira baki KWSP sebagai dana tersedia untuk waris</label>
+
+            <div class="col-span-2 text-xs font-bold pt-3 border-t bd">Zakat</div>
+            <div><label class="lbl" for="s-zs-h">Negeri zakat suami (tempat kerja)</label><select id="s-zs-h" class="field js-nisab-state"></select></div>
+            <div><label class="lbl" for="s-zs-w">Negeri zakat isteri (tempat kerja)</label><select id="s-zs-w" class="field js-nisab-state"></select></div>
+            <div><label class="lbl" for="s-nisab">Nisab manual (RM, utk "Lain-lain")</label><input id="s-nisab" type="number" min="0" step="1" class="field"></div>
             <div><label class="lbl" for="s-zmethod">Kaedah zakat pendapatan</label>
                 <select id="s-zmethod" class="field"><option value="tolakan">Dengan tolakan had kifayah</option><option value="kasar">Tanpa tolakan (kasar)</option></select></div>
             <div><label class="lbl" for="s-hk-h">Had kifayah Suami / thn (RM)</label><input id="s-hk-h" type="number" min="0" step="1" class="field"></div>
             <div><label class="lbl" for="s-hk-w">Had kifayah Isteri / thn (RM)</label><input id="s-hk-w" type="number" min="0" step="1" class="field"></div>
-            <div><label class="lbl" for="s-epf">Sasaran KWSP / orang (RM)</label><input id="s-epf" type="number" min="0" step="1000" class="field"></div>
-            <div><label class="lbl" for="s-mcyears">Horizon Monte Carlo (thn)</label><input id="s-mcyears" type="number" min="1" max="50" step="1" class="field"></div>
-            <div><label class="lbl" for="s-mcvol">Volatiliti tahunan (%)</label><input id="s-mcvol" type="number" min="1" max="40" step="0.5" class="field"></div>
-            <div class="col-span-2 text-[11px] t-faint">Nisab default = RM33,996 (WP 2026, 85g emas). Had kifayah: isi ikut kalkulator PPZ (tolakan diri, pasangan, anak, caruman KWSP dll). Kosongkan = 0.</div>
+            <div class="col-span-2 text-[11px] t-faint">Zakat dibayar ikut negeri tempat <strong>bekerja</strong>. Nisab preset: WP RM33,996 (2026), Selangor RM38,748 (Jul–Dis 2026). Nisab berubah ikut harga emas, semak semula setiap tahun/penggal. Had kifayah: isi ikut kalkulator PPZ (tolakan diri, pasangan, anak, caruman KWSP dll). Kosongkan = 0.</div>
             <div class="col-span-2 flex justify-end"><button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Simpan Tetapan</button></div>
         </form>
 
@@ -723,6 +852,12 @@
                 <button class="btn" data-action="copy-json"><i data-lucide="copy"></i>Salin JSON</button>
                 <label class="btn cursor-pointer"><i data-lucide="upload"></i>Import Fail<input id="import-file" type="file" accept=".json,application/json" class="hidden"></label>
             </div>
+            <div class="flex flex-wrap gap-2">
+                <button class="btn" data-action="csv-records"><i data-lucide="file-spreadsheet"></i>CSV rekod</button>
+                <button class="btn" data-action="csv-history"><i data-lucide="file-spreadsheet"></i>CSV sejarah</button>
+                <button class="btn" data-action="share"><i data-lucide="message-circle"></i>Ringkasan WhatsApp</button>
+            </div>
+            <p class="text-[11px] t-faint">CSV untuk Excel/Sheets sahaja; tak boleh import balik. Backup sebenar tetap JSON.</p>
             <textarea id="import-text" rows="3" class="field num text-[11px]" placeholder="Atau tampal teks JSON di sini…"></textarea>
             <button class="btn w-full" data-action="import-text"><i data-lucide="file-input"></i>Import dari teks</button>
             <p class="text-[11px] t-faint">Import akan <strong>ganti</strong> semua data semasa. Muat turun backup dulu kalau ragu.</p>
@@ -812,6 +947,16 @@
                 <button type="button" class="badge b-mute ml-2" data-action="ev-hijri-off" style="cursor:pointer">Guna tarikh Masihi</button>
             </div>
 
+            <label class="flex items-center gap-2 text-xs"><input id="ev-cycle-on" type="checkbox" class="w-4 h-4 accent-emerald-600">Kos berubah ikut kitaran (contoh: servis minor / major)</label>
+            <div id="wrap-cycle" class="hidden card-sub p-3 space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider t-muted">Kitaran kos (berulang dari atas)</p>
+                    <button type="button" class="badge b-sage" style="cursor:pointer" data-action="cycle-add"><i data-lucide="plus"></i>Baris</button>
+                </div>
+                <div id="cycle-rows" class="space-y-1.5"></div>
+                <p class="text-[11px] t-faint">Pilih bulatan pada servis yang <strong>seterusnya</strong>. Selepas "Dah bayar", dashboard gerak ke baris berikut. Kos rujuk buku servis / quotation SC.</p>
+            </div>
+
             <label class="flex items-center gap-2 text-xs"><input id="ev-odo-on" type="checkbox" class="w-4 h-4 accent-emerald-600">Ikut bacaan odometer juga (servis: mana dulu, tarikh atau km)</label>
             <div id="wrap-odo" class="hidden grid grid-cols-2 gap-3 card-sub p-3">
                 <div><label class="lbl" for="ev-odo-int">Setiap (km)</label><input id="ev-odo-int" type="number" min="500" step="500" class="field num" placeholder="10000"></div>
@@ -833,6 +978,68 @@
                 </div>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ================= MODAL: Pay sinking item ================= -->
+<div id="modal-pay" class="modal fixed inset-0 z-[55] hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-sm p-5 space-y-4 relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-pay" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div>
+            <h3 id="pay-title" class="text-sm font-bold">Rekod bayaran</h3>
+            <p id="pay-sub" class="text-xs t-muted"></p>
+        </div>
+        <form id="form-pay" novalidate class="space-y-3">
+            <div><label class="lbl" for="pay-amount">Jumlah sebenar dibayar (RM)</label>
+                <input id="pay-amount" type="number" min="0" step="0.01" inputmode="decimal" class="field num">
+                <p id="pay-diff" class="text-[11px] t-faint mt-1"></p></div>
+            <div id="wrap-pay-km"><label class="lbl" for="pay-km">Bacaan odometer masa servis (km)</label>
+                <input id="pay-km" type="number" min="0" step="1" class="field num"></div>
+            <div><label class="lbl" for="pay-date">Tarikh bayar</label><input id="pay-date" type="date" class="field"></div>
+            <label class="flex items-center gap-2 text-xs"><input id="pay-deduct" type="checkbox" class="w-4 h-4 accent-emerald-600" checked>Tolak dari baki akaun sinking fund</label>
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" class="btn" data-action="close-modal" data-modal="modal-pay">Batal</button>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Simpan bayaran</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL: Odometer ================= -->
+<div id="modal-odo" class="modal fixed inset-0 z-[55] hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-sm p-5 space-y-4 relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-odo" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div>
+            <h3 id="odo-title" class="text-sm font-bold">Kemaskini odometer</h3>
+            <p id="odo-sub" class="text-xs t-muted"></p>
+        </div>
+        <form id="form-odo" novalidate class="space-y-3">
+            <div><label class="lbl" for="odo-km">Bacaan sekarang (km)</label>
+                <input id="odo-km" type="number" min="0" step="1" inputmode="numeric" class="field num">
+                <p id="err-odo-km" class="text-[11px] t-rose mt-1 hidden"></p></div>
+            <div class="flex justify-end gap-2">
+                <button type="button" class="btn" data-action="close-modal" data-modal="modal-odo">Batal</button>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i>Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL: Share summary ================= -->
+<div id="modal-share" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-md p-5 space-y-3 relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-share" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div>
+            <h3 class="text-sm font-bold">Ringkasan untuk pasangan</h3>
+            <p class="text-xs t-muted">Teks ringkas isi rumah (bukan data penuh). Semak sebelum hantar.</p>
+        </div>
+        <label class="flex items-center gap-2 text-xs"><input id="share-hide" type="checkbox" class="w-4 h-4 accent-emerald-600">Sorok angka RM (peratus & status sahaja)</label>
+        <textarea id="share-text" rows="14" class="field text-[12px]" style="font-family:ui-monospace,monospace"></textarea>
+        <div class="flex flex-wrap justify-end gap-2">
+            <button class="btn" data-action="share-copy"><i data-lucide="copy"></i>Salin</button>
+            <button class="btn btn-primary" data-action="share-wa"><i data-lucide="message-circle"></i>Buka WhatsApp</button>
+        </div>
+        <p class="text-[11px] t-faint">"Buka WhatsApp" hantar teks ni melalui pautan wa.me. Pilih chat pasangan je.</p>
     </div>
 </div>
 
@@ -944,12 +1151,17 @@ const REPEAT_LABEL = { once: 'sekali', '3m': 'setiap 3 bln', '6m': 'setiap 6 bln
 const SINK_TEMPLATES = [
     { cat: 'kenderaan', name: 'Cukai jalan', repeat: 'yearly' },
     { cat: 'kenderaan', name: 'Insurans / takaful kereta', repeat: 'yearly' },
-    { cat: 'kenderaan', name: 'Servis kereta', repeat: '6m', odo: { interval: 10000 } },
+    { cat: 'kenderaan', name: 'Servis kereta', repeat: '6m', odo: { interval: 10000 },
+      schedule: [{ label: 'Minor (10k km)' }, { label: 'Major (20k km)' }, { label: 'Minor (30k km)' }, { label: 'Major besar (40k km)' }] },
     { cat: 'kenderaan', name: 'Tayar', repeat: '24m' },
     { cat: 'kenderaan', name: 'Bateri kereta', repeat: '24m' },
-    { cat: 'rumah', name: 'Cukai pintu (DBKL: Feb & Ogos)', repeat: '6m', md: '02-28', paused: true },
-    { cat: 'rumah', name: 'Cukai tanah (sebelum 31 Mei)', repeat: 'yearly', md: '05-31', paused: true },
-    { cat: 'rumah', name: 'Insurans / takaful rumah (kebakaran)', repeat: 'yearly', paused: true },
+    // Assessment tax (Akta Kerajaan Tempatan 1976, all Selangor PBTs): billed Jan & Jul, arrears after end-Feb / end-Aug
+    { cat: 'rumah', name: 'Cukai pintu PBT Selangor (akhir Feb & akhir Ogos)', repeat: '6m', md: '02-28' },
+    // Strata parcel rent: due 1 Jan, arrears from 1 June (KTN s.94)
+    { cat: 'rumah', name: 'Cukai petak strata (sebelum 31 Mei)', repeat: 'yearly', md: '05-31' },
+    { cat: 'rumah', name: 'Takaful isi rumah / kandungan', repeat: 'yearly' },
+    { cat: 'rumah', name: 'Baiki / renovasi kecil rumah', repeat: 'yearly' },
+    { cat: 'rumah', name: 'Cukai tanah (rumah landed, sebelum 31 Mei)', repeat: 'yearly', md: '05-31', paused: true },
     { cat: 'keluarga', name: 'Bajet Ramadan', repeat: 'yearly', hijri: { m: 9, d: 1 } },
     { cat: 'keluarga', name: 'Duit raya & balik kampung', repeat: 'yearly', hijri: { m: 10, d: 1 } },
     { cat: 'keluarga', name: 'Korban', repeat: 'yearly', hijri: { m: 12, d: 10 } },
@@ -960,9 +1172,23 @@ const SINK_TEMPLATES = [
     { cat: 'langganan', name: 'Domain / hosting', repeat: 'yearly' }
 ];
 
+// Verified nisab values. Change yearly (Selangor revises every 6 months).
+const NISAB_PRESETS = {
+    WP:     { label: 'WP (PPZ-MAIWP) · 2026', value: 33996 },
+    SEL:    { label: 'Selangor (LZS) · Jul–Dis 2026', value: 38748 },
+    manual: { label: 'Lain-lain negeri (nisab manual)', value: null }
+};
+const ASSET_CLASSES = {
+    tunai: { label: 'Tunai & simpanan', cats: ['Tunai & Simpanan'], color: '#4a7fb5' },
+    asbth: { label: 'ASB/ASN & Tabung Haji', cats: ['ASB / ASN', 'Tabung Haji'], color: '#40916c' },
+    ekuiti:{ label: 'Saham, ETF & unit amanah', cats: ['Saham & ETF', 'Unit Amanah / Robo'], color: '#c67d5a' },
+    emas:  { label: 'Emas', cats: ['Emas'], color: '#d4a373' },
+    lain:  { label: 'Lain-lain', cats: ['Lain-lain'], color: '#8d99ae' }
+};
+
 const DEFAULT_PEOPLE = {
-    husband: { name: 'Suami',  birthYear: null, scheme: 'kwsp', retireAge: 60, serviceStartYear: null },
-    wife:    { name: 'Isteri', birthYear: null, scheme: 'kwsp', retireAge: 60, serviceStartYear: null }
+    husband: { name: 'Suami',  birthYear: null, scheme: 'kwsp', retireAge: 60, serviceStartYear: null, salaryGrowth: 0, zakatState: 'WP', lifeCover: 0 },
+    wife:    { name: 'Isteri', birthYear: null, scheme: 'kwsp', retireAge: 60, serviceStartYear: null, salaryGrowth: 0, zakatState: 'WP', lifeCover: 0 }
 };
 
 const DEFAULT_SETTINGS = {
@@ -972,7 +1198,13 @@ const DEFAULT_SETTINGS = {
     people: clonePeople(DEFAULT_PEOPLE),
     nisab: 33996, zakatMethod: 'tolakan', hadKifayah: { husband: 0, wife: 0 },
     epfTarget: 390000, mcYears: 20, mcVolatility: 10,
-    lastBackupAt: null
+    lastBackupAt: null,
+    sinking: { balance: 0, updatedAt: '' },
+    drawdownYears: 20, medicalInflation: 10, medicalShare: 10,
+    emergencyMin: 3, emergencyIdeal: 6, dsrTarget: 40, dsrMax: 60,
+    takaful: { replaceYears: 5, finalExpenses: 10000, mortgageCovered: true, countKwsp: true },
+    allocation: { tunai: 20, asbth: 30, ekuiti: 40, emas: 10, lain: 0 },
+    taxYear: 2026, taxLimits: {}
 };
 
 function clonePeople(p) { return JSON.parse(JSON.stringify(p)); }
@@ -989,9 +1221,12 @@ const SAMPLE_DATA = {
     events: [
         { id: 'ev1', name: 'Cukai jalan Honda City', category: 'kenderaan', date: '2027-03-15', amount: 90, owner: 'husband', repeat: 'yearly' },
         { id: 'ev2', name: 'Takaful kereta Honda City', category: 'kenderaan', date: '2027-03-15', amount: 1300, owner: 'husband', repeat: 'yearly' },
-        { id: 'ev3', name: 'Servis kereta Honda City', category: 'kenderaan', date: '2026-07-10', amount: 350, owner: 'husband', repeat: '6m', odo: { interval: 10000, lastKm: 42000, currentKm: 48500, kmPerMonth: 1500 } },
+        { id: 'ev3', name: 'Servis kereta Honda City', category: 'kenderaan', date: '2026-07-10', amount: 480, owner: 'husband', repeat: '6m', odo: { interval: 10000, lastKm: 42000, currentKm: 48500, kmPerMonth: 1500 },
+          schedule: [{ label: 'Minor (10k km)', amount: 250 }, { label: 'Major (20k km)', amount: 480 }, { label: 'Minor (30k km)', amount: 250 }, { label: 'Major besar (40k km)', amount: 900 }], cycleIdx: 1,
+          history: [{ date: '2026-07-10', amount: 265, label: 'Minor (10k km)', km: 42000 }] },
         { id: 'ev4', name: 'Duit raya & balik kampung', category: 'keluarga', date: '2026-01-01', hijri: { m: 10, d: 1 }, amount: 2000, owner: 'shared', repeat: 'yearly' },
-        { id: 'ev5', name: 'Cukai pintu (DBKL: Feb & Ogos)', category: 'rumah', date: '2027-02-28', amount: 400, owner: 'shared', repeat: '6m', paused: true }
+        { id: 'ev5', name: 'Cukai pintu PBT Selangor (akhir Feb & akhir Ogos)', category: 'rumah', date: '2027-02-28', amount: 180, owner: 'shared', repeat: '6m' },
+        { id: 'ev6', name: 'Cukai petak strata (sebelum 31 Mei)', category: 'rumah', date: '2027-05-31', amount: 60, owner: 'shared', repeat: 'yearly' }
     ],
     actuals: {},
     checklist: { husband: {}, wife: {} },
@@ -1128,6 +1363,9 @@ const safeOwner = (o) => OWNERS.includes(o) ? o : 'shared';
 const safeId = (id, p) => (typeof id === 'string' && /^[\w-]{1,40}$/.test(id)) ? id : uid(p);
 
 // Validates + normalises any incoming data (localStorage, import). Unknown fields dropped.
+// number in [lo,hi] or default
+const rng = (v, lo, hi, d) => { const x = Number(v); return v !== '' && v != null && Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : d; };
+
 function normaliseState(raw) {
     if (!raw || typeof raw !== 'object') throw new Error('Bukan objek JSON');
     const arr = (x) => Array.isArray(x) ? x : [];
@@ -1149,8 +1387,26 @@ function normaliseState(raw) {
         splitMode: ['income', 'nafkah', 'equal', 'manual'].includes(s.splitMode) ? s.splitMode : 'income',
         epfDividend: s.epfDividend != null ? n(s.epfDividend) : 5.5,
         people: normalisePeople(s.people),
-        sinking: { balance: Math.max(0, n(s.sinking?.balance)), updatedAt: typeof s.sinking?.updatedAt === 'string' ? s.sinking.updatedAt : '' }
+        sinking: { balance: Math.max(0, n(s.sinking?.balance)), updatedAt: typeof s.sinking?.updatedAt === 'string' ? s.sinking.updatedAt : '' },
+        drawdownYears: rng(s.drawdownYears, 5, 45, 20),
+        medicalInflation: rng(s.medicalInflation, 0, 25, 10),
+        medicalShare: rng(s.medicalShare, 0, 60, 10),
+        emergencyMin: rng(s.emergencyMin, 1, 24, 3),
+        emergencyIdeal: rng(s.emergencyIdeal, 1, 36, 6),
+        dsrTarget: rng(s.dsrTarget, 10, 80, 40),
+        dsrMax: rng(s.dsrMax, 20, 90, 60),
+        takaful: {
+            replaceYears: rng(s.takaful?.replaceYears, 0, 30, 5),
+            finalExpenses: rng(s.takaful?.finalExpenses, 0, 1e6, 10000),
+            mortgageCovered: s.takaful?.mortgageCovered !== false,
+            countKwsp: s.takaful?.countKwsp !== false
+        },
+        allocation: Object.fromEntries(Object.keys(ASSET_CLASSES).map((k) => [k, rng(s.allocation?.[k], 0, 100, DEFAULT_SETTINGS.allocation[k])])),
+        taxYear: rng(s.taxYear, 2020, 2100, new Date().getFullYear()),
+        taxLimits: Object.fromEntries(TAX_RELIEFS.map((r) => [r.key, rng(s.taxLimits?.[r.key], 0, 1e6, r.limit)]))
     };
+    if (settings.emergencyIdeal < settings.emergencyMin) settings.emergencyIdeal = settings.emergencyMin;
+    if (settings.dsrMax < settings.dsrTarget) settings.dsrMax = settings.dsrTarget;
     const isV1 = n(raw.schemaVersion) < 2;
 
     const assets = arr(raw.assets).map((a) => {
@@ -1166,7 +1422,9 @@ function normaliseState(raw) {
     const liabilities = arr(raw.liabilities).map((l) => ({
         id: safeId(l.id, 'l'), owner: safeOwner(l.owner), name: cleanText(l.name) || 'Liabiliti',
         category: mapLiabCategory(l.category || ''), amount: Math.max(0, n(l.amount)),
-        monthlyPayment: Math.max(0, n(l.monthlyPayment)), interestRate: Math.max(0, n(l.interestRate))
+        monthlyPayment: Math.max(0, n(l.monthlyPayment)), interestRate: Math.max(0, n(l.interestRate)),
+        payMethod: l.payMethod === 'salary' ? 'salary' : 'debit',
+        payer: l.payer === 'wife' ? 'wife' : l.payer === 'husband' ? 'husband' : (l.owner === 'wife' ? 'wife' : 'husband')
     }));
     const liabIds = new Set(liabilities.map((l) => l.id));
     const income = arr(raw.income).map((i) => ({
@@ -1183,7 +1441,8 @@ function normaliseState(raw) {
     }));
     const historySnapshots = arr(raw.historySnapshots).map((h) => ({
         id: safeId(h.id, 'snap'), key: typeof h.key === 'string' ? h.key : '', dateLabel: cleanText(h.dateLabel, 20),
-        netWorth: n(h.netWorth), liquidAssets: n(h.liquidAssets), income: n(h.income), expenses: n(h.expenses), savings: n(h.savings)
+        netWorth: n(h.netWorth), liquidAssets: n(h.liquidAssets), income: n(h.income), expenses: n(h.expenses), savings: n(h.savings),
+        note: cleanText(h.note, 120)
     }));
     const tr = raw.taxRelief || {};
     const cleanTax = (o) => Object.fromEntries(TAX_RELIEFS.map((r) => [r.key, Math.max(0, n(o?.[r.key]))]));
@@ -1203,7 +1462,8 @@ function normaliseState(raw) {
         const hm = Math.round(n(e.hijri?.m)), hd = Math.round(n(e.hijri?.d));
         const odo = e.odo && n(e.odo.interval) > 0 ? {
             interval: Math.max(500, n(e.odo.interval)), lastKm: Math.max(0, n(e.odo.lastKm)),
-            currentKm: Math.max(0, n(e.odo.currentKm)), kmPerMonth: Math.max(1, n(e.odo.kmPerMonth) || 1500)
+            currentKm: Math.max(0, n(e.odo.currentKm)), kmPerMonth: Math.max(1, n(e.odo.kmPerMonth) || 1500),
+            readingDate: dateRe.test(e.odo.readingDate) ? e.odo.readingDate : ''   // needed to learn km/month
         } : null;
         return {
             id: safeId(e.id, 'ev'), name: cleanText(e.name, 60) || 'Item', amount: Math.max(0, n(e.amount)),
@@ -1212,7 +1472,11 @@ function normaliseState(raw) {
             category: SINK_GROUPS[e.category] ? e.category : 'lain',
             inBudget: !!e.inBudget, paused: !!e.paused, done: !!e.done,
             hijri: hm >= 1 && hm <= 12 && hd >= 1 && hd <= 30 ? { m: hm, d: hd } : null,
-            odo, lastPaid: dateRe.test(e.lastPaid) ? e.lastPaid : ''
+            odo, lastPaid: dateRe.test(e.lastPaid) ? e.lastPaid : '',
+            schedule: Array.isArray(e.schedule) && e.schedule.length ? e.schedule.slice(0, 8).map((x) => ({ label: cleanText(x?.label, 30) || 'Kitaran', amount: Math.max(0, n(x?.amount)) })) : null,
+            cycleIdx: Math.max(0, Math.round(n(e.cycleIdx))),
+            history: (Array.isArray(e.history) ? e.history : []).filter((h) => dateRe.test(h?.date)).slice(-24)
+                .map((h) => ({ date: h.date, amount: Math.max(0, n(h.amount)), label: cleanText(h.label, 30), km: h.km != null ? Math.max(0, n(h.km)) : null }))
         };
     });
     // actuals: { 'YYYY-MM': { category: amount } } household-level only
@@ -1227,7 +1491,11 @@ function normaliseState(raw) {
     const cleanCl = (o) => Object.fromEntries(CHECKLIST.map((c) => [c.key, typeof o?.[c.key] === 'string' && dateRe.test(o[c.key]) ? o[c.key] : '']));
     const checklist = { husband: cleanCl(cl.husband), wife: cleanCl(cl.wife) };
 
-    const state = { schemaVersion: SCHEMA_VERSION, settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, checklist };
+    const dividends = arr(raw.dividends).filter((d) => dateRe.test(d?.date) && n(d.amount) > 0).map((d) => ({
+        id: safeId(d.id, 'dv'), assetId: typeof d.assetId === 'string' ? d.assetId : '', assetName: cleanText(d.assetName, 80) || 'Aset',
+        date: d.date, amount: Math.max(0, n(d.amount))
+    }));
+    const state = { schemaVersion: SCHEMA_VERSION, settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, checklist, dividends };
     syncLinkedExpenses(state);
     return state;
 }
@@ -1242,7 +1510,10 @@ function normalisePeople(p) {
             birthYear: yr(src.birthYear, 1940, 2015),
             scheme: src.scheme === 'pencen' ? 'pencen' : 'kwsp',
             retireAge: yr(src.retireAge, 40, 70) || 60,
-            serviceStartYear: yr(src.serviceStartYear, 1970, 2040)
+            serviceStartYear: yr(src.serviceStartYear, 1970, 2040),
+            salaryGrowth: rng(src.salaryGrowth, -5, 10, 0),
+            zakatState: NISAB_PRESETS[src.zakatState] ? src.zakatState : 'WP',
+            lifeCover: rng(src.lifeCover, 0, 1e8, 0)
         };
     });
     return out;
@@ -1323,6 +1594,28 @@ function scoped(list, profile, kind = 'own') {
     }).filter(Boolean);
 }
 
+// Salary-deducted loan payments that a profile's take-home pay already excludes.
+// A salary deduction belongs 100% to whose pay it comes out of (the payer), whatever the loan's ownership.
+function salaryDeductions(profile) {
+    return appState.liabilities.filter((l) => l.payMethod === 'salary' && (profile === 'combined' || l.payer === profile))
+        .reduce((s, l) => s + n(l.monthlyPayment), 0);
+}
+// Per-person debt picture, the way a bank would look at one applicant
+function personDebt(person) {
+    const own = scoped(appState.liabilities, person);
+    const payments = sum(own, 'monthlyPayment');
+    const takeHome = sum(appState.income.filter((i) => i.owner === person));
+    const deduct = salaryDeductions(person);
+    const netBeforeLoans = takeHome + deduct;
+    const grossSalary = sum(appState.income.filter((i) => i.owner === person && i.category === 'Gaji'), 'grossAmount');
+    return {
+        person, payments, takeHome, deduct, netBeforeLoans, grossSalary,
+        dsr: netBeforeLoans > 0 ? payments / netBeforeLoans * 100 : 0,
+        deductPct: grossSalary > 0 ? deduct / grossSalary * 100 : 0,
+        list: appState.liabilities.filter((l) => l.payMethod === 'salary' && l.payer === person)
+    };
+}
+
 function yearsToTarget(current, target, monthlySave, realAnnualPct) {
     if (target <= 0) return 0;
     if (current >= target) return 0;
@@ -1353,7 +1646,11 @@ function computeMetrics(profile) {
     const earmarked = Math.min(liquidRaw, goals.earmarked);
     const liquid = liquidRaw - earmarked;
     const totalLiab = sum(liabilities);
-    const netIncome = sum(income);
+    // Take-home pay already excludes salary-deducted loans; add them back so income and the loan expense
+    // are on the same basis (otherwise the loan is counted twice: lower pay AND an expense line).
+    const salaryDeduct = salaryDeductions(profile);
+    const takeHome = sum(income);
+    const netIncome = takeHome + salaryDeduct;
     const totalExp = sum(expenses);
     const savings = netIncome - totalExp;                 // NOT clamped: deficit must show
     const savingsRate = netIncome > 0 ? savings / netIncome * 100 : 0;
@@ -1363,7 +1660,7 @@ function computeMetrics(profile) {
     const passive = sum(income.filter((i) => i.isPassive));
     const passiveCoverage = totalExp > 0 ? passive / totalExp * 100 : 0;
     const debtPayments = sum(liabilities, 'monthlyPayment');
-    const dsr = netIncome > 0 ? debtPayments / netIncome * 100 : 0;
+    const dsr = netIncome > 0 ? debtPayments / netIncome * 100 : 0;   // bank-style: debt / net income before loan deductions
     const fiTarget = totalExp * 12 * st.fireMultiplier;
     const fiProgress = fiTarget > 0 ? Math.min(100, liquid / fiTarget * 100) : 0;
     const realReturn = st.expectedReturn - st.inflationRate;
@@ -1377,7 +1674,7 @@ function computeMetrics(profile) {
         assets, liabilities, income, expenses,
         liquid, locked, totalAssets, totalLiab, netWorth: totalAssets - totalLiab,
         netIncome, totalExp, savings, savingsRate, fixedExp, variableExp: totalExp - fixedExp,
-        emergencyCash, runway, passive, passiveCoverage, debtPayments, dsr,
+        emergencyCash, runway, passive, passiveCoverage, debtPayments, dsr, takeHome, salaryDeduct,
         fiTarget, fiGap: Math.max(0, fiTarget - liquid), fiProgress, realReturn, yrs,
         liquidRaw, earmarked, goals, savingsFI,
         gold, goldPctOfLiquid: liquidRaw > 0 ? gold / liquidRaw * 100 : 0,
@@ -1426,9 +1723,15 @@ function computeGoals(profile) {
     return { list, earmarked, monthlyPlanActive, monthlyNeededActive, dupAsset };
 }
 
+// Nisab follows the state where the person WORKS
+function nisabFor(person) {
+    const st = appState.settings;
+    const pr = NISAB_PRESETS[st.people[person]?.zakatState] || NISAB_PRESETS.manual;
+    return { value: pr.value ?? st.nisab, label: pr.value ? pr.label : `Manual · ${formatRM(st.nisab)}` };
+}
 // Zakat per individual (zakat is fard 'ain, never combined across spouses)
 function computeZakat(person) {
-    const st = appState.settings;
+    const st = { ...appState.settings, nisab: nisabFor(person).value };
     const assets = scoped(appState.assets, person);
     const income = scoped(appState.income, person);
     const harta = sum(assets.filter((a) => a.zakatType === 'simpanan' && !a.isLocked));
@@ -1494,6 +1797,10 @@ function renderAll() {
     renderCalendar();
     renderBudget();
     renderRetirement();
+    renderAllocation(m);
+    renderDividends();
+    renderTakaful();
+    renderWhatIf(m);
     renderCharts(m);
     refreshIcons();
 }
@@ -1532,6 +1839,8 @@ function renderKpis(m) {
     setText('k-assets', formatRM(m.totalAssets));
     setText('k-liab', formatRM(m.totalLiab));
     setText('k-income', formatRM(m.netIncome));
+    $('k-income-note').classList.toggle('hidden', !m.salaryDeduct);
+    setText('k-income-note', `Masuk akaun ${formatRM(m.takeHome)} + potong gaji ${formatRM(m.salaryDeduct)}`);
     setText('k-passive', formatRM(m.passive));
     setText('k-expenses', formatRM(m.totalExp));
     setText('k-fixed', formatRM(m.fixedExp));
@@ -1544,10 +1853,11 @@ function renderKpis(m) {
 
 // Levels are based on liquid FI progress + safety buffers, not net worth (which includes house & EPF)
 function renderLevel(m) {
+    const { emergencyMin: emMin, emergencyIdeal: emIdeal } = appState.settings;
     const levels = [
-        { ok: true, t: 'Level 1: Bina Asas', d: 'Kumpul dana kecemasan sekurang-kurangnya 3 bulan belanja (dalam akaun Tunai & Simpanan).' },
-        { ok: m.runway >= 3, t: 'Level 2: Ada Kusyen', d: 'Dana kecemasan ≥ 3 bulan. Sasar 6 bulan dan kadar simpanan ≥ 20%.' },
-        { ok: m.runway >= 6 && m.savingsRate >= 20, t: 'Level 3: Stabil', d: 'Dana 6 bulan + simpan ≥ 20%. Tolak ke 25% progress FI liquid.' },
+        { ok: true, t: 'Level 1: Bina Asas', d: `Kumpul dana kecemasan sekurang-kurangnya ${emMin} bulan belanja (dalam akaun Tunai & Simpanan).` },
+        { ok: m.runway >= emMin, t: 'Level 2: Ada Kusyen', d: `Dana kecemasan ≥ ${emMin} bulan. Sasar ${emIdeal} bulan dan kadar simpanan ≥ 20%.` },
+        { ok: m.runway >= emIdeal && m.savingsRate >= 20, t: 'Level 3: Stabil', d: `Dana ${emIdeal} bulan + simpan ≥ 20%. Tolak ke 25% progress FI liquid.` },
         { ok: m.fiProgress >= 25, t: 'Level 4: Momentum', d: 'Seperempat jalan ke FI. Compounding mula buat kerja.' },
         { ok: m.fiProgress >= 50, t: 'Level 5: Separuh Jalan', d: 'Separuh sasaran FI liquid tercapai.' },
         { ok: m.fiProgress >= 100, t: 'Level 6: FI Tercapai', d: 'Aset liquid ≥ sasaran. Kerja jadi pilihan, bukan kewajipan.' }
@@ -1559,8 +1869,8 @@ function renderLevel(m) {
     setText('lvl-desc', levels[lvl - 1].d);
     $('streak-badge').innerHTML = `<i data-lucide="zap"></i>${appState.historySnapshots.length} Snapshot`;
     const ms = [
-        { name: 'Dana 3 bln', ok: m.runway >= 3, icon: 'shield' },
-        { name: 'Dana 6 bln', ok: m.runway >= 6, icon: 'shield-check' },
+        { name: `Dana ${emMin} bln`, ok: m.runway >= emMin, icon: 'shield' },
+        { name: `Dana ${emIdeal} bln`, ok: m.runway >= emIdeal, icon: 'shield-check' },
         { name: 'Simpan ≥ 30%', ok: m.savingsRate >= 30, icon: 'piggy-bank' },
         { name: 'Liquid RM100k', ok: m.liquidRaw >= 100000, icon: 'sprout' },
         { name: 'FI 25%', ok: m.fiProgress >= 25, icon: 'tree-pine' }
@@ -1579,10 +1889,15 @@ function renderInsights(m) {
     else if (m.savingsRate < 20) add(2, 'Kadar simpanan rendah', `${pct(m.savingsRate)} sahaja daripada pendapatan bersih disimpan.`, 'Automasi pindahan ke ASB/TH/robo pada hari gaji supaya simpanan berlaku dulu.');
     else add(1, 'Kadar simpanan', `${pct(m.savingsRate)} (${formatRM(m.savings)}/bln).`, m.savingsRate >= 50 ? 'Mantap. Pastikan lebihan betul-betul dilabur, bukan duduk dalam akaun semasa.' : 'Setiap +10% kadar simpanan pendekkan masa ke FI dengan ketara (lihat matriks).');
 
-    if (m.runway < 3) add(3, 'Dana kecemasan nipis', `Hanya ${m.runway.toFixed(1)} bulan belanja dalam Tunai & Simpanan.`, 'Bina sekurang-kurangnya 3 bulan dahulu sebelum tambah pelaburan berisiko.');
-    else if (m.runway < 6) add(2, 'Dana kecemasan', `${m.runway.toFixed(1)} bulan liputan.`, 'Sasar 6 bulan, terutama kalau satu pendapatan tidak stabil.');
+    if (m.runway < st.emergencyMin) add(3, 'Dana kecemasan nipis', `Hanya ${m.runway.toFixed(1)} bulan belanja dalam Tunai & Simpanan (sasaran min ${st.emergencyMin}).`, `Bina sekurang-kurangnya ${st.emergencyMin} bulan dahulu sebelum tambah pelaburan berisiko.`);
+    else if (m.runway < st.emergencyIdeal) add(2, 'Dana kecemasan', `${m.runway.toFixed(1)} bulan liputan.`, `Sasar ${st.emergencyIdeal} bulan, terutama kalau satu pendapatan tidak stabil.`);
 
-    if (m.dsr >= 40) add(m.dsr >= 60 ? 3 : 2, 'Komitmen hutang tinggi', `Bayaran hutang ${pct(m.dsr)} daripada gaji bersih (${formatRM(m.debtPayments)}/bln).`, 'Elak ambil pembiayaan baru. Fokus langsaikan yang kadar paling tinggi dulu.');
+    if (m.dsr >= st.dsrTarget) add(m.dsr >= st.dsrMax ? 3 : 2, 'Komitmen hutang tinggi', `Bayaran hutang ${pct(m.dsr)} daripada gaji bersih (${formatRM(m.debtPayments)}/bln).`, 'Elak ambil pembiayaan baru. Fokus langsaikan yang kadar paling tinggi dulu.');
+    persons.forEach((p) => {
+        const d = personDebt(p);
+        if (d.deductPct >= 50) add(d.deductPct >= 60 ? 3 : 2, `Potongan gaji ${ownerLabel(p)} tinggi`, `Pembiayaan potong gaji ${pct(d.deductPct)} daripada gaji kasar (${formatRM(d.deduct)}/bln).`, 'Campur KWSP, PCB & potongan lain, had 60% mungkin dah dekat. Pembiayaan baru melalui potongan gaji mungkin ditolak.');
+        if (d.dsr >= st.dsrMax) add(3, `DSR ${ownerLabel(p)} ${pct(d.dsr)}`, 'Melepasi tahap yang kebanyakan bank selesa.', 'Jangan mohon pembiayaan baru atas nama sorang ni; langsaikan yang paling kecil baki dulu untuk turunkan DSR cepat.');
+    });
     if (m.highInterest.length) add(3, 'Hutang kadar tinggi', `${m.highInterest.map((l) => l.name).join(', ')}.`, 'Kad kredit/pembiayaan ≥ 8% patut dilangsaikan sebelum labur di instrumen ~5–6%.');
 
     const snaps = [...appState.historySnapshots].sort((a, b) => a.key.localeCompare(b.key));
@@ -1599,6 +1914,19 @@ function renderInsights(m) {
     const zTotal = persons.reduce((s, p) => s + computeZakat(p).total, 0);
     if (zTotal > 0) add(1, 'Zakat dianggar wajib', `Anggaran ${formatRM(zTotal)} setahun (${persons.map((p) => ownerLabel(p)).join(' + ')}).`, 'Bandingkan dengan potongan gaji/bayaran sedia ada; sahkan di kalkulator PPZ.');
 
+    // Allocation drift (only when targets are valid)
+    const al = computeAllocation(activeProfile);
+    if (Math.abs(al.targetSum - 100) < 0.01 && al.total > 0) {
+        const drift = al.rows.filter((r) => Math.abs(r.diffPct) > 10);
+        if (drift.length) add(2, 'Agihan aset lari dari sasaran', drift.map((r) => `${ASSET_CLASSES[r.k].label} ${r.diffPct > 0 ? '+' : ''}${r.diffPct.toFixed(0)} pp`).join(', ') + '.', 'Arahkan simpanan baru ke kelas yang kurang (tab Aset → Sasaran Agihan).');
+    }
+    // Dividends: realised yield well below assumption
+    const lowDiv = dividendSummary(activeProfile).filter((r) => r.realYield != null && r.realYield < n(r.a.yieldPercent) - 1.5);
+    if (lowDiv.length) add(2, 'Dividen sebenar bawah andaian', lowDiv.map((r) => `${r.a.name}: ${pct(r.realYield, 2)} vs ${n(r.a.yieldPercent).toFixed(2)}%`).join(', ') + '.', 'Turunkan % p.a aset tu supaya unjuran FI tak terlebih optimis.');
+    // Takaful gap
+    const tg = persons.map(computeTakafulGap).filter((t) => t.gap > 0);
+    if (tg.length) add(2, 'Jurang perlindungan takaful', tg.map((t) => `${ownerLabel(t.person)} ${formatRM(t.gap)}`).join(', ') + '.', 'Semak polisi sedia ada & GTL majikan; takaful bertempoh (term) biasanya cara paling murah tutup jurang.');
+
     // Goals
     const gl = m.goals;
     const overdue = gl.list.filter((x) => x.status === 'overdue');
@@ -1608,10 +1936,10 @@ function renderInsights(m) {
     else if (behind.length) add(2, 'Matlamat ketinggalan', behind.map((x) => `${x.name} (perlu ${formatRM(x.needed)}/bln)`).join(', ') + '.', 'Naikkan simpanan bulanan untuk matlamat ini atau ubah tarikh.');
     if (gl.dupAsset) add(2, 'Satu aset untuk dua matlamat', 'Ada aset yang dipaut ke lebih daripada satu matlamat; progress dikira dua kali.', 'Pisahkan akaun atau guna simpanan manual untuk salah satu.');
     // Calendar
-    const sp = sinkingPlan(activeProfile);
+    const sp = sinkingPlan('combined');   // shared account
     if (sp.overdue.length) add(3, 'Bayaran / servis lewat', sp.overdue.map((r) => `${r.e.name} (${r.due.overdueKm ? r.due.reason : `${-r.days} hari`})`).join(', ') + '.', 'Bayar dan tekan "Dah bayar", atau kemaskini tarikh kalau dah selesai.');
     if (sp.shortSoon.length) add(sp.shortSoon.some((r) => r.days <= 30) ? 3 : 2, 'Sinking fund tak cukup', sp.shortSoon.map((r) => `${r.e.name}: kurang ${formatRM(r.gap)} (${r.days} hari)`).join(', ') + '.', `Transfer ${formatRM(sp.transferNow)} bulan ni ke akaun sinking, atau guna dana kecemasan sebagai jambatan.`);
-    else if (sp.next30.length) add(1, 'Bayaran dalam 30 hari (cukup)', sp.next30.map((r) => `${r.e.name} ${formatRM(r.amountScoped)}`).join(', ') + '.', 'Duit dah ada. Tekan "Dah bayar" lepas bayar supaya baki dikemaskini.');
+    else if (sp.next30.length) add(1, 'Bayaran dalam 30 hari (cukup)', sp.next30.map((r) => `${r.e.name} ${formatRM(r.amount)}`).join(', ') + '.', 'Duit dah ada. Tekan "Dah bayar" lepas bayar supaya baki dikemaskini.');
     const svcSoon = sp.rows.filter((r) => r.e.odo && !r.e.paused && r.due?.kmLeft != null && r.due.kmLeft <= 1000);
     if (svcSoon.length) add(2, 'Servis kereta dekat', svcSoon.map((r) => `${r.e.name}: ${Math.max(0, Math.round(r.due.kmLeft)).toLocaleString('en-MY')} km lagi`).join(', ') + '.', 'Book slot servis sekarang; elak lewat ikut km yang boleh jejaskan waranti.');
     const sinkUpd = appState.settings.sinking.updatedAt;
@@ -1683,14 +2011,40 @@ function renderTables(m) {
         <td class="font-semibold">${esc(l.name)}</td>
         <td class="t-muted">${esc(l.category)}</td>
         <td class="text-right num font-bold t-rose pv">${formatRM(l.amount)}${share(l)}</td>
-        <td class="text-right num pv">${formatRM(l.monthlyPayment)}</td>
+        <td class="text-right num pv">${formatRM(l.monthlyPayment)}${l.payMethod === 'salary' ? `<br><span class="badge b-blue mt-0.5">Potong gaji ${esc(ownerLabel(l.payer))}</span>` : ''}</td>
         <td class="text-right num ${l.interestRate >= 8 ? 't-rose font-bold' : ''}">${n(l.interestRate).toFixed(2)}</td>
         <td class="text-right">${actionBtns('liabilities', l.id)}</td></tr>`).join('') : emptyRow(7, 'Tiada rekod hutang.');
 
-    const dsrCls = m.dsr >= 60 ? 't-rose' : m.dsr >= 40 ? 't-gold' : 't-sage';
-    $('dsr-box').innerHTML = `<div class="flex flex-wrap justify-between gap-2">
-        <span class="t-muted">Jumlah bayaran hutang / bulan: <strong class="num pv">${formatRM(m.debtPayments)}</strong></span>
-        <span class="t-muted">Nisbah atas gaji bersih: <strong class="num ${dsrCls}">${pct(m.dsr)}</strong> <span class="t-faint">(sihat &lt; 40%)</span></span></div>`;
+    const { dsrTarget, dsrMax } = appState.settings;
+    const dsrCls = (v) => v >= dsrMax ? 't-rose' : v >= dsrTarget ? 't-gold' : 't-sage';
+    const people = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    $('dsr-box').innerHTML = `
+        <div class="flex flex-wrap justify-between items-baseline gap-2 mb-3">
+            <h4 class="text-sm font-bold">Nisbah Khidmat Hutang (DSR)</h4>
+            <span class="text-[11px] t-faint">Sasaran kau ≤ ${dsrTarget}% · bahaya ≥ ${dsrMax}% (kebanyakan bank lulus sehingga ~60%)</span>
+        </div>
+        <div class="grid grid-cols-1 ${people.length > 1 ? 'md:grid-cols-3' : ''} gap-3">
+            ${people.length > 1 ? `<div class="card p-3">
+                <p class="text-xs font-semibold uppercase tracking-wider t-muted">Isi rumah</p>
+                <p class="text-2xl font-extrabold num ${dsrCls(m.dsr)}">${pct(m.dsr)}</p>
+                <p class="text-[11px] t-faint num pv">${formatRM(m.debtPayments)} / ${formatRM(m.netIncome)}</p>
+            </div>` : ''}
+            ${people.map((p) => { const d = personDebt(p); return `<div class="card p-3 space-y-1.5">
+                <div class="flex justify-between items-center">${ownerBadge(p)}<span class="text-2xl font-extrabold num ${dsrCls(d.dsr)}">${pct(d.dsr)}</span></div>
+                <div class="text-[11px] space-y-0.5 num pv">
+                    <div class="flex justify-between"><span class="t-faint">Gaji masuk akaun</span><span>${formatRM(d.takeHome)}</span></div>
+                    <div class="flex justify-between"><span class="t-faint">+ Potongan pembiayaan dalam slip</span><span>${formatRM(d.deduct)}</span></div>
+                    <div class="flex justify-between font-semibold"><span>= Pendapatan bersih (asas DSR)</span><span>${formatRM(d.netBeforeLoans)}</span></div>
+                    <div class="flex justify-between"><span class="t-faint">Komitmen hutang (termasuk bahagian bersama)</span><span>${formatRM(d.payments)}</span></div>
+                </div>
+                ${d.deduct > 0 ? `<div class="pt-1.5 border-t bd">
+                    <div class="flex justify-between text-[11px]"><span class="t-muted">Potongan gaji / gaji kasar</span><strong class="num ${d.deductPct >= 60 ? 't-rose' : d.deductPct >= 50 ? 't-gold' : 't-sage'}">${pct(d.deductPct)}</strong></div>
+                    <div class="bar mt-1"><div style="width:${Math.min(100, d.deductPct / 60 * 100)}%;background:${d.deductPct >= 60 ? 'var(--rose)' : d.deductPct >= 50 ? 'var(--gold)' : 'var(--sage)'}"></div></div>
+                    <p class="text-[10px] t-faint mt-1">Bar penuh = had 60% (amalan JANM/Angkasa). Ni cuma potongan pembiayaan; KWSP, cukai, zakat & lain-lain dalam slip pun masuk had sebenar.</p>
+                </div>` : ''}
+            </div>`; }).join('')}
+        </div>
+        <p class="text-[11px] t-faint mt-2">DSR peribadi dikira ikut cara bank: semua bayaran hutang ÷ gaji bersih <em>sebelum</em> potongan pembiayaan. Bank sebenar guna slip & CCRIS; hutang bersama mungkin dikira penuh pada kedua-dua pemohon.</p>`;
 
     $('tbody-income').innerHTML = m.income.length ? [...m.income].sort(byAmt).map((i) => `
         <tr><td>${ownerBadge(i.owner)}</td>
@@ -1712,7 +2066,7 @@ function renderTables(m) {
 
 function renderZakat() {
     const st = appState.settings;
-    setText('nisab-badge', `Nisab ${formatRM(st.nisab)} · ${st.zakatMethod === 'tolakan' ? 'dgn tolakan' : 'kasar'}`);
+    setText('nisab-badge', `Kaedah ${st.zakatMethod === 'tolakan' ? 'dgn tolakan had kifayah' : 'kasar'} · nisab ikut negeri kerja`);
     const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
     const line = (label, base, z, note) => `
         <div class="flex justify-between items-start py-2 border-b bd text-xs gap-3">
@@ -1721,9 +2075,10 @@ function renderZakat() {
         </div>`;
     $('zakat-cards').innerHTML = persons.map((p) => {
         const z = computeZakat(p);
-        const below = (b) => b < st.nisab ? 'Bawah nisab, tidak wajib' : '≥ nisab × 2.5%';
+        const nz = nisabFor(p);
+        const below = (b) => b < nz.value ? 'Bawah nisab, tidak wajib' : '≥ nisab × 2.5%';
         return `<div class="card-sub p-4">
-            <div class="flex justify-between items-center mb-1">${ownerBadge(p)}<span class="text-[11px] t-faint">per tahun</span></div>
+            <div class="flex justify-between items-center mb-1">${ownerBadge(p)}<span class="badge b-sage">${esc(nz.label)} · ${formatRM(nz.value)}</span></div>
             ${line('Zakat pendapatan', z.incomeBase, z.zIncome, `Kasar ${formatRM(z.grossAnnual)}${z.hk ? ` − had kifayah ${formatRM(z.hk)}` : ''} · ${below(z.incomeBase)}`)}
             ${line('Zakat simpanan & pelaburan', z.harta, z.zHarta, below(z.harta))}
             ${line('Zakat emas', z.emas, z.zEmas, below(z.emas))}
@@ -1736,9 +2091,14 @@ function renderZakat() {
     }).join('');
 }
 
+let taxEditing = false;
+const taxLimit = (r) => n(appState.settings.taxLimits[r.key] ?? r.limit);
 function renderTax() {
     const tr = appState.taxRelief;
-    const cell = (p, r) => {
+    if (document.activeElement !== $('tax-year')) $('tax-year').value = appState.settings.taxYear;
+    setText('tax-edit-label', taxEditing ? 'Siap' : 'Edit had');
+    const cell = (p, rr) => {
+        const r = { ...rr, limit: taxLimit(rr) };
         const v = n(tr[p][r.key]);
         const pr = Math.min(100, v / r.limit * 100);
         const over = v > r.limit;
@@ -1748,9 +2108,12 @@ function renderTax() {
             <p class="text-[10px] ${over ? 't-rose' : 't-faint'} num">${over ? `Lebih had ${formatRM(v - r.limit)} (tak boleh tuntut)` : `Baki ruang ${formatRM(r.limit - v)}`}</p>
         </div></td>`;
     };
-    const total = (p) => TAX_RELIEFS.reduce((s, r) => s + Math.min(n(tr[p][r.key]), r.limit), 0);
+    const total = (p) => TAX_RELIEFS.reduce((s, r) => s + Math.min(n(tr[p][r.key]), taxLimit(r)), 0);
     $('tbody-tax').innerHTML = TAX_RELIEFS.map((r) => `
-        <tr><td class="font-semibold">${esc(r.label)}</td><td class="text-right num">${formatRM(r.limit)}</td>${cell('husband', r)}${cell('wife', r)}</tr>`).join('') +
+        <tr><td class="font-semibold">${esc(r.label)}${taxLimit(r) !== r.limit ? ` <span class="badge b-gold">diubah</span>` : ''}</td>
+        <td class="text-right num">${taxEditing
+            ? `<input type="number" min="0" step="50" class="field num" style="padding:.3rem .5rem;font-size:12px;width:100px" data-tax-limit="${r.key}" value="${taxLimit(r)}">`
+            : formatRM(taxLimit(r))}</td>${cell('husband', r)}${cell('wife', r)}</tr>`).join('') +
         `<tr><td class="font-bold">Jumlah boleh dituntut</td><td></td><td class="num font-bold t-sage pv">${formatRM(total('husband'))}</td><td class="num font-bold t-sage pv">${formatRM(total('wife'))}</td></tr>`;
 }
 
@@ -1774,13 +2137,21 @@ function renderSimulator(m) {
             `<tr><td class="text-left font-semibold">Tahun ke FI</td>${rowYears.map((y, i) => `<td class="num font-bold ${rates[i] === nearest ? 't-sage' : ''}">${esc(fmtYears(y))}</td>`).join('')}</tr>` +
             `<tr><td class="text-left t-muted">Sasaran FI</td>${rowTarget.map((t) => `<td class="num t-muted pv">${formatRM(t)}</td>`).join('')}</tr>`;
     }
-    const prob = monteCarlo(m.liquid, m.fiTarget, m.savingsFI, m.realReturn, st.mcVolatility, st.mcYears);
+    const prob = monteCarlo(m.liquid, m.fiTarget, Math.max(0, m.savingsFI), m.realReturn, st.mcVolatility, st.mcYears);   // same clamp as the chart
     const el = $('mc-text');
     if (prob == null) { el.textContent = 'Monte Carlo: tiada sasaran'; el.className = 'badge b-mute'; }
     else {
         el.textContent = `Monte Carlo: ${prob.toFixed(0)}% capai FI dalam ${st.mcYears} thn`;
         el.className = `badge ${prob >= 75 ? 'b-sage' : prob >= 40 ? 'b-gold' : 'b-rose'}`;
     }
+    // Medical costs grow faster than CPI: show how much the FI target drifts if nothing else changes
+    const yrsMed = Number.isFinite(m.yrs) && m.yrs > 0 ? m.yrs : 20;
+    const excess = (st.medicalInflation - st.inflationRate) / 100;
+    const medFactor = 1 + st.medicalShare / 100 * (Math.pow(1 + excess, yrsMed) - 1);
+    $('med-note').innerHTML = `<div class="flex flex-wrap justify-between gap-2 items-baseline">
+        <span class="font-semibold"><i data-lucide="heart-pulse" class="t-rose"></i> Sasaran FI terlaras inflasi perubatan</span>
+        <span class="num font-extrabold pv">${formatRM(m.fiTarget * medFactor)} <span class="t-faint font-normal">(+${((medFactor - 1) * 100).toFixed(0)}%)</span></span></div>
+        <p class="text-[11px] t-faint mt-1">${st.medicalShare}% belanja ialah perubatan/takaful yang naik ${st.medicalInflation}% setahun (vs inflasi am ${st.inflationRate}%), dalam ~${yrsMed.toFixed(0)} thn sehingga FI. Ubah di Tetapan → Persaraan & perubatan.</p>`;
     setText('mc-note', `1,000 simulasi · pulangan real purata ${pct(m.realReturn)} · volatiliti ${pct(st.mcVolatility, 0)} setahun · simpanan ke FI ${formatRM(Math.max(0, m.savingsFI))}/bln (selepas ${formatRM(m.goals.monthlyPlanActive)} untuk matlamat). Ini model kasar, bukan jaminan; ubah andaian di Tetapan.`);
 }
 
@@ -1793,8 +2164,269 @@ function renderHistory() {
         <td class="text-right num pv">${formatRM(s.income)}</td>
         <td class="text-right num t-rose pv">${formatRM(s.expenses)}</td>
         <td class="text-right num font-bold ${s.savings < 0 ? 't-rose' : 't-gold'} pv">${formatRM(s.savings)}</td>
+        <td><input type="text" maxlength="120" class="field" style="padding:.3rem .5rem;font-size:11px" data-snap-note="${esc(s.id)}" value="${esc(s.note || '')}" placeholder="—"></td>
         <td class="text-right no-print"><button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete-snap" data-id="${esc(s.id)}" aria-label="Padam"><i data-lucide="trash-2" class="text-[11px]"></i></button></td></tr>`).join('')
-        : emptyRow(7, 'Belum ada snapshot. Tekan "Simpan Snapshot Bulan Ini".');
+        : emptyRow(8, 'Belum ada snapshot. Tekan "Snapshot".');
+}
+
+/* =====================================================================
+   ANALYSIS: allocation, dividends, takaful gap, what-if
+   ===================================================================== */
+const classOf = (cat) => Object.keys(ASSET_CLASSES).find((k) => ASSET_CLASSES[k].cats.includes(cat)) || null;
+
+function computeAllocation(profile) {
+    const st = appState.settings;
+    // Money tied to dated goals via a linked asset is not part of the investable portfolio
+    const earmark = {};
+    appState.goals.filter((g) => g.linkedAssetId && g.excludeFromFI).forEach((g) => { earmark[g.linkedAssetId] = true; });
+    const byClass = Object.fromEntries(Object.keys(ASSET_CLASSES).map((k) => [k, 0]));
+    let excluded = 0;
+    scoped(appState.assets, profile).filter((a) => !a.isLocked).forEach((a) => {
+        const c = classOf(a.category);
+        if (!c) return;
+        if (earmark[a.id]) { excluded += a.amount; return; }
+        byClass[c] += a.amount;
+    });
+    const total = Object.values(byClass).reduce((s, v) => s + v, 0);
+    const targetSum = Object.values(st.allocation).reduce((s, v) => s + v, 0);
+    const rows = Object.keys(ASSET_CLASSES).map((k) => {
+        const actualPct = total > 0 ? byClass[k] / total * 100 : 0;
+        const tgt = st.allocation[k];
+        const targetRM = total * tgt / 100;
+        return { k, value: byClass[k], actualPct, target: tgt, diffPct: actualPct - tgt, moveRM: targetRM - byClass[k] };
+    });
+    return { rows, total, targetSum, excluded };
+}
+function renderAllocation(m) {
+    const a = computeAllocation(activeProfile);
+    const st = appState.settings;
+    const band = 5;
+    const sumOk = Math.abs(a.targetSum - 100) < 0.01;
+    const el = $('alloc-sum');
+    el.textContent = `Sasaran ${a.targetSum}%`;
+    el.className = `badge ${sumOk ? 'b-sage' : 'b-rose'}`;
+    $('tbody-alloc').innerHTML = a.rows.map((r) => {
+        const off = Math.abs(r.diffPct) > band;
+        return `<tr>
+            <td><span class="inline-flex items-center gap-1.5 font-semibold"><span class="w-2.5 h-2.5 rounded-full" style="background:${ASSET_CLASSES[r.k].color}"></span>${esc(ASSET_CLASSES[r.k].label)}</span></td>
+            <td class="text-right num pv">${formatRM(r.value)}</td>
+            <td class="text-right num font-semibold">${pct(r.actualPct)}</td>
+            <td><input type="number" min="0" max="100" step="5" class="field num" style="padding:.3rem .5rem;font-size:12px;width:80px" data-alloc="${r.k}" value="${r.target}"></td>
+            <td class="text-right num ${off ? (r.diffPct > 0 ? 't-gold' : 't-blue') : 't-faint'} font-semibold">${r.diffPct > 0 ? '+' : ''}${r.diffPct.toFixed(1)} pp</td>
+            <td class="text-right text-[11px] num pv">${!off || !sumOk ? '<span class="t-faint">dalam julat</span>' : r.moveRM > 0 ? `<span class="t-blue">Tambah ${formatRM(r.moveRM)}</span>` : `<span class="t-gold">Kurang ${formatRM(-r.moveRM)}</span>`}</td>
+        </tr>`;
+    }).join('');
+
+    const tips = [];
+    if (!sumOk) tips.push(`<p class="t-rose">Jumlah sasaran mesti 100% (sekarang ${a.targetSum}%).</p>`);
+    else if (a.total > 0) {
+        const under = a.rows.filter((r) => r.diffPct < -band);
+        const over = a.rows.filter((r) => r.diffPct > band);
+        if (!under.length && !over.length) tips.push('<p class="t-sage"><i data-lucide="check"></i> Semua kelas dalam julat ±5 pp. Tak perlu buat apa-apa.</p>');
+        else {
+            // Prefer steering NEW savings over selling (no fees, no timing, ASB/TH can't be "sold" freely)
+            const need = under.reduce((s, r) => s + r.moveRM, 0);
+            const monthly = Math.max(0, m.savingsFI);
+            if (under.length) {
+                const split = under.map((r) => `${ASSET_CLASSES[r.k].label} ${formatRM(monthly * r.moveRM / need)}`).join(', ');
+                tips.push(`<p><strong>Cara paling murah:</strong> arahkan simpanan FI bulanan (${formatRM(monthly)}) ke kelas yang kurang dulu: <span class="pv">${esc(split)}</span>. ${monthly > 0 ? `Seimbang dalam ~${Math.ceil(need / monthly)} bulan tanpa jual apa-apa.` : 'Tiada simpanan FI bulanan, jadi kena pindah dari kelas lebihan.'}</p>`);
+            }
+            if (over.length && under.length) tips.push(`<p><strong>Kalau nak cepat:</strong> pindah dari ${over.map((r) => `${ASSET_CLASSES[r.k].label} (${formatRM(-r.moveRM)})`).join(', ')} ke kelas yang kurang. Ambil kira caj jualan unit amanah / spread emas.</p>`);
+        }
+        const emTarget = m.totalExp * st.emergencyMin;
+        const tunai = a.rows.find((r) => r.k === 'tunai');
+        if (a.total * tunai.target / 100 < emTarget) tips.push(`<p class="t-gold">Sasaran tunai ${tunai.target}% = ${formatRM(a.total * tunai.target / 100)}, bawah dana kecemasan minimum ${formatRM(emTarget)} (${st.emergencyMin} bln). Naikkan % tunai.</p>`);
+    }
+    if (a.excluded > 0) tips.push(`<p class="t-faint">${formatRM(a.excluded)} dalam aset yang dipaut ke matlamat (contoh TH untuk Haji) tak dikira.</p>`);
+    $('alloc-advice').innerHTML = tips.join('');
+}
+
+// ---- Dividends ----
+function dividendSummary(profile) {
+    const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
+    const cutoffISO = cutoff.toISOString().slice(0, 10);
+    return scoped(appState.assets, profile).filter((a) => !a.isLocked || a.category === 'KWSP').map((a) => {
+        const recs = appState.dividends.filter((d) => d.assetId === a.id);
+        const last12 = recs.filter((d) => d.date >= cutoffISO).reduce((s, d) => s + d.amount, 0) * a._share;
+        const expected = a.amount * n(a.yieldPercent) / 100;
+        return { a, recs, last12, expected, realYield: a.amount > 0 && recs.length ? last12 / a.amount * 100 : null };
+    }).filter((r) => r.recs.length || r.expected > 0);
+}
+function renderDividends() {
+    const sel = $('div-asset');
+    const prev = sel.value;
+    sel.innerHTML = appState.assets.map((a) => `<option value="${esc(a.id)}">${esc(a.name)} · ${esc(ownerLabel(a.owner))}</option>`).join('');
+    if (prev && appState.assets.some((a) => a.id === prev)) sel.value = prev;
+    if (!$('div-date').value) $('div-date').value = todayISO();
+    const rows = dividendSummary(activeProfile);
+    $('tbody-div-summary').innerHTML = rows.length ? rows.map((r) => {
+        const gap = r.realYield != null ? r.realYield - n(r.a.yieldPercent) : null;
+        return `<tr><td class="font-semibold">${esc(r.a.name)}</td>
+            <td class="text-right num pv">${formatRM(r.a.amount)}</td>
+            <td class="text-right num">${n(r.a.yieldPercent).toFixed(2)}%</td>
+            <td class="text-right num pv">${formatRM(r.expected)}</td>
+            <td class="text-right num pv ${r.recs.length ? '' : 't-faint'}">${r.recs.length ? formatRM(r.last12) : 'tiada rekod'}</td>
+            <td class="text-right num font-semibold ${gap == null ? 't-faint' : gap < -1 ? 't-rose' : gap > 1 ? 't-sage' : ''}">${r.realYield == null ? '—' : pct(r.realYield, 2)}</td></tr>`;
+    }).join('') : emptyRow(6, 'Tiada aset berdividen.');
+    const all = [...appState.dividends].sort((x, y) => y.date.localeCompare(x.date));
+    setText('div-count', all.length);
+    const nameOf = (d) => appState.assets.find((a) => a.id === d.assetId)?.name || `${d.assetName} (aset dipadam)`;
+    $('tbody-div-list').innerHTML = all.length ? all.map((d) => `<tr><td class="num">${esc(d.date)}</td><td>${esc(nameOf(d))}</td><td class="text-right num pv">${formatRM(d.amount)}</td>
+        <td class="text-right no-print"><button class="btn btn-icon btn-danger" style="min-height:28px;width:28px" data-action="delete-div" data-id="${esc(d.id)}" aria-label="Padam"><i data-lucide="trash-2" class="text-[11px]"></i></button></td></tr>`).join('')
+        : emptyRow(4, 'Belum ada rekod.');
+}
+function handleDivSubmit(e) {
+    e.preventDefault();
+    const a = appState.assets.find((x) => x.id === $('div-asset').value);
+    const amount = Number($('div-amount').value);
+    const date = $('div-date').value;
+    if (!a) { showToast('Pilih aset.', 'error'); return; }
+    if (!(amount > 0)) { $('div-amount').classList.add('invalid'); showToast('Jumlah mesti lebih dari 0.', 'error'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { showToast('Pilih tarikh.', 'error'); return; }
+    $('div-amount').classList.remove('invalid');
+    appState.dividends.push({ id: uid('dv'), assetId: a.id, assetName: a.name, date, amount });
+    $('div-amount').value = '';
+    saveState(); renderAll();
+    showToast(`Dividen ${formatRM(amount)} untuk ${a.name} direkod.`, 'success');
+}
+
+// ---- Takaful gap ----
+function computeTakafulGap(person) {
+    const st = appState.settings, tk = st.takaful;
+    const liabs = scoped(appState.liabilities, person).filter((l) => !(tk.mortgageCovered && l.category === 'Pembiayaan Rumah'));
+    const debts = sum(liabs);
+    const income = personDebt(person).netBeforeLoans;
+    const incomeNeed = income * 12 * tk.replaceYears;
+    const assets = scoped(appState.assets, person);
+    const liquid = sum(assets.filter((a) => !a.isLocked));
+    const kwsp = tk.countKwsp ? sum(assets.filter((a) => a.category === 'KWSP')) : 0;
+    const cover = st.people[person].lifeCover;
+    const need = debts + incomeNeed + tk.finalExpenses;
+    const have = liquid + kwsp + cover;
+    return { person, debts, income, incomeNeed, final: tk.finalExpenses, liquid, kwsp, cover, need, have, gap: Math.max(0, need - have) };
+}
+function renderTakaful() {
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    const tk = appState.settings.takaful;
+    $('takaful-grid').innerHTML = persons.map((p) => {
+        const t = computeTakafulGap(p);
+        const line = (l, v, cls = '') => `<div class="flex justify-between"><span class="t-faint">${l}</span><span class="num pv ${cls}">${formatRM(v)}</span></div>`;
+        return `<div class="card p-3 space-y-2">
+            <div class="flex justify-between items-center">${ownerBadge(p)}
+                <span class="text-2xl font-extrabold num pv ${t.gap > 0 ? 't-rose' : 't-sage'}">${t.gap > 0 ? formatRM(t.gap) : 'Cukup'}</span></div>
+            <div class="grid grid-cols-2 gap-3 text-[11px]">
+                <div class="space-y-0.5"><p class="font-semibold uppercase tracking-wider t-muted">Keperluan</p>
+                    ${line(`Hutang${tk.mortgageCovered ? ' (tanpa rumah)' : ''}`, t.debts)}
+                    ${line(`Pendapatan × ${tk.replaceYears} thn`, t.incomeNeed)}
+                    ${line('Kos urusan', t.final)}
+                    ${line('<strong>Jumlah</strong>', t.need, 'font-bold')}</div>
+                <div class="space-y-0.5"><p class="font-semibold uppercase tracking-wider t-muted">Tersedia</p>
+                    ${line('Aset liquid', t.liquid)}
+                    ${tk.countKwsp ? line('KWSP', t.kwsp) : ''}
+                    ${line('Takaful sedia ada', t.cover, t.cover ? '' : 't-gold')}
+                    ${line('<strong>Jumlah</strong>', t.have, 'font-bold')}</div>
+            </div>
+            ${!t.cover ? '<p class="text-[11px] t-gold">Perlindungan sedia ada = 0. Isi di Tetapan kalau dah ada polisi / GTL majikan.</p>' : ''}
+        </div>`;
+    }).join('');
+}
+
+// ---- What-if ----
+const WHATIF_IDS = ['wi-crash', 'wi-infl', 'wi-loss-who', 'wi-loss-months', 'wi-house', 'wi-dp', 'wi-rate', 'wi-tenure', 'wi-rent', 'wi-extra', 'wi-raise'];
+function pmt(principal, annualPct, years) {
+    const r = annualPct / 100 / 12, k = years * 12;
+    if (principal <= 0 || k <= 0) return 0;
+    return r > 0 ? principal * r / (1 - Math.pow(1 + r, -k)) : principal / k;
+}
+function renderWhatIf(m) {
+    const v = (id) => $(id).value;
+    const st = appState.settings;
+    const crash = Math.min(90, Math.max(0, n(v('wi-crash'))));
+    const extraInfl = Math.max(0, n(v('wi-infl')));
+    const who = v('wi-loss-who');
+    const lossMonths = Math.max(0, Math.round(n(v('wi-loss-months'))));
+    const house = Math.max(0, n(v('wi-house')));
+    const dp = v('wi-dp') === '' ? 10 : Math.min(100, Math.max(0, n(v('wi-dp'))));
+    const rate = v('wi-rate') === '' ? 4.2 : Math.max(0, n(v('wi-rate')));
+    const tenure = v('wi-tenure') === '' ? 35 : Math.min(35, Math.max(5, n(v('wi-tenure'))));
+    const rent = Math.max(0, n(v('wi-rent')));
+    const extra = n(v('wi-extra'));
+    const raise = n(v('wi-raise'));
+    const notes = [];
+
+    // 1. Market crash hits equity + gold only (ASB/TH/cash are not market-priced)
+    const alloc = computeAllocation(activeProfile);
+    const exposed = alloc.rows.filter((r) => r.k === 'ekuiti' || r.k === 'emas').reduce((s, r) => s + r.value, 0);
+    const crashLoss = exposed * crash / 100;
+    let liquid = m.liquid - crashLoss;
+    if (crash) notes.push(`Pasaran jatuh ${crash}%: ekuiti + emas ${formatRM(exposed)} → rugi kertas ${formatRM(crashLoss)}. ASB, TH & tunai tak terjejas harga.`);
+
+    // 2. Income loss
+    let income = m.netIncome + raise;
+    let lossNote = '', burn = 0;
+    if (who && shareFor({ owner: who }, activeProfile) > 0) {
+        const pInc = personDebt(who).netBeforeLoans;
+        if (lossMonths === 0) { income -= pInc; lossNote = `${ownerLabel(who)} hilang pendapatan kekal (${formatRM(pInc)}/bln).`; }
+        else {
+            burn = pInc * lossMonths;
+            liquid -= burn;
+            lossNote = `${ownerLabel(who)} tiada gaji ${lossMonths} bln: simpanan terhakis ${formatRM(burn)}. Dana kecemasan ${formatRM(m.emergencyCash)} ${m.emergencyCash >= burn ? 'cukup tampung' : `kurang ${formatRM(burn - m.emergencyCash)}`}.`;
+        }
+        notes.push(lossNote);
+    }
+
+    // 3. House purchase: deposit + ~3% costs (SPA/loan legal, stamp duty; first-home exemptions may apply)
+    let exp = m.totalExp + extra;
+    let debtPay = m.debtPayments;
+    if (house > 0) {
+        const upfront = house * (dp / 100 + 0.03);
+        const loan = house * (1 - dp / 100);
+        const pay = pmt(loan, rate, tenure);
+        liquid -= upfront;
+        exp += pay - rent;
+        debtPay += pay;
+        notes.push(`Rumah ${formatRM(house)}: deposit ${dp}% + ~3% kos guaman/duti = ${formatRM(upfront)} dari aset liquid; ansuran ${formatRM(pay)}/bln (${rate}%, ${tenure} thn)${rent ? `, tolak sewa ${formatRM(rent)}` : ''}. Pembeli rumah pertama mungkin dapat pengecualian duti setem.`);
+    }
+    if (extra) notes.push(`Belanja ${extra > 0 ? 'tambahan' : 'berkurang'} ${formatRM(Math.abs(extra))}/bln.`);
+    if (raise) notes.push(`Pendapatan ${raise > 0 ? 'naik' : 'turun'} ${formatRM(Math.abs(raise))}/bln.`);
+    if (extraInfl) notes.push(`Inflasi +${extraInfl}%: pulangan real turun dari ${pct(m.realReturn)} ke ${pct(m.realReturn - extraInfl)}.`);
+
+    const savings = income - exp;
+    const savingsFI = savings - m.goals.monthlyPlanActive;
+    const fiTarget = exp * 12 * st.fireMultiplier;
+    const real = m.realReturn - extraInfl;
+    const yrs = yearsToTarget(Math.max(0, liquid), fiTarget, savingsFI, real);
+    const dsr = income > 0 ? debtPay / income * 100 : 0;
+    const emergency = Math.max(0, m.emergencyCash - burn);   // job loss drains cash first
+    const runway = exp > 0 ? emergency / exp : 0;
+
+    const rowsDef = [
+        ['Aset liquid untuk FI', m.liquid, liquid, 'rm', true],
+        ['Pendapatan / bln', m.netIncome, income, 'rm', true],
+        ['Belanja / bln', m.totalExp, exp, 'rm', false],
+        ['Simpanan / bln', m.savings, savings, 'rm', true],
+        ['Kadar simpanan', m.savingsRate, m.netIncome > 0 || income > 0 ? (income > 0 ? savings / income * 100 : 0) : 0, 'pct', true],
+        ['Sasaran FI', m.fiTarget, fiTarget, 'rm', false],
+        ['Tahun ke FI', m.yrs, yrs, 'yrs', false],
+        ['DSR isi rumah', m.dsr, dsr, 'pct', false],
+        ['Runway dana kecemasan (bln)', m.runway, runway, 'num', true]
+    ];
+    const fmt = (x, t) => t === 'rm' ? formatRM(x) : t === 'pct' ? pct(x) : t === 'yrs' ? fmtYears(x) : (Number.isFinite(x) ? x.toFixed(1) : '—');
+    $('tbody-whatif').innerHTML = rowsDef.map(([label, a, b, t, upGood]) => {
+        let diff = '', cls = 't-faint';
+        if (t === 'yrs') {
+            if (Number.isFinite(a) && Number.isFinite(b)) { const d = b - a; diff = Math.abs(d) < 0.05 ? '—' : `${d > 0 ? '+' : ''}${d.toFixed(1)} thn`; cls = d > 0.05 ? 't-rose' : d < -0.05 ? 't-sage' : 't-faint'; }
+            else if (Number.isFinite(a) !== Number.isFinite(b)) { diff = Number.isFinite(b) ? 'boleh capai' : 'tak tercapai'; cls = Number.isFinite(b) ? 't-sage' : 't-rose'; }
+        } else {
+            const d = b - a;
+            if (Math.abs(d) > (t === 'rm' ? 0.5 : 0.05)) { diff = `${d > 0 ? '+' : '−'}${t === 'rm' ? formatRM(Math.abs(d)) : t === 'pct' ? Math.abs(d).toFixed(1) + ' pp' : Math.abs(d).toFixed(1)}`; cls = (d > 0) === upGood ? 't-sage' : 't-rose'; }
+            else diff = '—';
+        }
+        return `<tr><td class="font-semibold">${label}</td><td class="text-right num pv">${fmt(a, t)}</td><td class="text-right num font-bold pv">${fmt(b, t)}</td><td class="text-right num pv ${cls}">${diff}</td></tr>`;
+    }).join('');
+    if (liquid < 0) notes.unshift('<span class="t-rose font-semibold">Aset liquid jadi negatif: senario ni tak mampu tanpa hutang tambahan.</span>');
+    if (!notes.length) notes.push('Isi mana-mana medan di atas untuk lihat kesan.');
+    $('whatif-notes').innerHTML = notes.map((t) => `<p>• ${t}</p>`).join('');
 }
 
 /* =====================================================================
@@ -1950,6 +2582,22 @@ const HIJRI_EVENTS = [
     { hm: 12, hd: 10, name: 'Hari Raya Aidiladha', icon: 'moon-star' }
 ];
 
+// Amount for the NEXT occurrence (cycle-aware) and long-run annual cost
+function cycleStep(e) { return e.schedule ? e.schedule[e.cycleIdx % e.schedule.length] : null; }
+function itemAmount(e) { const st = cycleStep(e); return st ? st.amount : e.amount; }
+function itemAnnual(e) {
+    const R = REPEAT_MONTHS[e.repeat];
+    if (!R) return 0;
+    const per = e.schedule ? e.schedule.reduce((s, x) => s + x.amount, 0) / e.schedule.length : e.amount;
+    // km-based: use the faster of date interval vs actual km pace
+    const months = e.odo ? Math.min(R, e.odo.interval / Math.max(1, e.odo.kmPerMonth)) : R;
+    return per * 12 / months;
+}
+function historyAvg(e, k = 3) {
+    const h = (e.history || []).slice(-k);
+    return h.length ? h.reduce((s, x) => s + x.amount, 0) / h.length : null;
+}
+
 // All active sinking items with their next due date, sorted, and funded from the single pool (earliest first)
 function sinkingPlan(profile) {
     const today = startOfToday();
@@ -1960,10 +2608,11 @@ function sinkingPlan(profile) {
         const R = REPEAT_MONTHS[e.repeat];
         const days = due ? Math.round((due.date - today) / 86400000) : null;
         const monthsLeft = due ? Math.max(1, (due.date.getFullYear() - today.getFullYear()) * 12 + due.date.getMonth() - today.getMonth()) : null;
-        return { e, share, due, days, monthsLeft, R,
-            amount: e.amount, amountScoped: e.amount * share,
-            annual: R ? e.amount * 12 / R : 0,
-            inPool: !e.paused && !e.inBudget && !e.done && e.amount > 0 && due && days <= 400 };
+        const amount = itemAmount(e);
+        return { e, share, due, days, monthsLeft, R, step: cycleStep(e),
+            amount, amountScoped: amount * share,
+            annual: itemAnnual(e),
+            inPool: !e.paused && !e.inBudget && !e.done && amount > 0 && due && days <= 400 };
     });
     // Greedy allocation of the real balance across household items (combined), earliest due first
     let left = pool;
@@ -2002,7 +2651,8 @@ function buildCalendar() {
         if (e.paused || e.done) return;
         const due = nextDue(e, today);
         if (!due || due.date > end) return;
-        items.push({ date: due.date, name: e.name, icon: SINK_GROUPS[e.category].icon, kind: 'custom', id: e.id, owner: e.owner, amount: e.amount,
+        const stp = cycleStep(e);
+        items.push({ date: due.date, name: stp ? `${e.name} · ${stp.label}` : e.name, icon: SINK_GROUPS[e.category].icon, kind: 'custom', id: e.id, owner: e.owner, amount: itemAmount(e),
             repeat: e.repeat, reason: due.reason, hijri: !!e.hijri, odo: !!e.odo });
     });
     items.forEach((i) => { i.days = Math.round((i.date - today) / 86400000); });
@@ -2011,7 +2661,8 @@ function buildCalendar() {
 
 function renderCalendar() {
     hijriCache.clear();
-    const sp = sinkingPlan(activeProfile);
+    // The sinking account is shared, so this tab always shows the household view (avoids half-amount vs full-bar mismatch)
+    const sp = sinkingPlan('combined');
     const st = appState.settings.sinking;
     if (document.activeElement !== $('sink-balance')) $('sink-balance').value = st.balance || '';
     setText('sink-updated', st.updatedAt ? `Dikemaskini ${st.updatedAt} · baki tak diagih: ${formatRM(sp.unallocated)}` : 'Belum dikemaskini. Isi baki sebenar akaun sinking.');
@@ -2056,29 +2707,39 @@ function renderCalendar() {
 function sinkRow(r) {
     const e = r.e;
     const due = r.due;
+    const amt = r.amount;
     let status, cls, pct = 0;
     if (e.done) { status = 'Selesai'; cls = 'b-mute'; }
     else if (e.paused) { status = 'Belum aktif'; cls = 'b-mute'; }
     else if (e.inBudget) { status = 'Bajet bulanan'; cls = 'b-blue'; }
-    else if (!e.amount) { status = 'Isi jumlah'; cls = 'b-gold'; }
-    else if (r.days < 0 || due?.overdueKm) { status = r.days < 0 ? `Lewat ${-r.days} hari` : 'Lewat (km)'; cls = 'b-rose'; pct = r.funded / e.amount * 100; }
-    else { pct = r.funded / e.amount * 100; status = pct >= 99.5 ? 'Cukup' : r.days <= 60 ? 'Tak cukup' : 'Sedang kumpul'; cls = pct >= 99.5 ? 'b-sage' : r.days <= 60 ? 'b-rose' : 'b-gold'; }
+    else if (!amt) { status = 'Isi jumlah'; cls = 'b-gold'; }
+    else if (r.days < 0 || due?.overdueKm) { status = r.days < 0 ? `Lewat ${-r.days} hari` : 'Lewat (km)'; cls = 'b-rose'; pct = r.funded / amt * 100; }
+    else { pct = r.funded / amt * 100; status = pct >= 99.5 ? 'Cukup' : r.days <= 60 ? 'Tak cukup' : 'Sedang kumpul'; cls = pct >= 99.5 ? 'b-sage' : r.days <= 60 ? 'b-rose' : 'b-gold'; }
     const kmInfo = e.odo ? `<span class="num">${e.odo.currentKm.toLocaleString('en-MY')} km</span> · servis seterusnya ${(e.odo.lastKm + e.odo.interval).toLocaleString('en-MY')} km` : '';
+    // Cycle chips: show where we are in minor/major rotation
+    const cycle = e.schedule ? `<div class="flex flex-wrap gap-1 mt-1.5">${e.schedule.map((x, i) => {
+        const cur = i === e.cycleIdx % e.schedule.length;
+        return `<span class="badge ${cur ? 'b-sage' : 'b-mute'}" style="${cur ? '' : 'opacity:.7'}">${cur ? '▶ ' : ''}${esc(x.label)} <span class="num pv">${formatRM(x.amount)}</span></span>`;
+    }).join('')}</div>` : '';
+    const avg = historyAvg(e);
+    const last = (e.history || []).slice(-1)[0];
+    const hist = last ? `<p class="text-[11px] t-faint mt-1 num pv">Terakhir ${formatRM(last.amount)} (${esc(last.date)}${last.label ? ` · ${esc(last.label)}` : ''})${e.history.length > 1 ? ` · purata ${Math.min(3, e.history.length)} kali ${formatRM(avg)}` : ''}${!e.schedule && avg && amt && Math.abs(avg - amt) / amt > 0.2 ? ' · <span class="t-gold">beza &gt;20% dari anggaran, kemaskini jumlah?</span>' : ''}</p>` : '';
     return `<div class="card-sub p-3 ${e.paused || e.done ? 'opacity-60' : ''}">
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-                <p class="text-sm font-bold">${esc(e.name)}</p>
-                <p class="text-[11px] t-faint">${esc(ownerLabel(e.owner))}${r.share < 1 ? ` (${Math.round(r.share * 100)}%)` : ''} · ${esc(REPEAT_LABEL[e.repeat])}${due ? ` · <strong class="t-muted">${dLabel(due.date)}</strong> (${esc(due.reason)})` : ''}</p>
+                <p class="text-sm font-bold">${esc(e.name)}${r.step ? ` <span class="t-sage text-xs">· ${esc(r.step.label)}</span>` : ''}</p>
+                <p class="text-[11px] t-faint">${esc(ownerLabel(e.owner))} · ${esc(REPEAT_LABEL[e.repeat])}${due ? ` · <strong class="t-muted">${dLabel(due.date)}</strong> (${esc(due.reason)})` : ''}</p>
                 ${kmInfo ? `<p class="text-[11px] t-faint">${kmInfo}</p>` : ''}
             </div>
             <div class="text-right shrink-0">
-                <p class="text-sm font-extrabold num pv">${formatRM(r.amountScoped)}</p>
+                <p class="text-sm font-extrabold num pv">${formatRM(r.amount)}</p>
                 <span class="badge ${cls}">${esc(status)}</span>
             </div>
         </div>
+        ${cycle}${hist}
         ${r.inPool ? `<div class="mt-2 space-y-1">
             <div class="bar"><div style="width:${Math.min(100, pct)}%;background:${pct >= 99.5 ? 'var(--sage)' : r.days <= 60 ? 'var(--rose)' : 'var(--gold)'}"></div></div>
-            <div class="flex justify-between text-[11px] t-faint num pv"><span>Ada ${formatRM(r.funded)} / ${formatRM(e.amount)}</span><span>${r.gap > 1 ? `simpan ${formatRM(r.needMonthly)}/bln · ${r.monthsLeft} bln` : 'siap sedia'}</span></div>
+            <div class="flex justify-between text-[11px] t-faint num pv"><span>Ada ${formatRM(r.funded)} / ${formatRM(amt)}</span><span>${r.gap > 1 ? `simpan ${formatRM(r.needMonthly)}/bln · ${r.monthsLeft} bln` : 'siap sedia'}</span></div>
         </div>` : ''}
         <div class="flex flex-wrap gap-1.5 mt-2 no-print">
             ${!e.paused && !e.done ? `<button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="sink-paid" data-id="${esc(e.id)}"><i data-lucide="check"></i>Dah bayar</button>` : ''}
@@ -2088,32 +2749,82 @@ function sinkRow(r) {
     </div>`;
 }
 
+let payingId = null;
 function markSinkPaid(id) {
     const e = appState.events.find((x) => x.id === id);
     if (!e) return;
-    const st = appState.settings.sinking;
-    const deduct = Math.min(st.balance, e.amount);
-    confirmDialog(`Tanda "${e.name}" dah bayar?`,
-        `${e.amount ? `Baki akaun sinking akan ditolak ${formatRM(deduct)} (${formatRM(st.balance)} → ${formatRM(st.balance - deduct)}). ` : ''}${e.odo ? 'Tarikh & km servis terakhir akan ditetapkan ke hari ini / km semasa. ' : ''}${e.repeat === 'once' ? 'Item sekali ni akan ditanda selesai.' : 'Tarikh seterusnya dikira automatik.'}`,
-        () => {
-            const t = todayISO();
-            e.lastPaid = t;
-            if (e.odo) { e.date = t; e.odo.lastKm = e.odo.currentKm; }
-            if (e.repeat === 'once') e.done = true;
-            st.balance = Math.max(0, st.balance - deduct);
-            st.updatedAt = t;
-            saveState(); renderAll();
-            showToast(`${e.name} ditanda dibayar.`, 'success');
-        }, 'Dah bayar');
+    payingId = id;
+    const step = cycleStep(e);
+    const expected = itemAmount(e);
+    setText('pay-title', `Rekod bayaran: ${e.name}`);
+    setText('pay-sub', `${step ? `${step.label} · ` : ''}Anggaran ${formatRM(expected)} · baki akaun sinking ${formatRM(appState.settings.sinking.balance)}`);
+    $('pay-amount').value = expected || '';
+    $('pay-amount').dataset.expected = expected;
+    $('pay-date').value = todayISO();
+    $('pay-deduct').checked = !e.inBudget;
+    $('wrap-pay-km').classList.toggle('hidden', !e.odo);
+    if (e.odo) $('pay-km').value = e.odo.currentKm || '';
+    updatePayDiff();
+    openModal('modal-pay');
+    refreshIcons();
+    setTimeout(() => $('pay-amount').select(), 50);
 }
+function updatePayDiff() {
+    const exp = n($('pay-amount').dataset.expected), v = n($('pay-amount').value);
+    const d = v - exp;
+    $('pay-diff').textContent = !exp || Math.abs(d) < 1 ? '' : d > 0 ? `${formatRM(d)} lebih dari anggaran` : `${formatRM(-d)} kurang dari anggaran (baki kekal dalam akaun)`;
+    $('pay-diff').className = `text-[11px] mt-1 ${d > 0 ? 't-gold' : 't-sage'}`;
+}
+function handlePaySubmit(ev) {
+    ev.preventDefault();
+    const e = appState.events.find((x) => x.id === payingId);
+    if (!e) return;
+    const amount = Math.max(0, n($('pay-amount').value));
+    const date = /^\d{4}-\d{2}-\d{2}$/.test($('pay-date').value) ? $('pay-date').value : todayISO();
+    let km = null;
+    if (e.odo) {
+        km = Math.round(n($('pay-km').value)) || e.odo.currentKm;
+        if (km < e.odo.lastKm) { showToast('Km servis tak boleh kurang dari km servis terakhir.', 'error'); return; }
+    }
+    const step = cycleStep(e);
+    e.history = [...(e.history || []), { date, amount, label: step ? step.label : '', km }].slice(-24);
+    e.lastPaid = date;
+    if (e.odo) { e.date = date; e.odo.lastKm = km; e.odo.currentKm = Math.max(e.odo.currentKm, km); e.odo.readingDate = date; }
+    if (e.schedule) e.cycleIdx = (e.cycleIdx + 1) % e.schedule.length;
+    if (e.repeat === 'once') e.done = true;
+    const st = appState.settings.sinking;
+    if ($('pay-deduct').checked) {
+        const before = st.balance;
+        st.balance = Math.max(0, st.balance - amount);
+        st.updatedAt = todayISO();
+        if (amount > before) showToast(`Akaun sinking tak cukup ${formatRM(amount - before)} — ditampung dari mana? Semak dana kecemasan.`, 'warning');
+    }
+    payingId = null;
+    saveState(); closeModal('modal-pay'); renderAll();
+    const next = cycleStep(e);
+    showToast(`${e.name} direkod${next ? `. Seterusnya: ${next.label} (${formatRM(next.amount)})` : ''}.`, 'success');
+}
+let odoId = null;
 function updateOdo(id) {
     const e = appState.events.find((x) => x.id === id);
     if (!e || !e.odo) return;
-    const v = window.prompt(`Bacaan odometer sekarang untuk "${e.name}" (km):`, String(e.odo.currentKm || ''));
-    if (v == null) return;
-    const km = Math.round(Number(v));
-    if (!Number.isFinite(km) || km < 0) { showToast('Nombor km tak sah.', 'error'); return; }
-    if (km < e.odo.lastKm) { showToast('Km sekarang lebih rendah dari km servis terakhir. Semak semula.', 'warning'); return; }
+    odoId = id;
+    setText('odo-title', `Kemaskini odometer: ${e.name}`);
+    setText('odo-sub', `Servis terakhir ${e.odo.lastKm.toLocaleString('en-MY')} km · bacaan lepas ${e.odo.currentKm.toLocaleString('en-MY')} km${e.odo.readingDate ? ` (${e.odo.readingDate})` : ''} · purata ${e.odo.kmPerMonth.toLocaleString('en-MY')} km/bln`);
+    $('odo-km').value = e.odo.currentKm || '';
+    $('odo-km').classList.remove('invalid'); $('err-odo-km').classList.add('hidden');
+    openModal('modal-odo'); refreshIcons();
+    setTimeout(() => $('odo-km').select(), 50);
+}
+function handleOdoSubmit(ev) {
+    ev.preventDefault();
+    const e = appState.events.find((x) => x.id === odoId);
+    if (!e) return;
+    const km = Math.round(Number($('odo-km').value));
+    const err = !$('odo-km').value || !Number.isFinite(km) || km < 0 ? 'Nombor km tak sah.'
+        : km < e.odo.lastKm ? `Tak boleh kurang dari km servis terakhir (${e.odo.lastKm.toLocaleString('en-MY')}).` : '';
+    $('odo-km').classList.toggle('invalid', !!err); $('err-odo-km').classList.toggle('hidden', !err); $('err-odo-km').textContent = err;
+    if (err) return;
     // learn the real km/month from the previous reading if we have its date
     if (e.odo.readingDate && e.odo.currentKm && km > e.odo.currentKm) {
         const months = (Date.now() - parseISO(e.odo.readingDate)) / (86400000 * 30.44);
@@ -2121,7 +2832,8 @@ function updateOdo(id) {
     }
     e.odo.currentKm = km;
     e.odo.readingDate = todayISO();
-    saveState(); renderAll();
+    odoId = null;
+    saveState(); closeModal('modal-odo'); renderAll();
     showToast('Odometer dikemaskini.', 'success');
 }
 
@@ -2174,16 +2886,18 @@ function computeRetirement(person) {
     if (p.scheme === 'pencen') {
         if (!p.serviceStartYear) return { person, missing: 'Isi tahun mula khidmat di Tetapan untuk kiraan pencen.' };
         const months = Math.min(360, Math.max(0, (retireYear - p.serviceStartYear) * 12));
-        const pension = months / 600 * gross;              // 1/600 × bulan khidmat × gaji akhir, max 60%
+        const finalGross = gross * Math.pow(1 + p.salaryGrowth / 100, years);   // real terms
+        const pension = months / 600 * finalGross;         // 1/600 × bulan khidmat × gaji akhir, max 60%
         return { person, scheme: 'pencen', age, years, retireYear, gross, months, pension };
     }
     const bal0 = sum(scoped(appState.assets, person).filter((a) => a.category === 'KWSP'));
     const er = gross <= 5000 ? 0.13 : 0.12;
     const contrib = gross * (0.11 + er);
     const real = (st.epfDividend - st.inflationRate) / 100 / 12;
+    const g = p.salaryGrowth / 100;                        // real salary growth per year (above inflation)
     let bal = bal0;
-    for (let k = 0; k < years * 12; k++) bal = bal * (1 + real) + contrib;
-    const nDraw = 240;                                     // spread over 20 years
+    for (let k = 0; k < years * 12; k++) bal = bal * (1 + real) + contrib * Math.pow(1 + g, Math.floor(k / 12));
+    const nDraw = st.drawdownYears * 12;
     const draw = real > 0 ? bal * real / (1 - Math.pow(1 + real, -nDraw)) : bal / nDraw;
     return { person, scheme: 'kwsp', age, years, retireYear, gross, bal0, contrib, er, projected: bal, draw, target: st.epfTarget };
 }
@@ -2205,7 +2919,7 @@ function renderRetirement() {
             <div class="grid grid-cols-3 gap-2 text-[11px]">
                 <div><p class="t-faint uppercase font-semibold tracking-wider">Sekarang</p><p class="num font-semibold pv">${formatRM(r.bal0)}</p></div>
                 <div><p class="t-faint uppercase font-semibold tracking-wider">Caruman / bln</p><p class="num font-semibold pv">${formatRM(r.contrib)}</p><p class="t-faint">11% + ${Math.round(r.er * 100)}%</p></div>
-                <div><p class="t-faint uppercase font-semibold tracking-wider">≈ Pendapatan</p><p class="num font-semibold pv">${formatRM(r.draw)}/bln</p><p class="t-faint">selama 20 thn</p></div>
+                <div><p class="t-faint uppercase font-semibold tracking-wider">≈ Pendapatan</p><p class="num font-semibold pv">${formatRM(r.draw)}/bln</p><p class="t-faint">selama ${appState.settings.drawdownYears} thn</p></div>
             </div>
             ${r.gross === 0 ? '<p class="text-[11px] t-rose">Tiada gaji kasar kategori "Gaji" untuk orang ni, caruman dikira 0.</p>' : ''}
         </div>`;
@@ -2298,7 +3012,9 @@ function renderCharts(m) {
             ]
         },
         options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { labels: { boxWidth: 12, color: th.text } }, tooltip: tip }, scales: axes }
+            plugins: { legend: { labels: { boxWidth: 12, color: th.text } },
+                tooltip: { callbacks: { ...tip.callbacks, footer: (items) => { const nt = snaps[items[0]?.dataIndex]?.note; return nt ? `📝 ${nt}` : ''; } } } },
+            scales: axes }
     });
 }
 function upsertChart(key, canvasId, config) {
@@ -2322,6 +3038,7 @@ function closeModal(id) {
     if (id === 'modal-entry') { editing = null; $('form-entry').reset(); }
     if (id === 'modal-goal') editingGoalId = null;
     if (id === 'modal-event') editingEventId = null;
+    if (id === 'modal-pay') payingId = null;
 }
 
 function fillCategoryOptions(type, current) {
@@ -2337,6 +3054,11 @@ const HINTS = {
     income: 'Bersih = masuk akaun. Kasar = sebelum potongan (untuk zakat pendapatan).',
     expense: 'Purata bulanan. Untuk belanja tahunan (cukai jalan, insurans kereta), bahagi 12.'
 };
+function togglePayUI() {
+    const sal = $('in-paymethod').value === 'salary';
+    $('wrap-payer').classList.toggle('hidden', !sal);
+    $('hint-paymethod').classList.toggle('hidden', !sal);
+}
 function applyTypeUI(type) {
     const show = (id, on) => $(id).classList.toggle('hidden', !on);
     $('entry-hint').textContent = HINTS[type];
@@ -2378,13 +3100,15 @@ function openEntry(type, item = null, collection = null) {
         $('in-name').value = item.name;
         $('in-amount').value = item.amount;
         if (type === 'asset') { $('in-secondary').value = item.yieldPercent; $('chk-locked').checked = item.isLocked; $('in-zakat').value = item.zakatType; }
-        if (type === 'liability') { $('in-secondary').value = item.monthlyPayment; $('in-tertiary').value = item.interestRate; }
+        if (type === 'liability') { $('in-secondary').value = item.monthlyPayment; $('in-tertiary').value = item.interestRate; $('in-paymethod').value = item.payMethod; $('in-payer').value = item.payer; }
         if (type === 'income') { $('in-secondary').value = item.grossAmount; $('chk-passive').checked = item.isPassive; }
         if (type === 'expense') { $('chk-fixed').checked = item.isFixed; }
     } else {
         if (activeProfile !== 'combined') $('in-owner').value = activeProfile;
         applyAssetDefaults();
     }
+    if (!item && type === 'liability') $('in-payer').value = activeProfile === 'wife' ? 'wife' : 'husband';
+    togglePayUI();
     openModal('modal-entry');
     setTimeout(() => $('in-name').focus(), 50);
 }
@@ -2411,7 +3135,9 @@ function handleEntrySubmit(e) {
     const sec = Math.max(0, n($('in-secondary').value));
     let rec;
     if (type === 'asset') rec = { ...base, yieldPercent: sec, isLocked: $('chk-locked').checked, zakatType: $('in-zakat').value };
-    if (type === 'liability') rec = { ...base, monthlyPayment: sec, interestRate: Math.max(0, n($('in-tertiary').value)) };
+    if (type === 'liability') rec = { ...base, monthlyPayment: sec, interestRate: Math.max(0, n($('in-tertiary').value)),
+        payMethod: $('in-paymethod').value === 'salary' ? 'salary' : 'debit',
+        payer: $('in-payer').value === 'wife' ? 'wife' : 'husband' };
     if (type === 'income') rec = { ...base, grossAmount: sec || v.amount, isPassive: $('chk-passive').checked };
     if (type === 'expense') rec = { ...base, isFixed: $('chk-fixed').checked };
 
@@ -2462,8 +3188,11 @@ function takeSnapshot() {
     const months = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
     const dateLabel = `${months[now.getMonth()]} ${now.getFullYear()}`;
     const doSave = () => {
+        const old = appState.historySnapshots.find((s) => s.key === key);   // keep its note if no new one typed
+        const note = cleanText($('snap-note').value, 120) || old?.note || '';
         appState.historySnapshots = appState.historySnapshots.filter((s) => s.key !== key && s.dateLabel !== dateLabel);
-        appState.historySnapshots.push({ id: uid('snap'), key, dateLabel, netWorth: m.netWorth, liquidAssets: m.liquidRaw, income: m.netIncome, expenses: m.totalExp, savings: m.savings });
+        appState.historySnapshots.push({ id: uid('snap'), key, dateLabel, netWorth: m.netWorth, liquidAssets: m.liquidRaw, income: m.netIncome, expenses: m.totalExp, savings: m.savings, note });
+        $('snap-note').value = '';
         saveState(); renderAll(); showToast(`Snapshot ${dateLabel} disimpan.`, 'success');
     };
     if (appState.historySnapshots.some((s) => s.key === key || s.dateLabel === dateLabel)) {
@@ -2474,6 +3203,12 @@ function takeSnapshot() {
 /* =====================================================================
    SETTINGS, BACKUP, ICS
    ===================================================================== */
+// [inputId, settingsKey, min, max] for plain numeric settings
+const SIMPLE_SETTINGS = [
+    ['s-drawdown', 'drawdownYears', 5, 45], ['s-medinfl', 'medicalInflation', 0, 25], ['s-medshare', 'medicalShare', 0, 60],
+    ['s-em-min', 'emergencyMin', 1, 24], ['s-em-ideal', 'emergencyIdeal', 1, 36],
+    ['s-dsr-target', 'dsrTarget', 10, 80], ['s-dsr-max', 'dsrMax', 20, 90]
+];
 function openSettings() {
     const s = appState.settings;
     const pp = s.people;
@@ -2483,11 +3218,20 @@ function openSettings() {
         $(`s-scheme-${k}`).value = pp[who].scheme;
         $(`s-ra-${k}`).value = pp[who].retireAge;
         $(`s-svc-${k}`).value = pp[who].serviceStartYear || '';
+        $(`s-sg-${k}`).value = pp[who].salaryGrowth;
+        $(`s-lc-${k}`).value = pp[who].lifeCover || '';
+        $(`s-zs-${k}`).innerHTML = Object.entries(NISAB_PRESETS).map(([key, v]) => `<option value="${key}">${esc(v.label)}${v.value ? ` · ${formatRM(v.value)}` : ''}</option>`).join('');
+        $(`s-zs-${k}`).value = pp[who].zakatState;
     });
+    SIMPLE_SETTINGS.forEach(([id, key]) => { $(id).value = s[key]; });
+    $('s-replace').value = s.takaful.replaceYears;
+    $('s-final').value = s.takaful.finalExpenses;
+    $('s-mrtt').checked = s.takaful.mortgageCovered;
+    $('s-kwsp-avail').checked = s.takaful.countKwsp;
     $('s-splitmode').value = s.splitMode;
     $('s-epfdiv').value = s.epfDividend;
-    updateSplitPreview();
     $('s-split').value = Math.round(s.sharedSplitRatio * 100);
+    updateSplitPreview();                               // after s-split is filled (manual mode reads it)
     $('s-mult').value = s.fireMultiplier;
     $('s-return').value = s.expectedReturn;
     $('s-infl').value = s.inflationRate;
@@ -2515,9 +3259,21 @@ function saveSettings(e) {
             birthYear: yr($(`s-by-${k}`).value, 1940, 2015),
             scheme: $(`s-scheme-${k}`).value === 'pencen' ? 'pencen' : 'kwsp',
             retireAge: yr($(`s-ra-${k}`).value, 40, 70) || 60,
-            serviceStartYear: yr($(`s-svc-${k}`).value, 1970, 2040)
+            serviceStartYear: yr($(`s-svc-${k}`).value, 1970, 2040),
+            salaryGrowth: clamp($(`s-sg-${k}`).value, -5, 10, 0),
+            zakatState: NISAB_PRESETS[$(`s-zs-${k}`).value] ? $(`s-zs-${k}`).value : 'WP',
+            lifeCover: clamp($(`s-lc-${k}`).value, 0, 1e8, 0)
         };
     });
+    SIMPLE_SETTINGS.forEach(([id, key, lo, hi]) => { s[key] = clamp($(id).value, lo, hi, DEFAULT_SETTINGS[key]); });
+    if (s.emergencyIdeal < s.emergencyMin) s.emergencyIdeal = s.emergencyMin;
+    if (s.dsrMax < s.dsrTarget) s.dsrMax = s.dsrTarget;
+    s.takaful = {
+        replaceYears: clamp($('s-replace').value, 0, 30, 5),
+        finalExpenses: clamp($('s-final').value, 0, 1e6, 10000),
+        mortgageCovered: $('s-mrtt').checked,
+        countKwsp: $('s-kwsp-avail').checked
+    };
     s.fireMultiplier = clamp($('s-mult').value, 10, 50, 25);
     s.expectedReturn = clamp($('s-return').value, 0, 20, 6);
     s.inflationRate = clamp($('s-infl').value, 0, 15, 3);
@@ -2602,6 +3358,38 @@ function setOdoUI(on) {
     $('wrap-odo').classList.toggle('hidden', !on);
     setText('lbl-ev-date', on ? 'Tarikh servis terakhir' : 'Tarikh (seterusnya / rujukan)');
 }
+// ---- Cost cycle editor (minor/major service etc.) ----
+let cycleDraft = [];   // [{label, amount}]
+let cycleCur = 0;
+function readCycleRows() {
+    document.querySelectorAll('#cycle-rows [data-cyc]').forEach((row) => {
+        const i = Number(row.dataset.cyc);
+        cycleDraft[i] = { label: row.querySelector('.cyc-label').value, amount: row.querySelector('.cyc-amt').value };
+        if (row.querySelector('.cyc-cur').checked) cycleCur = i;
+    });
+}
+function renderCycleRows() {
+    $('cycle-rows').innerHTML = cycleDraft.map((x, i) => `
+        <div class="flex items-center gap-2" data-cyc="${i}">
+            <input type="radio" name="cyc-cur" class="cyc-cur w-4 h-4 accent-emerald-600" ${i === cycleCur ? 'checked' : ''} aria-label="Servis seterusnya">
+            <input type="text" maxlength="30" class="field cyc-label" style="padding:.4rem .6rem;font-size:12px" value="${esc(x.label)}" placeholder="Contoh: Minor">
+            <input type="number" min="0" step="1" inputmode="decimal" class="field num cyc-amt" style="padding:.4rem .6rem;font-size:12px;max-width:110px" value="${x.amount === '' || x.amount == null ? '' : esc(x.amount)}" placeholder="RM">
+            <button type="button" class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="cycle-del" data-idx="${i}" aria-label="Buang"><i data-lucide="x"></i></button>
+        </div>`).join('');
+    refreshIcons();
+}
+function setCycleUI(on, schedule = null, idx = 0) {
+    $('ev-cycle-on').checked = on;
+    $('wrap-cycle').classList.toggle('hidden', !on);
+    $('ev-amount').disabled = on;
+    $('ev-amount').placeholder = on ? 'ikut kitaran' : '';
+    if (on) {
+        cycleDraft = (schedule && schedule.length ? schedule : [{ label: 'Minor', amount: '' }, { label: 'Major', amount: '' }]).map((x) => ({ label: x.label, amount: x.amount ?? '' }));
+        cycleCur = Math.min(idx, cycleDraft.length - 1);
+        renderCycleRows();
+    }
+}
+
 function applyTemplate(t) {
     $('ev-name').value = t.name;
     $('ev-cat').value = t.cat;
@@ -2616,6 +3404,7 @@ function applyTemplate(t) {
     }
     setOdoUI(!!t.odo);
     if (t.odo) $('ev-odo-int').value = t.odo.interval;
+    setCycleUI(!!t.schedule, t.schedule || null, 0);
     if (t.cat === 'kenderaan' || t.cat === 'langganan') $('ev-owner').value = activeProfile === 'combined' ? 'husband' : activeProfile;
     $('ev-amount').focus();
 }
@@ -2639,12 +3428,13 @@ function openEvent(id = null) {
         $('ev-paused').checked = ev.paused; $('ev-inbudget').checked = ev.inBudget;
         setHijriUI(ev.hijri);
         setOdoUI(!!ev.odo);
+        setCycleUI(!!ev.schedule, ev.schedule, ev.cycleIdx % (ev.schedule?.length || 1));
         if (ev.odo) { $('ev-odo-int').value = ev.odo.interval; $('ev-odo-last').value = ev.odo.lastKm; $('ev-odo-now').value = ev.odo.currentKm; $('ev-odo-rate').value = ev.odo.kmPerMonth; }
     } else {
         $('ev-owner').value = activeProfile === 'combined' ? 'shared' : activeProfile;
         $('ev-repeat').value = 'yearly';
         $('ev-cat').value = 'lain';
-        setHijriUI(null); setOdoUI(false);
+        setHijriUI(null); setOdoUI(false); setCycleUI(false);
     }
     openModal('modal-event');
     refreshIcons();
@@ -2669,17 +3459,28 @@ function handleEventSubmit(e) {
         if (odo.currentKm && odo.currentKm < odo.lastKm) { showToast('Km sekarang tak boleh kurang dari km servis terakhir.', 'error'); return; }
         if (!odo.currentKm) odo.currentKm = odo.lastKm;
     }
+    let schedule = null, cycleIdx = 0;
+    if ($('ev-cycle-on').checked) {
+        readCycleRows();
+        const rows = cycleDraft.map((x, i) => ({ label: cleanText(x.label, 30), amount: Math.max(0, n(x.amount)), i })).filter((x) => x.label || x.amount);
+        if (!rows.length) { showToast('Isi sekurang-kurangnya satu baris kitaran.', 'error'); return; }
+        schedule = rows.map((x) => ({ label: x.label || 'Kitaran', amount: x.amount }));
+        if (cycleCur >= cycleDraft.length || cycleCur < 0) cycleCur = 0;
+        cycleIdx = Math.max(0, rows.findIndex((x) => x.i === cycleCur));
+    }
     const rec = {
+        schedule, cycleIdx,
         name, category: SINK_GROUPS[$('ev-cat').value] ? $('ev-cat').value : 'lain', owner: safeOwner($('ev-owner').value),
-        amount: Math.max(0, n($('ev-amount').value)), repeat: REPEAT_MONTHS[$('ev-repeat').value] != null ? $('ev-repeat').value : 'yearly',
+        amount: schedule ? schedule[cycleIdx].amount : Math.max(0, n($('ev-amount').value)), repeat: REPEAT_MONTHS[$('ev-repeat').value] != null ? $('ev-repeat').value : 'yearly',
         date: evHijri ? (prev?.date || todayISO()) : date, hijri: evHijri, odo,
         paused: $('ev-paused').checked, inBudget: $('ev-inbudget').checked
     };
     if (rec.hijri && rec.repeat !== 'yearly') rec.repeat = 'yearly';   // Hijri items recur yearly by definition
     if (prev) Object.assign(prev, rec, { done: rec.repeat === 'once' ? prev.done : false });
-    else appState.events.push({ id: uid('ev'), lastPaid: '', done: false, ...rec });
+    else appState.events.push({ id: uid('ev'), lastPaid: '', done: false, history: [], ...rec });
     saveState(); closeModal('modal-event'); renderAll();
-    showToast(rec.amount ? 'Item disimpan.' : 'Item disimpan. Isi jumlah supaya masuk kiraan sinking.', rec.amount ? 'success' : 'warning');
+    const amtOk = schedule ? schedule.some((x) => x.amount > 0) : rec.amount > 0;
+    showToast(amtOk ? 'Item disimpan.' : 'Item disimpan. Isi jumlah supaya masuk kiraan sinking.', amtOk ? 'success' : 'warning');
 }
 
 /* ---------- Full-calendar .ics export ---------- */
@@ -2702,6 +3503,97 @@ function downloadAllIcs() {
     lines.push('END:VCALENDAR');
     downloadBlob(lines.join('\r\n'), 'Kalendar_Kewangan_Keluarga.ics', 'text/calendar');
     showToast('Kalendar .ics dimuat turun (peringatan 14 hari sebelum bayaran).', 'success');
+}
+
+/* =====================================================================
+   SHARING: WhatsApp summary + CSV export
+   ===================================================================== */
+function buildSummary(hideAmounts) {
+    const m = computeMetrics('combined');
+    const st = appState.settings;
+    const RM = (v) => hideAmounts ? '••••' : formatRM(v);
+    const now = new Date();
+    const snaps = [...appState.historySnapshots].sort((a, b) => a.key.localeCompare(b.key));
+    const prev = snaps.filter((s) => s.key < currentYM()).slice(-1)[0];
+    const lines = [];
+    lines.push(`*Ringkasan Kewangan Keluarga · ${MONTHS_MS[now.getMonth()]} ${now.getFullYear()}*`);
+    lines.push('');
+    const nwDelta = prev ? m.netWorth - prev.netWorth : null;
+    lines.push(`• Nilai bersih: ${RM(m.netWorth)}${nwDelta != null ? ` (${nwDelta >= 0 ? '▲' : '▼'} ${hideAmounts ? pct(prev.netWorth ? Math.abs(nwDelta / prev.netWorth * 100) : 0) : formatRM(Math.abs(nwDelta))} vs ${prev.dateLabel})` : ''}`);
+    lines.push(`• Simpanan bulanan: ${RM(m.savings)} (${pct(m.savingsRate)})`);
+    lines.push(`• Progress FI: ${pct(m.fiProgress)}${Number.isFinite(m.yrs) && m.yrs > 0 ? ` · anggaran capai ${now.getFullYear() + Math.ceil(m.yrs)}` : ''}`);
+    lines.push(`• Dana kecemasan: ${m.runway.toFixed(1)} bulan (sasaran ${st.emergencyIdeal})`);
+    lines.push(`• DSR: ${pct(m.dsr)}`);
+    const gl = m.goals.list.filter((g) => !g.done);
+    if (gl.length) {
+        lines.push('');
+        lines.push('*Matlamat*');
+        const tag = { ok: '✅', behind: '⚠️', overdue: '❗', done: '🎉' };
+        gl.forEach((g) => lines.push(`${tag[g.status]} ${g.name}: ${g.pct.toFixed(0)}%${g.targetMonth ? ` (sasaran ${ymLabel(g.targetMonth)})` : ''}`));
+    }
+    const sp = sinkingPlan('combined');
+    const soon = sp.active.filter((r) => r.days >= 0 && r.days <= 45);
+    if (soon.length) {
+        lines.push('');
+        lines.push('*Bayaran 45 hari akan datang*');
+        soon.forEach((r) => lines.push(`• ${r.e.name}: ${RM(r.amount)} · ${dLabel(r.due.date)}${r.gap > 1 ? ` (kurang ${RM(r.gap)})` : ' ✅'}`));
+        if (sp.transferNow > 0) lines.push(`→ Transfer ke akaun sinking bulan ni: ${RM(sp.transferNow)}`);
+    }
+    // Top action items from the local insights (critical first)
+    const crit = [...document.querySelectorAll('#insights > div')].map((d) => ({ t: d.querySelector('h4')?.textContent, b: d.querySelector('.badge')?.textContent }))
+        .filter((x) => x.b === 'Kritikal' || x.b === 'Perhatian').slice(0, 3);
+    if (crit.length) {
+        lines.push('');
+        lines.push('*Perlu perhatian*');
+        crit.forEach((x) => lines.push(`• ${x.t}`));
+    }
+    lines.push('');
+    lines.push('_Dari Hub Kewangan Keluarga_');
+    return lines.join('\n');
+}
+function openShare() {
+    refreshShare();
+    openModal('modal-share');
+    refreshIcons();
+}
+function refreshShare() { $('share-text').value = buildSummary($('share-hide').checked); }
+async function copyShare() {
+    try { await navigator.clipboard.writeText($('share-text').value); showToast('Ringkasan disalin.', 'success'); }
+    catch { $('share-text').select(); showToast('Tekan Ctrl/⌘+C untuk salin.', 'info'); }
+}
+function openWhatsApp() {
+    const url = `https://wa.me/?text=${encodeURIComponent($('share-text').value)}`;
+    const a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
+}
+
+// ---- CSV (Excel-friendly: UTF-8 BOM, CRLF, formula-injection guard) ----
+function csvCell(v) {
+    let s = v == null ? '' : String(v);
+    if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s;   // stop Excel from executing text as formula
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function toCsv(rows) { return '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n'); }
+function exportCsvRecords() {
+    const O = (o) => ownerLabel(o);
+    const rows = [['Jenis', 'Pemilik', 'Nama', 'Kategori', 'Nilai / Baki (RM)', 'Bulanan (RM)', 'Kadar (%)', 'Tarikh', 'Nota']];
+    appState.assets.forEach((a) => rows.push(['Aset', O(a.owner), a.name, a.category, a.amount, '', a.yieldPercent, '', `${a.isLocked ? 'Terkunci' : 'Liquid'}; zakat ${a.zakatType}`]));
+    appState.liabilities.forEach((l) => rows.push(['Liabiliti', O(l.owner), l.name, l.category, l.amount, l.monthlyPayment, l.interestRate, '', l.payMethod === 'salary' ? `Potong gaji ${O(l.payer)}` : '']));
+    appState.income.forEach((i) => rows.push(['Pendapatan', O(i.owner), i.name, i.category, '', i.amount, '', '', `Kasar ${i.grossAmount}${i.isPassive ? '; pasif' : ''}`]));
+    appState.expenses.forEach((e) => rows.push(['Belanja', O(e.owner), e.name, e.category, '', e.amount, '', '', `${e.isFixed ? 'Tetap' : 'Variabel'}${e.linkedLiabilityId ? '; auto dari liabiliti' : ''}`]));
+    appState.goals.forEach((g) => rows.push(['Matlamat', O(g.owner), g.name, GOAL_KINDS[g.kind].label, g.target, g.monthlyPlan, '', g.targetMonth, g.linkedAssetId ? 'Dipaut ke aset' : `Terkumpul ${g.saved}`]));
+    appState.events.forEach((e) => rows.push(['Sinking fund', O(e.owner), e.name, SINK_GROUPS[e.category].label, itemAmount(e), '', '', e.hijri ? `${e.hijri.d}/${e.hijri.m} Hijrah` : e.date, `${REPEAT_LABEL[e.repeat]}${e.paused ? '; belum aktif' : ''}`]));
+    appState.dividends.forEach((d) => rows.push(['Dividen', '', appState.assets.find((a) => a.id === d.assetId)?.name || d.assetName, '', d.amount, '', '', d.date, '']));
+    downloadBlob(toCsv(rows), `Rekod_Kewangan_${todayISO()}.csv`, 'text/csv;charset=utf-8');
+    showToast('CSV rekod dimuat turun.', 'success');
+}
+function exportCsvHistory() {
+    const rows = [['Bulan', 'Kunci', 'Nilai bersih', 'Aset liquid', 'Pendapatan', 'Belanja', 'Simpanan', 'Nota']];
+    [...appState.historySnapshots].sort((a, b) => a.key.localeCompare(b.key))
+        .forEach((h) => rows.push([h.dateLabel, h.key, Math.round(h.netWorth), Math.round(h.liquidAssets), Math.round(h.income), Math.round(h.expenses), Math.round(h.savings), h.note || '']));
+    downloadBlob(toCsv(rows), `Sejarah_Snapshot_${todayISO()}.csv`, 'text/csv;charset=utf-8');
+    showToast('CSV sejarah dimuat turun.', 'success');
 }
 
 function exportJson() { return JSON.stringify(appState, null, 2); }
@@ -2817,6 +3709,17 @@ document.addEventListener('click', (e) => {
         'edit-event': () => openEvent(t.dataset.id),
         'event-preset': () => { const tp = SINK_TEMPLATES[Number(t.dataset.idx)]; if (tp) applyTemplate(tp); },
         'ev-hijri-off': () => setHijriUI(null),
+        'whatif-reset': () => { WHATIF_IDS.forEach((id) => { $(id).value = ''; }); renderWhatIf(computeMetrics(activeProfile)); refreshIcons(); },
+        'delete-div': () => confirmDialog('Padam rekod dividen?', 'Rekod ni akan dibuang.', () => {
+            appState.dividends = appState.dividends.filter((d) => d.id !== t.dataset.id); saveState(); renderAll(); showToast('Rekod dipadam.', 'warning'); }, 'Padam'),
+        'share': openShare,
+        'share-copy': copyShare,
+        'share-wa': openWhatsApp,
+        'csv-records': exportCsvRecords,
+        'csv-history': exportCsvHistory,
+        'tax-edit-limits': () => { taxEditing = !taxEditing; renderTax(); refreshIcons(); },
+        'cycle-add': () => { readCycleRows(); if (cycleDraft.length >= 8) return; cycleDraft.push({ label: '', amount: '' }); renderCycleRows(); },
+        'cycle-del': () => { readCycleRows(); const i = Number(t.dataset.idx); cycleDraft.splice(i, 1); if (!cycleDraft.length) { setCycleUI(false); return; } if (cycleCur >= cycleDraft.length || cycleCur === i) cycleCur = 0; else if (cycleCur > i) cycleCur--; renderCycleRows(); },
         'sink-paid': () => markSinkPaid(t.dataset.id),
         'sink-odo': () => updateOdo(t.dataset.id),
         'save-sink-balance': () => {
@@ -2874,6 +3777,37 @@ document.addEventListener('change', (e) => {
     if (el.id === 's-splitmode' || el.id === 's-split') { updateSplitPreview(); return; }
     if (el.id === 'g-asset') { toggleGoalSaved(); return; }
     if (el.id === 'ev-odo-on') { setOdoUI(el.checked); return; }
+    if (el.id === 'ev-cycle-on') { setCycleUI(el.checked); return; }
+    if (el.id === 'in-paymethod') { togglePayUI(); return; }
+    if (el.id === 'share-hide') { refreshShare(); return; }
+    if (el.dataset.snapNote) {
+        const sn = appState.historySnapshots.find((x) => x.id === el.dataset.snapNote);
+        if (sn) { sn.note = cleanText(el.value, 120); saveState(); showToast('Nota disimpan.', 'success'); }
+        return;
+    }
+    if (el.dataset.alloc) {
+        appState.settings.allocation[el.dataset.alloc] = Math.min(100, Math.max(0, Math.round(n(el.value))));
+        saveState(); renderAllocation(computeMetrics(activeProfile)); refreshIcons(); return;
+    }
+    if (el.dataset.taxLimit) {
+        appState.settings.taxLimits[el.dataset.taxLimit] = Math.max(0, n(el.value));
+        saveState(); renderTax(); refreshIcons(); return;
+    }
+    if (el.id === 'tax-year') {
+        const y = Math.round(n(el.value));
+        if (y < 2020 || y > 2100 || y === appState.settings.taxYear) { el.value = appState.settings.taxYear; return; }
+        const hasData = ['husband', 'wife'].some((p) => Object.values(appState.taxRelief[p]).some((v) => v > 0));
+        const apply = () => {
+            appState.settings.taxYear = y;
+            appState.taxRelief = { year: y, husband: {}, wife: {} };
+            appState.taxRelief = normaliseState({ ...appState, taxRelief: appState.taxRelief }).taxRelief;
+            saveState(); renderTax(); refreshIcons(); showToast(`Tahun taksiran ${y}: rekod pelepasan dikosongkan.`, 'success');
+        };
+        if (hasData) confirmDialog(`Tukar ke YA ${y}?`, 'Jumlah pelepasan yang dah diisi akan dikosongkan (had kekal). Muat turun backup dulu kalau nak simpan rekod tahun ni.', apply, 'Tukar');
+        else apply();
+        el.value = appState.settings.taxYear;
+        return;
+    }
     if (el.dataset.taxPerson) {
         appState.taxRelief[el.dataset.taxPerson][el.dataset.taxKey] = Math.max(0, n(el.value));
         saveState(); renderTax();
@@ -2884,6 +3818,13 @@ $('form-entry').addEventListener('submit', handleEntrySubmit);
 $('form-settings').addEventListener('submit', saveSettings);
 $('form-goal').addEventListener('submit', handleGoalSubmit);
 $('form-event').addEventListener('submit', handleEventSubmit);
+$('form-pay').addEventListener('submit', handlePaySubmit);
+$('form-odo').addEventListener('submit', handleOdoSubmit);
+$('form-div').addEventListener('submit', handleDivSubmit);
+// What-if recalculates live as you type (no save)
+$('form-whatif').addEventListener('input', () => { renderWhatIf(computeMetrics(activeProfile)); refreshIcons(); });
+$('form-whatif').addEventListener('submit', (e) => e.preventDefault());
+$('pay-amount').addEventListener('input', updatePayDiff);
 $('in-type').addEventListener('change', () => { const t = $('in-type').value; fillCategoryOptions(t); applyTypeUI(t); applyAssetDefaults(); });
 $('in-category').addEventListener('change', () => { if (!editing) applyAssetDefaults(); });
 $('in-name').addEventListener('input', () => { if ($('in-name').classList.contains('invalid')) validateEntry(); });

@@ -457,20 +457,38 @@
             </div>
         </div>
 
-        <!-- TAB: Calendar -->
+        <!-- TAB: Calendar + Sinking fund -->
         <div id="tab-calendar" class="view-tab-content hidden p-4 md:p-6 space-y-5">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                 <div>
-                    <h3 class="text-sm font-bold">Kalendar Kewangan 12 Bulan</h3>
-                    <p class="text-xs t-muted">Tarikh tetap + bayaran tahunan kau. Bayaran tahunan ditukar jadi simpanan bulanan (sinking fund).</p>
+                    <h3 class="text-sm font-bold">Sinking Fund & Kalendar</h3>
+                    <p class="text-xs t-muted">Satu akaun khas untuk semua bayaran berkala. Baki diagih ikut item yang paling dekat tarikh.</p>
                 </div>
                 <div class="flex gap-2 no-print">
-                    <button class="btn" data-action="ics-all"><i data-lucide="calendar-plus"></i>Eksport .ics</button>
-                    <button class="btn btn-primary" data-action="add-event"><i data-lucide="plus"></i>Tarikh</button>
+                    <button class="btn" data-action="ics-all"><i data-lucide="calendar-plus"></i>.ics</button>
+                    <button class="btn btn-primary" data-action="add-event"><i data-lucide="plus"></i>Item</button>
                 </div>
             </div>
-            <div id="sinking-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
-            <div id="calendar-list" class="space-y-2"></div>
+
+            <div class="card-sub p-4 flex flex-col md:flex-row md:items-end gap-4">
+                <div class="flex-1">
+                    <label class="lbl" for="sink-balance">Baki akaun sinking fund sekarang (RM)</label>
+                    <div class="flex gap-2">
+                        <input id="sink-balance" type="number" min="0" step="1" inputmode="decimal" class="field num pv" placeholder="0">
+                        <button class="btn btn-primary no-print" data-action="save-sink-balance"><i data-lucide="check"></i>Kemaskini</button>
+                    </div>
+                    <p id="sink-updated" class="text-[11px] t-faint mt-1">Belum dikemaskini</p>
+                </div>
+                <p class="text-[11px] t-faint md:max-w-xs">Tip: buka akaun/pocket berasingan untuk sinking fund, auto-transfer jumlah "disyorkan" setiap 25hb. Tekan "Dah bayar" bila guna duit tu.</p>
+            </div>
+
+            <div id="sinking-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+            <div id="sinking-items" class="space-y-4"></div>
+
+            <div class="space-y-2 pt-2">
+                <h3 class="text-sm font-bold">Garis Masa 12 Bulan</h3>
+                <div id="calendar-list" class="space-y-2"></div>
+            </div>
             <p class="text-[11px] t-faint">Tarikh Hijrah dikira ikut kalendar Umm al-Qura dalam browser; tarikh rasmi Malaysia boleh beza 1–2 hari. Tarikh pengumuman dividen ialah anggaran biasa, bukan tarikh rasmi.</p>
         </div>
 
@@ -759,29 +777,54 @@
     </div>
 </div>
 
-<!-- ================= MODAL: Calendar event ================= -->
+<!-- ================= MODAL: Sinking / calendar item ================= -->
 <div id="modal-event" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
-    <div class="card w-full max-w-md p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
+    <div class="card w-full max-w-lg p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
         <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-event" aria-label="Tutup"><i data-lucide="x"></i></button>
         <div>
-            <h3 id="event-title" class="text-sm font-bold">Tambah Tarikh</h3>
-            <p class="text-xs t-muted">Bayaran tahunan atau tarikh penting. Pilih template cepat atau isi sendiri.</p>
+            <h3 id="event-title" class="text-sm font-bold">Tambah Item Sinking Fund</h3>
+            <p class="text-xs t-muted">Pilih template, kemudian isi jumlah & tarikh sebenar kau.</p>
         </div>
-        <div id="event-presets" class="flex flex-wrap gap-1.5"></div>
+        <div id="event-presets" class="space-y-2"></div>
         <form id="form-event" novalidate class="space-y-3">
-            <div><label class="lbl" for="ev-name">Nama</label><input id="ev-name" type="text" maxlength="60" class="field">
-                <p id="err-ev-name" class="text-[11px] t-rose mt-1 hidden">Nama wajib diisi.</p></div>
             <div class="grid grid-cols-2 gap-3">
-                <div><label class="lbl" for="ev-date">Tarikh</label><input id="ev-date" type="date" class="field">
-                    <p id="err-ev-date" class="text-[11px] t-rose mt-1 hidden">Pilih tarikh.</p></div>
-                <div><label class="lbl" for="ev-amount">Jumlah (RM, pilihan)</label><input id="ev-amount" type="number" min="0" step="1" inputmode="decimal" class="field"></div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2"><label class="lbl" for="ev-name">Nama</label><input id="ev-name" type="text" maxlength="60" class="field">
+                    <p id="err-ev-name" class="text-[11px] t-rose mt-1 hidden">Nama wajib diisi.</p></div>
+                <div><label class="lbl" for="ev-cat">Kumpulan</label><select id="ev-cat" class="field"></select></div>
                 <div><label class="lbl" for="ev-owner">Untuk</label><select id="ev-owner" class="field js-owner-select"></select></div>
+                <div><label class="lbl" for="ev-amount">Jumlah setiap kali (RM)</label><input id="ev-amount" type="number" min="0" step="1" inputmode="decimal" class="field"></div>
                 <div><label class="lbl" for="ev-repeat">Ulang</label>
-                    <select id="ev-repeat" class="field"><option value="yearly">Setiap tahun</option><option value="once">Sekali sahaja</option></select></div>
+                    <select id="ev-repeat" class="field">
+                        <option value="3m">Setiap 3 bulan</option>
+                        <option value="6m">Setiap 6 bulan</option>
+                        <option value="yearly">Setiap tahun</option>
+                        <option value="24m">Setiap 2 tahun</option>
+                        <option value="once">Sekali sahaja</option>
+                    </select></div>
             </div>
-            <label class="flex items-center gap-2 text-xs"><input id="ev-inbudget" type="checkbox" class="w-4 h-4 accent-emerald-600">Dah termasuk dalam belanja bulanan (jangan kira sinking fund)</label>
+            <div id="wrap-ev-date">
+                <label class="lbl" for="ev-date" id="lbl-ev-date">Tarikh (seterusnya / rujukan)</label>
+                <input id="ev-date" type="date" class="field">
+                <p id="err-ev-date" class="text-[11px] t-rose mt-1 hidden">Pilih tarikh.</p>
+            </div>
+            <div id="wrap-ev-hijri" class="hidden card-sub p-3 text-xs">
+                <i data-lucide="moon-star" class="t-sage"></i> Tarikh ikut kalendar Hijrah: <strong id="ev-hijri-label"></strong>
+                <button type="button" class="badge b-mute ml-2" data-action="ev-hijri-off" style="cursor:pointer">Guna tarikh Masihi</button>
+            </div>
+
+            <label class="flex items-center gap-2 text-xs"><input id="ev-odo-on" type="checkbox" class="w-4 h-4 accent-emerald-600">Ikut bacaan odometer juga (servis: mana dulu, tarikh atau km)</label>
+            <div id="wrap-odo" class="hidden grid grid-cols-2 gap-3 card-sub p-3">
+                <div><label class="lbl" for="ev-odo-int">Setiap (km)</label><input id="ev-odo-int" type="number" min="500" step="500" class="field num" placeholder="10000"></div>
+                <div><label class="lbl" for="ev-odo-last">Km servis terakhir</label><input id="ev-odo-last" type="number" min="0" step="1" class="field num"></div>
+                <div><label class="lbl" for="ev-odo-now">Km sekarang</label><input id="ev-odo-now" type="number" min="0" step="1" class="field num"></div>
+                <div><label class="lbl" for="ev-odo-rate">Purata km / bulan</label><input id="ev-odo-rate" type="number" min="1" step="50" class="field num" placeholder="1500"></div>
+                <p class="col-span-2 text-[11px] t-faint">Tarikh atas = tarikh servis terakhir. Kemaskini "Km sekarang" sebulan sekali (25hb) supaya ramalan tepat.</p>
+            </div>
+
+            <div class="space-y-2 text-xs">
+                <label class="flex items-center gap-2"><input id="ev-paused" type="checkbox" class="w-4 h-4 accent-emerald-600">Belum aktif (contoh: cukai pintu bila dah ada rumah sendiri)</label>
+                <label class="flex items-center gap-2"><input id="ev-inbudget" type="checkbox" class="w-4 h-4 accent-emerald-600">Dibayar dari belanja bulanan biasa (jangan masuk sinking fund)</label>
+            </div>
             <div class="flex justify-between gap-2 pt-2">
                 <button type="button" id="ev-delete" class="btn btn-danger hidden" data-action="delete-event"><i data-lucide="trash-2"></i>Padam</button>
                 <div class="flex gap-2 ml-auto">
@@ -887,10 +930,34 @@ const CHECKLIST = [
     { key: 'senarai', label: 'Senarai akaun & dokumen penting disimpan (pasangan tahu di mana)' }
 ];
 
-// Quick-add templates for the calendar (user still picks the real date)
-const EVENT_PRESETS = [
-    'Cukai jalan', 'Insurans / takaful kereta', 'Hibah Tabung Haji', 'Ulang tahun perkahwinan',
-    'Takaful tahunan', 'Servis kereta', 'Duit raya', 'Korban'
+// Sinking fund groups + templates. Amounts are left blank on purpose: fill your real quotes.
+const SINK_GROUPS = {
+    kenderaan: { label: 'Kenderaan', icon: 'car' },
+    rumah:     { label: 'Rumah', icon: 'house' },
+    keluarga:  { label: 'Keluarga & Agama', icon: 'moon-star' },
+    langganan: { label: 'Langganan & Lain', icon: 'repeat' },
+    lain:      { label: 'Lain-lain', icon: 'calendar-days' }
+};
+const REPEAT_MONTHS = { once: 0, '3m': 3, '6m': 6, yearly: 12, '24m': 24 };
+const REPEAT_LABEL = { once: 'sekali', '3m': 'setiap 3 bln', '6m': 'setiap 6 bln', yearly: 'tahunan', '24m': 'setiap 2 thn' };
+// md = default month-day when the date is fixed by law/practice; hijri = {m,d}; odo = km-based service
+const SINK_TEMPLATES = [
+    { cat: 'kenderaan', name: 'Cukai jalan', repeat: 'yearly' },
+    { cat: 'kenderaan', name: 'Insurans / takaful kereta', repeat: 'yearly' },
+    { cat: 'kenderaan', name: 'Servis kereta', repeat: '6m', odo: { interval: 10000 } },
+    { cat: 'kenderaan', name: 'Tayar', repeat: '24m' },
+    { cat: 'kenderaan', name: 'Bateri kereta', repeat: '24m' },
+    { cat: 'rumah', name: 'Cukai pintu (DBKL: Feb & Ogos)', repeat: '6m', md: '02-28', paused: true },
+    { cat: 'rumah', name: 'Cukai tanah (sebelum 31 Mei)', repeat: 'yearly', md: '05-31', paused: true },
+    { cat: 'rumah', name: 'Insurans / takaful rumah (kebakaran)', repeat: 'yearly', paused: true },
+    { cat: 'keluarga', name: 'Bajet Ramadan', repeat: 'yearly', hijri: { m: 9, d: 1 } },
+    { cat: 'keluarga', name: 'Duit raya & balik kampung', repeat: 'yearly', hijri: { m: 10, d: 1 } },
+    { cat: 'keluarga', name: 'Korban', repeat: 'yearly', hijri: { m: 12, d: 10 } },
+    { cat: 'keluarga', name: 'Ulang tahun perkahwinan', repeat: 'yearly' },
+    { cat: 'langganan', name: 'Takaful / insurans tahunan', repeat: 'yearly' },
+    { cat: 'langganan', name: 'Langganan tahunan (streaming / cloud)', repeat: 'yearly' },
+    { cat: 'langganan', name: 'Yuran profesional / keahlian', repeat: 'yearly' },
+    { cat: 'langganan', name: 'Domain / hosting', repeat: 'yearly' }
 ];
 
 const DEFAULT_PEOPLE = {
@@ -920,7 +987,11 @@ const SAMPLE_DATA = {
         { id: 'g2', kind: 'rumah', name: 'Deposit + kos rumah pertama', owner: 'shared', target: 70000, targetMonth: '2029-12', linkedAssetId: null, saved: 15000, monthlyPlan: 1200, excludeFromFI: true }
     ],
     events: [
-        { id: 'ev1', name: 'Cukai jalan + insurans Honda City', date: '2026-03-15', amount: 1400, owner: 'husband', repeat: 'yearly', inBudget: false }
+        { id: 'ev1', name: 'Cukai jalan Honda City', category: 'kenderaan', date: '2027-03-15', amount: 90, owner: 'husband', repeat: 'yearly' },
+        { id: 'ev2', name: 'Takaful kereta Honda City', category: 'kenderaan', date: '2027-03-15', amount: 1300, owner: 'husband', repeat: 'yearly' },
+        { id: 'ev3', name: 'Servis kereta Honda City', category: 'kenderaan', date: '2026-07-10', amount: 350, owner: 'husband', repeat: '6m', odo: { interval: 10000, lastKm: 42000, currentKm: 48500, kmPerMonth: 1500 } },
+        { id: 'ev4', name: 'Duit raya & balik kampung', category: 'keluarga', date: '2026-01-01', hijri: { m: 10, d: 1 }, amount: 2000, owner: 'shared', repeat: 'yearly' },
+        { id: 'ev5', name: 'Cukai pintu (DBKL: Feb & Ogos)', category: 'rumah', date: '2027-02-28', amount: 400, owner: 'shared', repeat: '6m', paused: true }
     ],
     actuals: {},
     checklist: { husband: {}, wife: {} },
@@ -1077,7 +1148,8 @@ function normaliseState(raw) {
         lastBackupAt: typeof s.lastBackupAt === 'string' ? s.lastBackupAt : null,
         splitMode: ['income', 'nafkah', 'equal', 'manual'].includes(s.splitMode) ? s.splitMode : 'income',
         epfDividend: s.epfDividend != null ? n(s.epfDividend) : 5.5,
-        people: normalisePeople(s.people)
+        people: normalisePeople(s.people),
+        sinking: { balance: Math.max(0, n(s.sinking?.balance)), updatedAt: typeof s.sinking?.updatedAt === 'string' ? s.sinking.updatedAt : '' }
     };
     const isV1 = n(raw.schemaVersion) < 2;
 
@@ -1127,10 +1199,22 @@ function normaliseState(raw) {
         linkedAssetId: assetIds.has(g.linkedAssetId) ? g.linkedAssetId : null,
         saved: Math.max(0, n(g.saved)), monthlyPlan: Math.max(0, n(g.monthlyPlan)), excludeFromFI: g.excludeFromFI !== false
     }));
-    const events = arr(raw.events).filter((e) => dateRe.test(e.date)).map((e) => ({
-        id: safeId(e.id, 'ev'), name: cleanText(e.name, 60) || 'Tarikh', date: e.date, amount: Math.max(0, n(e.amount)),
-        owner: safeOwner(e.owner), repeat: e.repeat === 'once' ? 'once' : 'yearly', inBudget: !!e.inBudget
-    }));
+    const events = arr(raw.events).filter((e) => dateRe.test(e.date) || (e.hijri && n(e.hijri.m))).map((e) => {
+        const hm = Math.round(n(e.hijri?.m)), hd = Math.round(n(e.hijri?.d));
+        const odo = e.odo && n(e.odo.interval) > 0 ? {
+            interval: Math.max(500, n(e.odo.interval)), lastKm: Math.max(0, n(e.odo.lastKm)),
+            currentKm: Math.max(0, n(e.odo.currentKm)), kmPerMonth: Math.max(1, n(e.odo.kmPerMonth) || 1500)
+        } : null;
+        return {
+            id: safeId(e.id, 'ev'), name: cleanText(e.name, 60) || 'Item', amount: Math.max(0, n(e.amount)),
+            date: dateRe.test(e.date) ? e.date : todayISO(),
+            owner: safeOwner(e.owner), repeat: REPEAT_MONTHS[e.repeat] != null ? e.repeat : 'yearly',
+            category: SINK_GROUPS[e.category] ? e.category : 'lain',
+            inBudget: !!e.inBudget, paused: !!e.paused, done: !!e.done,
+            hijri: hm >= 1 && hm <= 12 && hd >= 1 && hd <= 30 ? { m: hm, d: hd } : null,
+            odo, lastPaid: dateRe.test(e.lastPaid) ? e.lastPaid : ''
+        };
+    });
     // actuals: { 'YYYY-MM': { category: amount } } household-level only
     const actuals = {};
     Object.entries(raw.actuals && typeof raw.actuals === 'object' ? raw.actuals : {}).forEach(([k, v]) => {
@@ -1256,6 +1340,10 @@ function computeMetrics(profile) {
     const liabilities = scoped(appState.liabilities, profile);
     const income = scoped(appState.income, profile);
     const expenses = scoped(appState.expenses, profile, 'spend');
+    // Annual/periodic costs are real expenses: add the long-run sinking average as an auto line,
+    // so savings rate and the FI target (25x annual spending) include them.
+    const sinkSteady = sinkingPlan(profile).steady;
+    if (sinkSteady > 0) expenses.push({ id: 'auto-sink', owner: 'shared', name: 'Sinking fund (purata bulanan)', category: 'Sinking Fund', amount: sinkSteady, isFixed: true, auto: true, _share: 1 });
 
     const liquidRaw = sum(assets.filter((a) => !a.isLocked));
     const locked = sum(assets.filter((a) => a.isLocked));
@@ -1520,8 +1608,14 @@ function renderInsights(m) {
     else if (behind.length) add(2, 'Matlamat ketinggalan', behind.map((x) => `${x.name} (perlu ${formatRM(x.needed)}/bln)`).join(', ') + '.', 'Naikkan simpanan bulanan untuk matlamat ini atau ubah tarikh.');
     if (gl.dupAsset) add(2, 'Satu aset untuk dua matlamat', 'Ada aset yang dipaut ke lebih daripada satu matlamat; progress dikira dua kali.', 'Pisahkan akaun atau guna simpanan manual untuk salah satu.');
     // Calendar
-    const sk = sinkingSummary(activeProfile);
-    if (sk.next30.length) add(2, 'Bayaran dalam 30 hari', sk.next30.map((i) => `${i.name} ${formatRM(i.amount)} (${i.days} hari)`).join(', ') + '.', 'Pastikan duit dah diasingkan dalam akaun sinking fund.');
+    const sp = sinkingPlan(activeProfile);
+    if (sp.overdue.length) add(3, 'Bayaran / servis lewat', sp.overdue.map((r) => `${r.e.name} (${r.due.overdueKm ? r.due.reason : `${-r.days} hari`})`).join(', ') + '.', 'Bayar dan tekan "Dah bayar", atau kemaskini tarikh kalau dah selesai.');
+    if (sp.shortSoon.length) add(sp.shortSoon.some((r) => r.days <= 30) ? 3 : 2, 'Sinking fund tak cukup', sp.shortSoon.map((r) => `${r.e.name}: kurang ${formatRM(r.gap)} (${r.days} hari)`).join(', ') + '.', `Transfer ${formatRM(sp.transferNow)} bulan ni ke akaun sinking, atau guna dana kecemasan sebagai jambatan.`);
+    else if (sp.next30.length) add(1, 'Bayaran dalam 30 hari (cukup)', sp.next30.map((r) => `${r.e.name} ${formatRM(r.amountScoped)}`).join(', ') + '.', 'Duit dah ada. Tekan "Dah bayar" lepas bayar supaya baki dikemaskini.');
+    const svcSoon = sp.rows.filter((r) => r.e.odo && !r.e.paused && r.due?.kmLeft != null && r.due.kmLeft <= 1000);
+    if (svcSoon.length) add(2, 'Servis kereta dekat', svcSoon.map((r) => `${r.e.name}: ${Math.max(0, Math.round(r.due.kmLeft)).toLocaleString('en-MY')} km lagi`).join(', ') + '.', 'Book slot servis sekarang; elak lewat ikut km yang boleh jejaskan waranti.');
+    const sinkUpd = appState.settings.sinking.updatedAt;
+    if (sp.active.length && (!sinkUpd || (Date.now() - parseISO(sinkUpd)) / 86400000 > 35)) add(1, 'Baki sinking fund lama', sinkUpd ? `Kali terakhir dikemaskini ${sinkUpd}.` : 'Belum pernah diisi.', 'Isi baki sebenar akaun sinking di tab Kalendar setiap 25hb.');
     // Budget vs actual: previous month with entries
     const prevYM = (() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
     const over = budgetRows(prevYM).filter((r) => r.has && r.actual > r.budget * 1.1 && r.actual - r.budget >= 50).sort((a, b) => (b.actual - b.budget) - (a.actual - a.budget));
@@ -1609,11 +1703,11 @@ function renderTables(m) {
 
     $('tbody-expenses').innerHTML = m.expenses.length ? [...m.expenses].sort(byAmt).map((e) => `
         <tr><td>${ownerBadge(e.owner)}</td>
-        <td class="font-semibold">${e.linkedLiabilityId ? '<i data-lucide="link" class="t-faint mr-1" title="Auto-sync dari liabiliti"></i>' : ''}${esc(e.name)}</td>
+        <td class="font-semibold">${e.linkedLiabilityId ? '<i data-lucide="link" class="t-faint mr-1" title="Auto-sync dari liabiliti"></i>' : ''}${e.auto ? '<i data-lucide="piggy-bank" class="t-faint mr-1"></i>' : ''}${esc(e.name)}</td>
         <td class="t-muted">${esc(e.category)}</td>
         <td>${e.isFixed ? '<span class="badge b-gold">Tetap</span>' : '<span class="badge b-blue">Variabel</span>'}</td>
         <td class="text-right num font-bold t-rose pv">${formatRM(e.amount)}${share(e)}</td>
-        <td class="text-right">${actionBtns('expenses', e.id)}</td></tr>`).join('') : emptyRow(6, 'Tiada rekod perbelanjaan.');
+        <td class="text-right">${e.auto ? '<button class="badge b-sage no-print" data-tab="calendar" style="cursor:pointer">Urus di Kalendar</button>' : actionBtns('expenses', e.id)}</td></tr>`).join('') : emptyRow(6, 'Tiada rekod perbelanjaan.');
 }
 
 function renderZakat() {
@@ -1782,7 +1876,7 @@ function renderChecklist() {
     return { done, total };
 }
 
-// ---- Calendar ----
+// ---- Calendar + sinking fund engine ----
 let hijriFmt = null;
 function hijriParts(d) {
     try {
@@ -1791,6 +1885,58 @@ function hijriParts(d) {
         return { m: Number(p.find((x) => x.type === 'month')?.value), d: Number(p.find((x) => x.type === 'day')?.value) };
     } catch { return null; }
 }
+// Next Gregorian date (>= from) matching a Hijri month/day. Cached per render.
+const hijriCache = new Map();
+function nextHijri(hm, hd, from) {
+    const key = `${hm}-${hd}-${from.toDateString()}`;
+    if (hijriCache.has(key)) return hijriCache.get(key);
+    let res = null;
+    const dt = new Date(from);
+    for (let k = 0; k < 400; k++, dt.setDate(dt.getDate() + 1)) {
+        const h = hijriParts(dt);
+        if (!h) break;
+        if (h.m === hm && h.d === hd) { res = new Date(dt); break; }
+    }
+    hijriCache.set(key, res);
+    return res;
+}
+const HIJRI_MONTHS = ['Muharram', 'Safar', 'Rabiulawal', 'Rabiulakhir', 'Jamadilawal', 'Jamadilakhir', 'Rejab', 'Syaaban', 'Ramadan', 'Syawal', 'Zulkaedah', 'Zulhijjah'];
+const parseISO = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
+const addMonths = (d, k) => { const x = new Date(d); const day = x.getDate(); x.setDate(1); x.setMonth(x.getMonth() + k); x.setDate(Math.min(day, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return x; };
+const startOfToday = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
+
+// When is this item next due? Returns { date, reason } or null (done/none).
+function nextDue(e, today = startOfToday()) {
+    if (e.done) return null;
+    const R = REPEAT_MONTHS[e.repeat];
+    const paid = e.lastPaid ? parseISO(e.lastPaid) : null;
+    // Paid recently for an upcoming occurrence -> skip to the following one
+    const skipIfPaid = (occ, advance) => (paid && paid <= occ && (occ - paid) / 86400000 <= 120 && occ >= today) ? advance(occ) : occ;
+
+    if (e.hijri) {
+        let occ = nextHijri(e.hijri.m, e.hijri.d, today);
+        if (!occ) return null;
+        occ = skipIfPaid(occ, (o) => { const f = new Date(o); f.setDate(f.getDate() + 1); return nextHijri(e.hijri.m, e.hijri.d, f) || o; });
+        return { date: occ, reason: `${e.hijri.d} ${HIJRI_MONTHS[e.hijri.m - 1]} (anggaran)` };
+    }
+    const anchor = parseISO(e.date);
+    if (e.odo) {
+        // Service: due by date (last service + R months) or by km, whichever comes first. Never rolls: overdue stays overdue.
+        const byDate = R ? addMonths(anchor, R) : anchor;
+        const kmLeft = e.odo.lastKm + e.odo.interval - e.odo.currentKm;
+        const byKm = addMonths(today, Math.max(0, Math.floor(kmLeft / e.odo.kmPerMonth)));
+        const useKm = byKm < byDate;
+        const overKm = kmLeft < 0;
+        return { date: useKm ? byKm : byDate, kmLeft, overdueKm: overKm,
+            reason: overKm ? `lewat ${Math.round(-kmLeft).toLocaleString('en-MY')} km` : useKm ? `ikut km: baki ${Math.round(kmLeft).toLocaleString('en-MY')} km` : 'ikut tarikh' };
+    }
+    if (!R) return { date: anchor, reason: 'sekali' };
+    let occ = new Date(anchor);
+    while (occ < today) occ = addMonths(occ, R);
+    occ = skipIfPaid(occ, (o) => addMonths(o, R));
+    return { date: occ, reason: REPEAT_LABEL[e.repeat] };
+}
+
 const FIXED_EVENTS = [
     { m: 2, d: 28, name: 'Anggaran pengumuman dividen KWSP (biasanya Feb–Mac)', icon: 'landmark' },
     { m: 4, d: 30, name: 'Akhir hantar borang BE manual', icon: 'receipt' },
@@ -1799,76 +1945,184 @@ const FIXED_EVENTS = [
     { m: 12, d: 30, name: 'Anggaran pengumuman dividen ASB (biasanya hujung Dis)', icon: 'wallet' }
 ];
 const HIJRI_EVENTS = [
-    { hm: 9, hd: 1, name: 'Awal Ramadan · bajet Ramadan & zakat fitrah', icon: 'moon-star' },
-    { hm: 10, hd: 1, name: 'Hari Raya Aidilfitri · duit raya, balik kampung', icon: 'moon-star' },
-    { hm: 12, hd: 10, name: 'Hari Raya Aidiladha · korban', icon: 'moon-star' }
+    { hm: 9, hd: 1, name: 'Awal Ramadan · zakat fitrah sebelum Raya', icon: 'moon-star' },
+    { hm: 10, hd: 1, name: 'Hari Raya Aidilfitri', icon: 'moon-star' },
+    { hm: 12, hd: 10, name: 'Hari Raya Aidiladha', icon: 'moon-star' }
 ];
+
+// All active sinking items with their next due date, sorted, and funded from the single pool (earliest first)
+function sinkingPlan(profile) {
+    const today = startOfToday();
+    const pool = appState.settings.sinking.balance;   // the account is household-level
+    const rows = appState.events.map((e) => {
+        const share = shareFor(e, profile, 'spend');
+        const due = nextDue(e, today);
+        const R = REPEAT_MONTHS[e.repeat];
+        const days = due ? Math.round((due.date - today) / 86400000) : null;
+        const monthsLeft = due ? Math.max(1, (due.date.getFullYear() - today.getFullYear()) * 12 + due.date.getMonth() - today.getMonth()) : null;
+        return { e, share, due, days, monthsLeft, R,
+            amount: e.amount, amountScoped: e.amount * share,
+            annual: R ? e.amount * 12 / R : 0,
+            inPool: !e.paused && !e.inBudget && !e.done && e.amount > 0 && due && days <= 400 };
+    });
+    // Greedy allocation of the real balance across household items (combined), earliest due first
+    let left = pool;
+    rows.filter((r) => r.inPool).sort((a, b) => a.due.date - b.due.date).forEach((r) => {
+        r.funded = Math.min(r.amount, left); left -= r.funded;
+        r.gap = r.amount - r.funded;
+        r.needMonthly = r.gap / r.monthsLeft;
+    });
+    const visible = rows.filter((r) => r.share > 0);
+    const active = visible.filter((r) => r.inPool);
+    const sumS = (arr, f) => arr.reduce((s, r) => s + f(r), 0);
+    return {
+        rows: visible, active, pool, unallocated: Math.max(0, left),
+        transferNow: sumS(active, (r) => r.needMonthly * r.share),
+        steady: sumS(visible.filter((r) => !r.e.paused && !r.e.inBudget && !r.e.done), (r) => r.annual * r.share) / 12,
+        annual: sumS(visible.filter((r) => !r.e.paused && !r.e.inBudget && !r.e.done), (r) => r.annual * r.share),
+        shortSoon: active.filter((r) => r.days <= 60 && r.gap > 1),
+        overdue: visible.filter((r) => r.due && (r.days < 0 || r.due.overdueKm) && !r.e.paused && !r.e.done),
+        next30: active.filter((r) => r.days >= 0 && r.days <= 30)
+    };
+}
+// Kept for insights code that calls it
+function sinkingSummary(profile) {
+    const p = sinkingPlan(profile);
+    return { annual: p.annual, monthly: p.steady, next30: p.next30.map((r) => ({ name: r.e.name, amount: r.amountScoped, days: r.days })) };
+}
+
 function buildCalendar() {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
     const end = new Date(today); end.setDate(end.getDate() + 366);
     const items = [];
-    const nextYearly = (mo, d) => {
-        let dt = new Date(today.getFullYear(), mo - 1, d);
-        if (dt < today) dt = new Date(today.getFullYear() + 1, mo - 1, d);
-        return dt;
-    };
+    const nextYearly = (mo, d) => { let dt = new Date(today.getFullYear(), mo - 1, d); if (dt < today) dt = new Date(today.getFullYear() + 1, mo - 1, d); return dt; };
     FIXED_EVENTS.forEach((e) => items.push({ date: nextYearly(e.m, e.d), name: e.name, icon: e.icon, kind: 'fixed', owner: 'shared', amount: 0 }));
-    // Hijri: scan day by day for the next occurrence (approximate, Umm al-Qura)
-    const found = new Set();
-    for (let dt = new Date(today); dt <= end && found.size < HIJRI_EVENTS.length; dt.setDate(dt.getDate() + 1)) {
-        const h = hijriParts(dt);
-        if (!h) break;
-        HIJRI_EVENTS.forEach((e, i) => {
-            if (!found.has(i) && h.m === e.hm && h.d === e.hd) { found.add(i); items.push({ date: new Date(dt), name: e.name, icon: e.icon, kind: 'hijri', owner: 'shared', amount: 0 }); }
-        });
-    }
+    HIJRI_EVENTS.forEach((e) => { const dt = nextHijri(e.hm, e.hd, today); if (dt) items.push({ date: dt, name: e.name, icon: e.icon, kind: 'hijri', owner: 'shared', amount: 0 }); });
     appState.events.forEach((e) => {
-        const [y, mo, d] = e.date.split('-').map(Number);
-        const dt = e.repeat === 'yearly' ? nextYearly(mo, d) : new Date(y, mo - 1, d);
-        if (dt >= today && dt <= end) items.push({ date: dt, name: e.name, icon: 'calendar-days', kind: 'custom', id: e.id, owner: e.owner, amount: e.amount, inBudget: e.inBudget, repeat: e.repeat });
+        if (e.paused || e.done) return;
+        const due = nextDue(e, today);
+        if (!due || due.date > end) return;
+        items.push({ date: due.date, name: e.name, icon: SINK_GROUPS[e.category].icon, kind: 'custom', id: e.id, owner: e.owner, amount: e.amount,
+            repeat: e.repeat, reason: due.reason, hijri: !!e.hijri, odo: !!e.odo });
     });
-    items.forEach((i) => {
-        i.days = Math.round((i.date - today) / 86400000);
-        const months = Math.max(1, (i.date.getFullYear() - today.getFullYear()) * 12 + i.date.getMonth() - today.getMonth());
-        i.saveMonthly = i.amount && !i.inBudget ? i.amount / months : 0;
-    });
+    items.forEach((i) => { i.days = Math.round((i.date - today) / 86400000); });
     return items.sort((a, b) => a.date - b.date);
 }
-function sinkingSummary(profile) {
-    const yearly = appState.events.filter((e) => e.repeat === 'yearly' && e.amount > 0 && !e.inBudget);
-    const share = (e) => shareFor(e, profile, 'spend');
-    const annual = yearly.reduce((s, e) => s + e.amount * share(e), 0);
-    const cal = buildCalendar().filter((i) => i.kind === 'custom' && i.days <= 90);
-    const next90 = cal.reduce((s, i) => s + i.amount * shareFor(i, profile, 'spend'), 0);
-    return { annual, monthly: annual / 12, next90, next30: buildCalendar().filter((i) => i.kind === 'custom' && i.amount > 0 && i.days <= 30) };
-}
+
 function renderCalendar() {
-    const s = sinkingSummary(activeProfile);
+    hijriCache.clear();
+    const sp = sinkingPlan(activeProfile);
+    const st = appState.settings.sinking;
+    if (document.activeElement !== $('sink-balance')) $('sink-balance').value = st.balance || '';
+    setText('sink-updated', st.updatedAt ? `Dikemaskini ${st.updatedAt} · baki tak diagih: ${formatRM(sp.unallocated)}` : 'Belum dikemaskini. Isi baki sebenar akaun sinking.');
+    const stale = st.updatedAt && (Date.now() - parseISO(st.updatedAt)) / 86400000 > 35;
+
     $('sinking-summary').innerHTML = `
-        <div class="card kpi p-3" style="--stripe:#d4a373"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Bayaran tahunan</p><p class="text-xl font-extrabold num pv">${formatRM(s.annual)}</p></div>
-        <div class="card kpi p-3" style="--stripe:#40916c"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Sinking fund / bln</p><p class="text-xl font-extrabold num t-sage pv">${formatRM(s.monthly)}</p></div>
-        <div class="card kpi p-3" style="--stripe:#d1495b"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Jatuh tempo 90 hari</p><p class="text-xl font-extrabold num pv">${formatRM(s.next90)}</p></div>`;
+        <div class="card kpi p-3" style="--stripe:#4a7fb5"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Baki akaun</p><p class="text-xl font-extrabold num pv">${formatRM(sp.pool)}</p>${stale ? '<p class="text-[10px] t-rose">Lebih sebulan tak dikemaskini</p>' : ''}</div>
+        <div class="card kpi p-3" style="--stripe:#40916c"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Transfer disyorkan / bln</p><p class="text-xl font-extrabold num t-sage pv">${formatRM(sp.transferNow)}</p><p class="text-[10px] t-faint">kejar baki ikut tarikh</p></div>
+        <div class="card kpi p-3" style="--stripe:#d4a373"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Purata jangka panjang</p><p class="text-xl font-extrabold num pv">${formatRM(sp.steady)}</p><p class="text-[10px] t-faint">kos tahunan ÷ 12</p></div>
+        <div class="card kpi p-3" style="--stripe:#d1495b"><p class="text-xs font-semibold uppercase tracking-wider t-muted">Kos tahunan</p><p class="text-xl font-extrabold num pv">${formatRM(sp.annual)}</p></div>`;
+
+    // Items grouped by category
+    const groups = {};
+    sp.rows.forEach((r) => { (groups[r.e.category] = groups[r.e.category] || []).push(r); });
+    const order = Object.keys(SINK_GROUPS);
+    $('sinking-items').innerHTML = sp.rows.length ? order.filter((g) => groups[g]).map((g) => {
+        const list = groups[g].sort((a, b) => (a.e.paused - b.e.paused) || ((a.due?.date || 0) - (b.due?.date || 0)));
+        return `<div class="space-y-2">
+            <p class="text-[11px] font-semibold uppercase tracking-wider t-muted flex items-center gap-1.5"><i data-lucide="${SINK_GROUPS[g].icon}"></i>${esc(SINK_GROUPS[g].label)}</p>
+            ${list.map((r) => sinkRow(r)).join('')}
+        </div>`;
+    }).join('') : '<div class="card-sub p-6 text-center text-xs t-faint">Belum ada item. Tekan "Item" dan pilih template (cukai jalan, servis, duit raya…).</div>';
+
+    // Timeline
     const items = buildCalendar().filter((i) => activeProfile === 'combined' || i.owner === 'shared' || i.owner === activeProfile);
     let lastMonth = '';
-    $('calendar-list').innerHTML = items.length ? items.map((i) => {
+    $('calendar-list').innerHTML = items.map((i) => {
         const mk = `${MONTHS_MS[i.date.getMonth()]} ${i.date.getFullYear()}`;
         const head = mk !== lastMonth ? `<p class="text-[11px] font-semibold uppercase tracking-wider t-muted pt-2">${mk}</p>` : '';
         lastMonth = mk;
-        const soon = i.days <= 30;
-        return `${head}<div class="card-sub p-3 flex items-center gap-3">
-            <div class="w-12 text-center shrink-0"><p class="text-lg font-extrabold num leading-none">${i.date.getDate()}</p><p class="text-[10px] t-faint uppercase">${MONTHS_MS[i.date.getMonth()]}</p></div>
+        return `${head}<div class="card-sub p-2.5 flex items-center gap-3">
+            <div class="w-10 text-center shrink-0"><p class="text-base font-extrabold num leading-none">${i.date.getDate()}</p><p class="text-[10px] t-faint uppercase">${MONTHS_MS[i.date.getMonth()]}</p></div>
             <i data-lucide="${i.icon}" class="t-faint"></i>
-            <div class="flex-1 min-w-0">
-                <p class="text-xs font-semibold">${esc(i.name)}</p>
-                <p class="text-[11px] t-faint">${i.kind === 'hijri' ? 'Anggaran Hijrah · ' : i.kind === 'fixed' ? 'Tarikh tetap · ' : `${esc(ownerLabel(i.owner))} · ${i.repeat === 'yearly' ? 'tahunan' : 'sekali'} · `}${i.saveMonthly ? `<span class="num pv">simpan ${formatRM(i.saveMonthly)}/bln dari sekarang</span>` : i.inBudget ? 'dalam bajet bulanan' : ''}</p>
+            <div class="flex-1 min-w-0"><p class="text-xs font-semibold">${esc(i.name)}</p>
+                <p class="text-[11px] t-faint">${i.kind === 'hijri' ? 'Anggaran Hijrah' : i.kind === 'fixed' ? 'Tarikh tetap' : `${esc(ownerLabel(i.owner))} · ${esc(i.reason)}`}</p></div>
+            <div class="text-right shrink-0">${i.amount ? `<p class="text-xs font-bold num pv">${formatRM(i.amount)}</p>` : ''}
+                <span class="badge ${i.days < 0 ? 'b-rose' : i.days <= 30 ? 'b-gold' : 'b-mute'}">${i.days < 0 ? `lewat ${-i.days} hari` : i.days === 0 ? 'Hari ini' : `${i.days} hari`}</span></div>
+        </div>`;
+    }).join('') || '<p class="text-xs t-faint">Tiada tarikh dalam 12 bulan.</p>';
+}
+
+function sinkRow(r) {
+    const e = r.e;
+    const due = r.due;
+    let status, cls, pct = 0;
+    if (e.done) { status = 'Selesai'; cls = 'b-mute'; }
+    else if (e.paused) { status = 'Belum aktif'; cls = 'b-mute'; }
+    else if (e.inBudget) { status = 'Bajet bulanan'; cls = 'b-blue'; }
+    else if (!e.amount) { status = 'Isi jumlah'; cls = 'b-gold'; }
+    else if (r.days < 0 || due?.overdueKm) { status = r.days < 0 ? `Lewat ${-r.days} hari` : 'Lewat (km)'; cls = 'b-rose'; pct = r.funded / e.amount * 100; }
+    else { pct = r.funded / e.amount * 100; status = pct >= 99.5 ? 'Cukup' : r.days <= 60 ? 'Tak cukup' : 'Sedang kumpul'; cls = pct >= 99.5 ? 'b-sage' : r.days <= 60 ? 'b-rose' : 'b-gold'; }
+    const kmInfo = e.odo ? `<span class="num">${e.odo.currentKm.toLocaleString('en-MY')} km</span> · servis seterusnya ${(e.odo.lastKm + e.odo.interval).toLocaleString('en-MY')} km` : '';
+    return `<div class="card-sub p-3 ${e.paused || e.done ? 'opacity-60' : ''}">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-sm font-bold">${esc(e.name)}</p>
+                <p class="text-[11px] t-faint">${esc(ownerLabel(e.owner))}${r.share < 1 ? ` (${Math.round(r.share * 100)}%)` : ''} · ${esc(REPEAT_LABEL[e.repeat])}${due ? ` · <strong class="t-muted">${dLabel(due.date)}</strong> (${esc(due.reason)})` : ''}</p>
+                ${kmInfo ? `<p class="text-[11px] t-faint">${kmInfo}</p>` : ''}
             </div>
             <div class="text-right shrink-0">
-                ${i.amount ? `<p class="text-sm font-bold num pv">${formatRM(i.amount)}</p>` : ''}
-                <span class="badge ${soon ? 'b-rose' : 'b-mute'}">${i.days === 0 ? 'Hari ini' : `${i.days} hari`}</span>
+                <p class="text-sm font-extrabold num pv">${formatRM(r.amountScoped)}</p>
+                <span class="badge ${cls}">${esc(status)}</span>
             </div>
-            ${i.kind === 'custom' ? `<button class="btn btn-icon no-print" style="min-height:30px;width:30px" data-action="edit-event" data-id="${esc(i.id)}" aria-label="Edit"><i data-lucide="pencil" class="text-[11px]"></i></button>` : ''}
-        </div>`;
-    }).join('') : '<p class="text-xs t-faint">Tiada tarikh dalam 12 bulan.</p>';
+        </div>
+        ${r.inPool ? `<div class="mt-2 space-y-1">
+            <div class="bar"><div style="width:${Math.min(100, pct)}%;background:${pct >= 99.5 ? 'var(--sage)' : r.days <= 60 ? 'var(--rose)' : 'var(--gold)'}"></div></div>
+            <div class="flex justify-between text-[11px] t-faint num pv"><span>Ada ${formatRM(r.funded)} / ${formatRM(e.amount)}</span><span>${r.gap > 1 ? `simpan ${formatRM(r.needMonthly)}/bln · ${r.monthsLeft} bln` : 'siap sedia'}</span></div>
+        </div>` : ''}
+        <div class="flex flex-wrap gap-1.5 mt-2 no-print">
+            ${!e.paused && !e.done ? `<button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="sink-paid" data-id="${esc(e.id)}"><i data-lucide="check"></i>Dah bayar</button>` : ''}
+            ${e.odo && !e.done ? `<button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="sink-odo" data-id="${esc(e.id)}"><i data-lucide="gauge"></i>Kemaskini km</button>` : ''}
+            <button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="edit-event" data-id="${esc(e.id)}"><i data-lucide="pencil"></i>Edit</button>
+        </div>
+    </div>`;
+}
+
+function markSinkPaid(id) {
+    const e = appState.events.find((x) => x.id === id);
+    if (!e) return;
+    const st = appState.settings.sinking;
+    const deduct = Math.min(st.balance, e.amount);
+    confirmDialog(`Tanda "${e.name}" dah bayar?`,
+        `${e.amount ? `Baki akaun sinking akan ditolak ${formatRM(deduct)} (${formatRM(st.balance)} → ${formatRM(st.balance - deduct)}). ` : ''}${e.odo ? 'Tarikh & km servis terakhir akan ditetapkan ke hari ini / km semasa. ' : ''}${e.repeat === 'once' ? 'Item sekali ni akan ditanda selesai.' : 'Tarikh seterusnya dikira automatik.'}`,
+        () => {
+            const t = todayISO();
+            e.lastPaid = t;
+            if (e.odo) { e.date = t; e.odo.lastKm = e.odo.currentKm; }
+            if (e.repeat === 'once') e.done = true;
+            st.balance = Math.max(0, st.balance - deduct);
+            st.updatedAt = t;
+            saveState(); renderAll();
+            showToast(`${e.name} ditanda dibayar.`, 'success');
+        }, 'Dah bayar');
+}
+function updateOdo(id) {
+    const e = appState.events.find((x) => x.id === id);
+    if (!e || !e.odo) return;
+    const v = window.prompt(`Bacaan odometer sekarang untuk "${e.name}" (km):`, String(e.odo.currentKm || ''));
+    if (v == null) return;
+    const km = Math.round(Number(v));
+    if (!Number.isFinite(km) || km < 0) { showToast('Nombor km tak sah.', 'error'); return; }
+    if (km < e.odo.lastKm) { showToast('Km sekarang lebih rendah dari km servis terakhir. Semak semula.', 'warning'); return; }
+    // learn the real km/month from the previous reading if we have its date
+    if (e.odo.readingDate && e.odo.currentKm && km > e.odo.currentKm) {
+        const months = (Date.now() - parseISO(e.odo.readingDate)) / (86400000 * 30.44);
+        if (months >= 0.5) e.odo.kmPerMonth = Math.round((km - e.odo.currentKm) / months);
+    }
+    e.odo.currentKm = km;
+    e.odo.readingDate = todayISO();
+    saveState(); renderAll();
+    showToast('Odometer dikemaskini.', 'success');
 }
 
 // ---- Budget vs actual (household level) ----
@@ -1876,6 +2130,8 @@ function budgetMonth() { return $('budget-month').value || currentYM(); }
 function budgetRows(ym) {
     const budget = {};
     appState.expenses.forEach((e) => { budget[e.category] = (budget[e.category] || 0) + n(e.amount); });
+    const sink = sinkingPlan('combined').steady;
+    if (sink > 0) budget['Sinking Fund'] = sink;   // actual = what you transferred to the sinking account
     const actual = appState.actuals[ym] || {};
     const cats = [...new Set([...Object.keys(budget), ...Object.keys(actual)])].sort((a, b) => (budget[b] || 0) - (budget[a] || 0));
     return cats.map((c) => ({ cat: c, budget: budget[c] || 0, actual: actual[c], has: actual[c] != null }));
@@ -2332,23 +2588,63 @@ function handleGoalSubmit(e) {
     showToast('Matlamat disimpan.', 'success');
 }
 
-/* ---------- Event modal ---------- */
+/* ---------- Sinking item modal ---------- */
 let editingEventId = null;
+let evHijri = null;          // {m,d} when the item follows the Hijri calendar
+function setHijriUI(h) {
+    evHijri = h;
+    $('wrap-ev-hijri').classList.toggle('hidden', !h);
+    $('wrap-ev-date').classList.toggle('hidden', !!h);
+    if (h) setText('ev-hijri-label', `${h.d} ${HIJRI_MONTHS[h.m - 1]} setiap tahun`);
+}
+function setOdoUI(on) {
+    $('ev-odo-on').checked = on;
+    $('wrap-odo').classList.toggle('hidden', !on);
+    setText('lbl-ev-date', on ? 'Tarikh servis terakhir' : 'Tarikh (seterusnya / rujukan)');
+}
+function applyTemplate(t) {
+    $('ev-name').value = t.name;
+    $('ev-cat').value = t.cat;
+    $('ev-repeat').value = t.repeat;
+    $('ev-paused').checked = !!t.paused;
+    setHijriUI(t.hijri || null);
+    if (t.md) {
+        const today = startOfToday();
+        let d = new Date(today.getFullYear(), Number(t.md.slice(0, 2)) - 1, Number(t.md.slice(3)));
+        if (d < today) d.setFullYear(d.getFullYear() + 1);
+        $('ev-date').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    setOdoUI(!!t.odo);
+    if (t.odo) $('ev-odo-int').value = t.odo.interval;
+    if (t.cat === 'kenderaan' || t.cat === 'langganan') $('ev-owner').value = activeProfile === 'combined' ? 'husband' : activeProfile;
+    $('ev-amount').focus();
+}
 function openEvent(id = null) {
     const ev = id ? appState.events.find((x) => x.id === id) : null;
     editingEventId = ev ? ev.id : null;
     $('form-event').reset();
     ['ev-name', 'ev-date'].forEach((k) => { $(k).classList.remove('invalid'); $(`err-${k}`).classList.add('hidden'); });
     renderNames();
-    $('event-title').textContent = ev ? 'Kemaskini Tarikh' : 'Tambah Tarikh';
+    $('ev-cat').innerHTML = Object.entries(SINK_GROUPS).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
+    $('event-title').textContent = ev ? 'Kemaskini Item' : 'Tambah Item Sinking Fund';
     $('ev-delete').classList.toggle('hidden', !ev);
-    $('event-presets').innerHTML = ev ? '' : EVENT_PRESETS.map((p) => `<button type="button" class="badge b-mute" style="cursor:pointer;padding:.3rem .6rem" data-action="event-preset" data-name="${esc(p)}">${esc(p)}</button>`).join('');
+    // Template chips grouped by category (only when adding)
+    $('event-presets').innerHTML = ev ? '' : Object.entries(SINK_GROUPS).filter(([g]) => g !== 'lain').map(([g, meta]) =>
+        `<div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-semibold uppercase tracking-wider t-faint w-full">${esc(meta.label)}</span>${
+            SINK_TEMPLATES.map((t, i) => t.cat === g ? `<button type="button" class="badge b-mute" style="cursor:pointer;padding:.3rem .6rem" data-action="event-preset" data-idx="${i}">${esc(t.name)}</button>` : '').join('')
+        }</div>`).join('');
     if (ev) {
-        $('ev-name').value = ev.name; $('ev-date').value = ev.date; $('ev-amount').value = ev.amount || '';
-        $('ev-owner').value = ev.owner; $('ev-repeat').value = ev.repeat; $('ev-inbudget').checked = ev.inBudget;
+        $('ev-name').value = ev.name; $('ev-cat').value = ev.category; $('ev-owner').value = ev.owner;
+        $('ev-amount').value = ev.amount || ''; $('ev-repeat').value = ev.repeat; $('ev-date').value = ev.date;
+        $('ev-paused').checked = ev.paused; $('ev-inbudget').checked = ev.inBudget;
+        setHijriUI(ev.hijri);
+        setOdoUI(!!ev.odo);
+        if (ev.odo) { $('ev-odo-int').value = ev.odo.interval; $('ev-odo-last').value = ev.odo.lastKm; $('ev-odo-now').value = ev.odo.currentKm; $('ev-odo-rate').value = ev.odo.kmPerMonth; }
     } else {
         $('ev-owner').value = activeProfile === 'combined' ? 'shared' : activeProfile;
         $('ev-repeat').value = 'yearly';
+        $('ev-cat').value = 'lain';
+        setHijriUI(null); setOdoUI(false);
     }
     openModal('modal-event');
     refreshIcons();
@@ -2356,15 +2652,34 @@ function openEvent(id = null) {
 function handleEventSubmit(e) {
     e.preventDefault();
     const name = cleanText($('ev-name').value, 60), date = $('ev-date').value;
-    const checks = [['ev-name', !!name], ['ev-date', /^\d{4}-\d{2}-\d{2}$/.test(date)]];
+    const okDate = !!evHijri || /^\d{4}-\d{2}-\d{2}$/.test(date);
+    const checks = [['ev-name', !!name], ['ev-date', okDate]];
     checks.forEach(([k, ok]) => { $(k).classList.toggle('invalid', !ok); $(`err-${k}`).classList.toggle('hidden', ok); });
     if (!checks.every(([, ok]) => ok)) return;
-    const rec = { name, date, amount: Math.max(0, n($('ev-amount').value)), owner: safeOwner($('ev-owner').value),
-        repeat: $('ev-repeat').value === 'once' ? 'once' : 'yearly', inBudget: $('ev-inbudget').checked };
-    if (editingEventId) Object.assign(appState.events.find((x) => x.id === editingEventId), rec);
-    else appState.events.push({ id: uid('ev'), ...rec });
+    const prev = editingEventId ? appState.events.find((x) => x.id === editingEventId) : null;
+    let odo = null;
+    if ($('ev-odo-on').checked) {
+        odo = {
+            interval: Math.max(500, n($('ev-odo-int').value) || 10000),
+            lastKm: Math.max(0, n($('ev-odo-last').value)),
+            currentKm: Math.max(0, n($('ev-odo-now').value)),
+            kmPerMonth: Math.max(1, n($('ev-odo-rate').value) || 1500),
+            readingDate: todayISO()
+        };
+        if (odo.currentKm && odo.currentKm < odo.lastKm) { showToast('Km sekarang tak boleh kurang dari km servis terakhir.', 'error'); return; }
+        if (!odo.currentKm) odo.currentKm = odo.lastKm;
+    }
+    const rec = {
+        name, category: SINK_GROUPS[$('ev-cat').value] ? $('ev-cat').value : 'lain', owner: safeOwner($('ev-owner').value),
+        amount: Math.max(0, n($('ev-amount').value)), repeat: REPEAT_MONTHS[$('ev-repeat').value] != null ? $('ev-repeat').value : 'yearly',
+        date: evHijri ? (prev?.date || todayISO()) : date, hijri: evHijri, odo,
+        paused: $('ev-paused').checked, inBudget: $('ev-inbudget').checked
+    };
+    if (rec.hijri && rec.repeat !== 'yearly') rec.repeat = 'yearly';   // Hijri items recur yearly by definition
+    if (prev) Object.assign(prev, rec, { done: rec.repeat === 'once' ? prev.done : false });
+    else appState.events.push({ id: uid('ev'), lastPaid: '', done: false, ...rec });
     saveState(); closeModal('modal-event'); renderAll();
-    showToast('Tarikh disimpan.', 'success');
+    showToast(rec.amount ? 'Item disimpan.' : 'Item disimpan. Isi jumlah supaya masuk kiraan sinking.', rec.amount ? 'success' : 'warning');
 }
 
 /* ---------- Full-calendar .ics export ---------- */
@@ -2378,7 +2693,9 @@ function downloadAllIcs() {
         lines.push('BEGIN:VEVENT', `UID:hkk-${k}-${ymd(i.date)}@hub-kewangan.local`, `DTSTAMP:${stamp}`,
             `DTSTART;VALUE=DATE:${ymd(i.date)}`, `DTEND;VALUE=DATE:${ymd(end)}`,
             `SUMMARY:${icsEscape(i.name + (i.amount ? ` (RM ${Math.round(i.amount)})` : ''))}`);
-        if (i.kind === 'custom' && i.repeat === 'yearly') lines.push('RRULE:FREQ=YEARLY');
+        // Only plain date-based items repeat in the calendar app; Hijri & km-based dates move, so export next date only
+        const R = REPEAT_MONTHS[i.repeat];
+        if (i.kind === 'custom' && !i.hijri && !i.odo && R) lines.push(R === 12 ? 'RRULE:FREQ=YEARLY' : `RRULE:FREQ=MONTHLY;INTERVAL=${R}`);
         if (i.amount) lines.push('BEGIN:VALARM', 'TRIGGER:-P14D', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape(i.name)}`, 'END:VALARM');
         lines.push('END:VEVENT');
     });
@@ -2498,7 +2815,15 @@ document.addEventListener('click', (e) => {
             appState.goals = appState.goals.filter((g) => g.id !== id); saveState(); closeModal('modal-goal'); renderAll(); showToast('Matlamat dipadam.', 'warning'); }, 'Padam'); },
         'add-event': () => openEvent(),
         'edit-event': () => openEvent(t.dataset.id),
-        'event-preset': () => { $('ev-name').value = t.dataset.name; $('ev-date').focus(); },
+        'event-preset': () => { const tp = SINK_TEMPLATES[Number(t.dataset.idx)]; if (tp) applyTemplate(tp); },
+        'ev-hijri-off': () => setHijriUI(null),
+        'sink-paid': () => markSinkPaid(t.dataset.id),
+        'sink-odo': () => updateOdo(t.dataset.id),
+        'save-sink-balance': () => {
+            const v = $('sink-balance').value;
+            appState.settings.sinking = { balance: Math.max(0, n(v)), updatedAt: todayISO() };
+            saveState(); renderAll(); showToast('Baki sinking fund dikemaskini.', 'success');
+        },
         'delete-event': () => { const id = editingEventId; confirmDialog('Padam tarikh?', 'Tarikh ni akan dibuang dari kalendar.', () => {
             appState.events = appState.events.filter((x) => x.id !== id); saveState(); closeModal('modal-event'); renderAll(); showToast('Tarikh dipadam.', 'warning'); }, 'Padam'); },
         'ics-all': downloadAllIcs,
@@ -2525,6 +2850,7 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.id === 'sink-balance') { e.preventDefault(); document.querySelector('[data-action="save-sink-balance"]').click(); return; }
     if (e.key === 'Escape') document.querySelectorAll('.modal:not(.hidden)').forEach((m) => closeModal(m.id));
 });
 
@@ -2547,6 +2873,7 @@ document.addEventListener('change', (e) => {
     if (el.id === 'budget-month') { renderBudget(); refreshIcons(); return; }
     if (el.id === 's-splitmode' || el.id === 's-split') { updateSplitPreview(); return; }
     if (el.id === 'g-asset') { toggleGoalSaved(); return; }
+    if (el.id === 'ev-odo-on') { setOdoUI(el.checked); return; }
     if (el.dataset.taxPerson) {
         appState.taxRelief[el.dataset.taxPerson][el.dataset.taxKey] = Math.max(0, n(el.value));
         saveState(); renderTax();

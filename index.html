@@ -122,6 +122,12 @@
             /* privacy mode stays on when printing: hide the numbers outright (blur prints unreliably) */
             body.privacy-active .pv { filter: none !important; color: transparent !important; text-shadow: 0 0 0 #999; }
             body.privacy-active canvas { visibility: hidden; }
+            /* "Cetak laporan": only the report tab */
+            body.print-report .view-tab-content:not(#tab-report) { display: none !important; }
+            body.print-report #tab-report { display: block !important; }
+            body.print-report main > *:not(:has(#tab-report)) { display: none !important; }
+            body.print-report #report-body table { font-size: 10px; }
+            body.print-report .report-sec { break-inside: avoid; }
         }
     </style>
 </head>
@@ -290,6 +296,7 @@
             <button class="tab-btn view-tab" data-tab="zakat-tax"><i data-lucide="hand-heart"></i>Zakat & Cukai</button>
             <button class="tab-btn view-tab" data-tab="simulator"><i data-lucide="calculator"></i>Unjuran FIRE</button>
             <button class="tab-btn view-tab" data-tab="trend"><i data-lucide="chart-line"></i>Sejarah</button>
+            <button class="tab-btn view-tab" data-tab="report"><i data-lucide="file-text"></i>Laporan</button>
         </div>
 
         <!-- TAB: Dashboard -->
@@ -496,6 +503,23 @@
                     <div><label class="lbl" for="mg-lump">Bayaran sekaligus (RM)</label><input id="mg-lump" type="number" min="0" step="1000" class="field num" placeholder="0"></div>
                 </div>
                 <div id="mg-body" class="space-y-3"></div>
+            </div>
+            <div class="card-sub p-4 space-y-3">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="trending-up" class="t-sage"></i>Senario Cashflow Lepas Hutang Tamat</h3>
+                    <p class="text-xs t-muted">Cashflow bersih bulanan (pendapatan − semua belanja) bila setiap hutang tamat. Guna tetapan Pelan Langsai Hutang di atas (tambahan, lump sum, termasuk rumah atau tidak).</p>
+                </div>
+                <div id="cs-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                <div class="scroll-x"><table class="tbl"><thead><tr><th>Bulan</th><th>Hutang tamat</th><th class="text-right">Cashflow bersih / bln</th><th class="text-right">Tambahan</th></tr></thead><tbody id="tbody-cs"></tbody></table></div>
+                <div class="relative h-60 pv"><canvas id="chart-cs"></canvas></div>
+                <div id="cs-notes" class="text-[11px] t-faint space-y-1"></div>
+            </div>
+            <div class="card-sub p-4 space-y-3">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="life-buoy" class="t-gold"></i>Pelan Tampung Defisit dari Aset</h3>
+                    <p class="text-xs t-muted">Kalau cashflow negatif sebab hutang, dashboard cadang tarik aset liquid ikut urutan selamat (tunai → ASB → unit amanah/robo → saham → emas) sehingga cashflow positif. KWSP, Tabung Haji, hartanah dan aset matlamat tak disentuh. Guna bayaran minimum, bukan bayaran tambahan.</p>
+                </div>
+                <div id="sf-body" class="space-y-3 text-xs"></div>
             </div>
             <div class="card-sub p-4 space-y-3">
                 <div class="flex flex-wrap justify-between items-center gap-2">
@@ -802,6 +826,25 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- TAB: Laporan bulanan -->
+        <div id="tab-report" class="view-tab-content hidden p-4 md:p-6 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 no-print">
+                <div>
+                    <h3 class="text-sm font-bold">Laporan Kewangan Bulanan</h3>
+                    <p class="text-xs t-muted">Cetak sebagai PDF atau salin teks lengkap (dengan arahan siap) untuk dianalisa di Claude. Angka aset dan hutang ialah keadaan semasa; slip, simpanan dan bajet ikut bulan yang dipilih.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input id="rp-month" type="month" class="field" style="width:auto" aria-label="Bulan laporan">
+                    <label class="flex items-center gap-1.5 text-xs"><input id="rp-mask" type="checkbox" class="w-4 h-4 accent-emerald-600">Samarkan nama akaun</label>
+                    <button class="btn btn-primary" data-action="report-print"><i data-lucide="printer"></i>Cetak / PDF</button>
+                    <button class="btn" data-action="report-copy"><i data-lucide="clipboard-copy"></i>Salin untuk Claude</button>
+                    <button class="btn" data-action="report-md"><i data-lucide="download"></i>.md</button>
+                </div>
+            </div>
+            <p class="text-[11px] t-gold no-print">Laporan ni data sensitif. Bila disalin ke Claude atau tempat lain, data keluar daripada peranti ni. "Samarkan nama akaun" tukar nama akaun kepada Aset 1, Hutang 2 dan seterusnya, tapi angka kekal supaya analisa boleh dibuat.</p>
+            <div id="report-body" class="space-y-4"></div>
         </div>
 
         <!-- TAB: Trend -->
@@ -2211,6 +2254,8 @@ function renderAll() {
     renderBudget();
     renderPayslips();
     renderSavings();
+    renderCashflowScenario();
+    if (activeTab === 'report') renderReport();
     renderNafkah();
     renderRetirement();
     renderAllocation(m);
@@ -4492,6 +4537,335 @@ function renderSavings() {
         : emptyRow(6, 'Belum ada rekod.');
 }
 
+/* =====================================================================
+   SENARIO CASHFLOW LEPAS HUTANG, PELAN TAMPUNG DEFISIT, LAPORAN BULANAN
+   ===================================================================== */
+// Net monthly cashflow over time. Amounts come from the expense lines (so shares/payer rules match the dashboard),
+// timing from the payoff simulation. Income and other spending stay flat in today's ringgit.
+function cashflowScenario(profile) {
+    const dp = appState.settings.debtPlan;
+    const m = computeMetrics(profile);
+    const debts = debtsFor(profile, dp.includeMortgage);
+    const lineAmt = new Map();
+    m.expenses.filter((e) => e.linkedLiabilityId).forEach((e) => lineAmt.set(e.linkedLiabilityId, (lineAmt.get(e.linkedLiabilityId) || 0) + n(e.amount)));
+    const lineOf = (id) => lineAmt.get(id) || 0;
+    const debtLines = [...lineAmt.values()].reduce((s2, v) => s2 + v, 0);
+    const free = m.netIncome - (m.totalExp - debtLines);                 // cashflow if there were no debt lines at all
+    const base = simulateDebts(debts, { rollover: false });
+    const plan = simulateDebts(debts, { extra: dp.extra, lump: dp.lump, strategy: dp.strategy, rollover: true });
+    const modelled = new Set(debts.map((d) => d.id));
+    const fixedOutside = [...lineAmt.entries()].filter(([id]) => !modelled.has(id)).reduce((s2, [, v]) => s2 + v, 0);
+    const modelledTotal = debts.reduce((s2, d) => s2 + lineOf(d.id), 0);
+    const endMin = (d) => (base.payoff[d.id] == null ? 600 : base.payoff[d.id]);   // payment made while t < end
+    const horizon = Math.min(600, Math.max(base.months, plan.months));
+    const netMin = [], netPlan = [];
+    for (let t = 0; t <= horizon; t++) {
+        netMin.push(free - fixedOutside - debts.reduce((s2, d) => s2 + (t < endMin(d) ? lineOf(d.id) : 0), 0));
+        netPlan.push(free - fixedOutside - (t < plan.months ? modelledTotal + n(dp.extra) : 0));
+    }
+    const byMonth = new Map();
+    debts.forEach((d) => { const k = endMin(d); if (k >= 600) return; if (!byMonth.has(k)) byMonth.set(k, []); byMonth.get(k).push(d.name); });
+    const milestones = [...byMonth.entries()].sort((a, b) => a[0] - b[0])
+        .map(([k, names]) => ({ month: k, label: monthLabel(k), names, net: netMin[Math.min(k, horizon)], gain: netMin[Math.min(k, horizon)] - netMin[0] }));
+    return { m, debts, base, plan, free, fixedOutside, horizon, netMin, netPlan, netNow: netMin[0], netAfter: netMin[horizon], milestones, extra: n(dp.extra), lump: n(dp.lump), includeMortgage: dp.includeMortgage };
+}
+
+const DRAW_ORDER = ['Tunai & Simpanan', 'ASB / ASN', 'Unit Amanah / Robo', 'Saham & ETF', 'Emas', 'Lain-lain'];
+// When cashflow is negative: which liquid assets to draw, month by month, until it turns positive.
+function shortfallPlan(profile, sc) {
+    const st = appState.settings;
+    const linked = new Set(appState.goals.map((g) => g.linkedAssetId).filter(Boolean));
+    const pool = scoped(appState.assets, profile)
+        .filter((a) => !a.isLocked && DRAW_ORDER.includes(a.category) && !linked.has(a.id) && a.amount > 0)
+        .sort((a, b) => DRAW_ORDER.indexOf(a.category) - DRAW_ORDER.indexOf(b.category) || b.amount - a.amount)
+        .map((a) => ({ id: a.id, name: a.name, category: a.category, start: a.amount, left: a.amount, drawn: 0, depletedAt: null }));
+    // manual goal savings are reserved first from the cash pool (kept conservative)
+    let reserve = appState.goals.filter((g) => !g.linkedAssetId && g.excludeFromFI).reduce((s2, g) => s2 + n(g.saved) * shareFor(g, profile), 0);
+    pool.forEach((p) => { const take = Math.min(reserve, p.left); p.left -= take; p.start -= take; reserve -= take; });
+    const startLiquid = pool.reduce((s2, p) => s2 + p.left, 0);
+    const rows = [];
+    let unfunded = 0, firstShort = null, positiveFrom = null, deficitMonths = 0, total = 0;
+    for (let t = 0; t <= sc.horizon; t++) {
+        if (sc.netMin[t] >= 0) { positiveFrom = t; break; }
+        deficitMonths++;
+        let gap = -sc.netMin[t];
+        const draws = [];
+        for (const p of pool) {
+            if (gap <= 0.005) break;
+            if (p.left <= 0.005) continue;
+            const take = Math.min(p.left, gap);
+            p.left -= take; p.drawn += take; gap -= take; total += take;
+            draws.push({ name: p.name, amount: take });
+            if (p.left <= 0.005 && p.depletedAt == null) p.depletedAt = t;
+        }
+        if (gap > 0.005) { unfunded += gap; if (firstShort == null) firstShort = t; }
+        if (rows.length < 60) rows.push({ t, net: sc.netMin[t], draws, short: gap > 0.005 ? gap : 0, liquidLeft: pool.reduce((s2, p) => s2 + p.left, 0) });
+    }
+    const cashDrawn = pool.filter((p) => p.category === 'Tunai & Simpanan').reduce((s2, p) => s2 + p.drawn, 0);
+    const runwayAfter = sc.m.totalExp > 0 ? Math.max(0, sc.m.emergencyCash - cashDrawn) / sc.m.totalExp : 0;
+    return { rows, pool, startLiquid, total, unfunded, firstShort, positiveFrom, deficitMonths, cashDrawn, runwayAfter, emergencyMin: st.emergencyMin };
+}
+
+function renderCashflowScenario() {
+    const sc = cashflowScenario(activeProfile);
+    const kpi = (label, val, sub, stripe, cls = '') => `<div class="card kpi p-3" style="--stripe:${stripe}"><p class="text-xs font-semibold uppercase tracking-wider t-muted">${label}</p><p class="text-lg font-extrabold num pv ${cls}">${val}</p><p class="text-[10px] t-faint">${sub}</p></div>`;
+    if (!sc.debts.length) {
+        $('cs-kpis').innerHTML = kpi('Cashflow sekarang', formatRM(sc.netNow), 'tiada hutang dalam pelan', '#40916c', sc.netNow < 0 ? 't-rose' : 't-sage');
+        $('tbody-cs').innerHTML = emptyRow(4, 'Tiada hutang dalam pelan. Tanda "termasuk rumah" di Pelan Langsai Hutang kalau nak masukkan pembiayaan rumah.');
+        $('cs-notes').innerHTML = '';
+        if (charts.cs) { charts.cs.destroy(); delete charts.cs; }
+        renderShortfall(sc);
+        return;
+    }
+    const lastMs = sc.milestones[sc.milestones.length - 1];
+    const planNet = sc.netPlan[Math.min(sc.plan.months, sc.horizon)];
+    $('cs-kpis').innerHTML =
+        kpi('Cashflow sekarang', formatRM(sc.netNow), 'pendapatan − semua belanja', '#40916c', sc.netNow < 0 ? 't-rose' : 't-sage') +
+        kpi('Lepas hutang tamat', formatRM(sc.netAfter), lastMs ? `bermula ${lastMs.label}` : 'hutang tak tamat dalam 50 thn', '#4a7fb5', sc.netAfter < 0 ? 't-rose' : 't-sage') +
+        kpi('Tambahan cashflow', `+${formatRM(Math.max(0, sc.netAfter - sc.netNow))}`, 'ansuran yang bebas', '#d4a373') +
+        kpi('Dengan pelan', formatRM(planNet), `bebas hutang ${sc.plan.months >= 600 ? '50+ thn' : monthLabel(sc.plan.months)}${sc.extra ? ` · +${formatRM(sc.extra)}/bln` : ''}`, '#c67d5a', planNet < 0 ? 't-rose' : '');
+    $('tbody-cs').innerHTML = `<tr><td class="num font-semibold">${esc(monthLabel(0))}</td><td class="t-muted">Sekarang</td><td class="text-right num pv font-semibold ${sc.netNow < 0 ? 't-rose' : ''}">${formatRM(sc.netNow)}</td><td class="text-right t-faint">—</td></tr>` +
+        sc.milestones.map((x) => `<tr><td class="num font-semibold">${esc(x.label)}</td><td>${x.names.map(esc).join(', ')}</td>
+            <td class="text-right num pv font-semibold ${x.net < 0 ? 't-rose' : 't-sage'}">${formatRM(x.net)}</td><td class="text-right num pv t-sage">+${formatRM(x.gain)}</td></tr>`).join('');
+
+    const notes = [];
+    notes.push('Andaian: pendapatan dan belanja lain kekal (ringgit hari ini), tiada kenaikan gaji atau inflasi. Cashflow ni sebelum caruman matlamat dan simpanan automatik gaji.');
+    if (sc.fixedOutside > 0) notes.push(`Ansuran ${formatRM(sc.fixedOutside)}/bln (contoh rumah, kalau tak dimasukkan dalam pelan) kekal dan tak diambil kira dalam tarikh tamat.`);
+    if (sc.extra > 0) notes.push(`Dengan pelan, cashflow kekal rata sehingga semua hutang selesai kerana ansuran yang dibebaskan disalurkan ke hutang seterusnya (tambahan ${formatRM(sc.extra)}/bln), lepas tu terus melonjak.`);
+    if (sc.lump > 0) notes.push(`Lump sum ${formatRM(sc.lump)} dianggap dibayar dari aset sekarang, jadi tak masuk cashflow bulanan.`);
+    if (sc.debts.some((d) => d.l.rateType === 'flat')) notes.push('Tarikh tamat guna kadar efektif anggaran untuk hutang flat. Semak tarikh tamat sebenar dengan penyata bank.');
+    $('cs-notes').innerHTML = notes.map((t) => `<p>• ${esc(t)}</p>`).join('');
+
+    if (typeof Chart !== 'undefined') {
+        const th = chartTheme();
+        const step = Math.max(1, Math.ceil((sc.horizon + 1) / 72));
+        const idx = []; for (let t = 0; t <= sc.horizon; t += step) idx.push(t);
+        if (idx[idx.length - 1] !== sc.horizon) idx.push(sc.horizon);
+        upsertChart('cs', 'chart-cs', {
+            type: 'line',
+            data: { labels: idx.map((t) => monthLabel(t)), datasets: [
+                { label: 'Bayar minimum', data: idx.map((t) => Math.round(sc.netMin[t])), borderColor: '#d1495b', pointRadius: 0, stepped: true },
+                { label: 'Dengan pelan', data: idx.map((t) => Math.round(sc.netPlan[t])), borderColor: '#40916c', backgroundColor: 'rgba(64,145,108,.12)', fill: true, borderWidth: 3, pointRadius: 0, stepped: true },
+                { label: 'Sifar', data: idx.map(() => 0), borderColor: '#8d99ae', borderDash: [4, 4], pointRadius: 0 }
+            ] },
+            options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { labels: { boxWidth: 12, color: th.text } }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${formatRM(c.raw)}` } } },
+                scales: { x: { grid: { color: th.grid }, ticks: { maxTicksLimit: 8 } }, y: { grid: { color: th.grid }, ticks: { callback: rmTick } } } }
+        });
+    }
+    renderShortfall(sc);
+}
+
+function renderShortfall(sc) {
+    const sf = shortfallPlan(activeProfile, sc);
+    const dp = appState.settings.debtPlan;
+    const goalsPlan = n(sc.m.goals.monthlyPlanActive);
+    if (sf.positiveFrom === 0) {
+        const tight = sc.netNow < goalsPlan;
+        $('sf-body').innerHTML = `<p class="t-sage font-semibold">Tiada defisit bulan ni: cashflow ${formatRM(sc.netNow)}/bln. Tak perlu tarik aset.</p>` +
+            (tight ? `<p class="t-gold">Cashflow ${formatRM(sc.netNow)} kurang daripada caruman matlamat ${formatRM(goalsPlan)}/bln, jadi matlamat tak penuh dibiaya. Itu bukan defisit, tapi semak keutamaan.</p>` : '');
+        return;
+    }
+    const never = sf.positiveFrom == null;
+    const head = `<p class="t-rose font-semibold">Cashflow negatif ${formatRM(-sc.netNow)}/bln. ${never ? 'Kekal negatif walaupun semua hutang dalam pelan tamat.' : `Kekal negatif sehingga ${esc(monthLabel(sf.positiveFrom))} (${sf.deficitMonths} bulan).`} Jumlah perlu ditampung: ${formatRM(sf.total + sf.unfunded)}.</p>`;
+    const warn = [];
+    if (sf.unfunded > 0.5) warn.push(`<span class="t-rose font-semibold">Aset liquid yang selamat ditarik tak cukup: habis pada ${esc(monthLabel(sf.firstShort))}, kekurangan ${formatRM(sf.unfunded)} lagi.</span> Pilihan: kurangkan belanja, rundingkan ansuran atau tempoh dengan bank, atau tambah pendapatan. Aset terkunci (KWSP, Tabung Haji) jalan terakhir sahaja.`);
+    if (sf.cashDrawn > 0 && sf.runwayAfter < sf.emergencyMin) warn.push(`<span class="t-gold font-semibold">Dana kecemasan jatuh ke ${sf.runwayAfter.toFixed(1)} bulan, bawah minimum ${sf.emergencyMin} bulan.</span> Tarik dari aset lain dulu kalau boleh, atau kurangkan belanja.`);
+    if (dp.extra > 0) warn.push(`Berhenti bayar tambahan ${formatRM(dp.extra)}/bln sementara defisit. Pelan ni kira bayaran minimum sahaja.`);
+    if (goalsPlan > 0) warn.push(`Caruman matlamat ${formatRM(goalsPlan)}/bln patut dijeda semasa defisit.`);
+    const byAsset = sf.pool.filter((p) => p.drawn > 0.005).map((p) => `<div class="flex justify-between gap-3 py-1 border-b bd"><span>${esc(p.name)} <span class="t-faint">${esc(p.category)}</span>${p.depletedAt != null ? ` <span class="badge b-rose">habis ${esc(monthLabel(p.depletedAt))}</span>` : ''}</span><span class="num font-bold pv">${formatRM(p.drawn)} <span class="t-faint font-normal">dari ${formatRM(p.start)}</span></span></div>`).join('');
+    const table = `<div class="scroll-x"><table class="tbl"><thead><tr><th>Bulan</th><th class="text-right">Cashflow</th><th>Tarik dari</th><th class="text-right">Baki liquid</th></tr></thead><tbody>${sf.rows.map((r) => `<tr>
+        <td class="num font-semibold">${esc(monthLabel(r.t))}</td><td class="text-right num pv t-rose">${formatRM(r.net)}</td>
+        <td>${r.draws.map((d) => `${esc(d.name)} <span class="num pv">${formatRM(d.amount)}</span>`).join(' · ') || '<span class="t-faint">—</span>'}${r.short ? ` <span class="t-rose">kurang ${formatRM(r.short)}</span>` : ''}</td>
+        <td class="text-right num pv">${formatRM(r.liquidLeft)}</td></tr>`).join('')}</tbody></table></div>${sf.deficitMonths > sf.rows.length ? `<p class="t-faint">+${sf.deficitMonths - sf.rows.length} bulan lagi (jadual dipotong pada 60 bulan).</p>` : ''}`;
+    $('sf-body').innerHTML = head +
+        `<p class="t-muted">Aset liquid selamat tersedia: ${formatRM(sf.startLiquid)}${sf.pool.length ? '' : ' (tiada)'}.</p>` +
+        (byAsset ? `<div>${byAsset}</div>` : '') + table +
+        (warn.length ? `<div class="space-y-1">${warn.map((w2) => `<p>• ${w2}</p>`).join('')}</div>` : '') +
+        '<p class="text-[11px] t-faint">Tak dikira: pulangan yang hilang pada aset yang ditarik, masa tebus unit amanah, atau untung/rugi jual saham dan emas. Jual saham semasa pasaran jatuh boleh mengunci kerugian.</p>';
+}
+
+/* ---------- Laporan bulanan ---------- */
+let rpMonth = null;
+// Sections are plain data so the same content feeds the on-screen/print view and the text copy for Claude.
+function reportSections(ym, mask) {
+    const st = appState.settings;
+    const sections = [];
+    const add = (title, o) => sections.push({ title, ...o });
+    const M = computeMetrics('combined');
+    const mk = (kind, i, name, extra) => mask ? `${kind} ${i + 1}${extra ? ` (${extra})` : ''}` : name;
+    const who = (o) => mask ? (o === 'husband' ? 'Suami' : o === 'wife' ? 'Isteri' : 'Bersama') : ownerLabel(o);
+    const flags = [];
+
+    // 1. Overview
+    const auto = autoSavings('combined').amount;
+    const fullRate = M.netIncome + auto > 0 ? (M.savings + auto) / (M.netIncome + auto) * 100 : 0;
+    add('Ringkasan isi rumah', { kv: [
+        ['Nilai bersih', formatRM(M.netWorth)], ['Jumlah aset', formatRM(M.totalAssets)], ['Aset liquid', formatRM(M.liquidRaw)], ['Jumlah liabiliti', formatRM(M.totalLiab)],
+        ['Pendapatan bersih / bln', formatRM(M.netIncome)], ['Belanja / bln', formatRM(M.totalExp)], ['Simpanan / bln (pendapatan − belanja)', `${formatRM(M.savings)} (${pct(M.savingsRate)})`],
+        ...(auto > 0 ? [['Simpanan automatik gaji (KWSP pekerja + simpanan)', `${formatRM(auto)}/bln, kadar penuh ${pct(fullRate)}`]] : []),
+        ['DSR isi rumah', pct(M.dsr)], ['Runway dana kecemasan', `${M.runway.toFixed(1)} bulan (minimum ${st.emergencyMin}, ideal ${st.emergencyIdeal})`],
+        ['Kemajuan FI (aset liquid / sasaran)', `${pct(M.fiProgress)} daripada ${formatRM(M.fiTarget)}`], ['Anggaran capai FI', fmtYears(M.yrs)]
+    ] });
+    if (M.savings < 0) flags.push(`Simpanan bulanan negatif (${formatRM(M.savings)}).`);
+    if (M.dsr > st.dsrMax) flags.push(`DSR isi rumah ${pct(M.dsr)} melebihi had ${st.dsrMax}%.`);
+    else if (M.dsr > st.dsrTarget) flags.push(`DSR isi rumah ${pct(M.dsr)} melebihi sasaran ${st.dsrTarget}%.`);
+    if (M.runway < st.emergencyMin) flags.push(`Dana kecemasan ${M.runway.toFixed(1)} bulan, bawah minimum ${st.emergencyMin}.`);
+
+    // 2. Per person
+    const people = ['husband', 'wife'].map((p) => { const m = computeMetrics(p), pd = personDebt(p); return { p, m, pd }; });
+    add('Ikut individu', { table: { head: ['', 'Pendapatan bersih', 'Belanja', 'Simpanan', 'Kadar simpanan', 'Bayaran hutang', 'DSR', 'Nilai bersih'],
+        rows: people.map(({ p, m, pd }) => [who(p), formatRM(m.netIncome), formatRM(m.totalExp), formatRM(m.savings), pct(m.savingsRate), formatRM(pd.payments), pct(pd.dsr), formatRM(m.netWorth)]) } });
+    people.forEach(({ p, pd }) => { if (pd.dsr > st.dsrMax) flags.push(`DSR ${who(p)} ${pct(pd.dsr)} melebihi had ${st.dsrMax}%.`); });
+
+    // 3. Cashflow scenario + shortfall
+    const sc = cashflowScenario('combined'), sf = shortfallPlan('combined', sc);
+    add('Cashflow dan tempoh hutang', { kv: [
+        ['Cashflow bersih sekarang', formatRM(sc.netNow)],
+        ['Cashflow selepas hutang dalam pelan tamat', `${formatRM(sc.netAfter)}${sc.milestones.length ? ` (bermula ${sc.milestones[sc.milestones.length - 1].label})` : ''}`],
+        ['Pelan langsai', `${sc.plan.months >= 600 ? '50+ thn' : monthLabel(sc.plan.months)}${sc.extra ? `, tambahan ${formatRM(sc.extra)}/bln` : ''}`]
+    ], table: sc.milestones.length ? { head: ['Bulan', 'Hutang tamat', 'Cashflow bersih', 'Tambahan'], rows: sc.milestones.map((x) => [x.label, x.names.map((nm, i) => mask ? `Hutang (${i + 1})` : nm).join(', '), formatRM(x.net), `+${formatRM(x.gain)}`]) } : null,
+        note: sf.positiveFrom === 0 ? 'Tiada defisit bulan ni.' : `Defisit ${sf.deficitMonths} bulan sehingga ${sf.positiveFrom == null ? 'tak positif' : monthLabel(sf.positiveFrom)}; perlu tampung ${formatRM(sf.total + sf.unfunded)}${sf.unfunded > 0.5 ? `, aset selamat kurang ${formatRM(sf.unfunded)}` : ''}.` });
+    if (sf.positiveFrom !== 0) flags.push(`Cashflow negatif sehingga ${sf.positiveFrom == null ? 'hutang dalam pelan tamat pun masih negatif' : monthLabel(sf.positiveFrom)}.`);
+
+    // 4. Liabilities
+    const base = simulateDebts(debtsFor('combined', true), { rollover: false });
+    add('Liabiliti', { table: { head: ['Hutang', 'Pemilik', 'Baki', 'Bayaran / bln', 'Kadar', 'Cara bayar', 'Tamat'],
+        rows: appState.liabilities.map((l, i) => [mk('Hutang', i, l.name, l.category), who(l.owner), formatRM(l.amount), formatRM(l.monthlyPayment), `${n(l.interestRate).toFixed(2)}% ${l.rateType === 'flat' ? 'flat' : 'efektif'}`, l.payMethod === 'salary' ? `Potong gaji ${who(l.payer)}` : 'Debit', base.payoff[l.id] == null ? '—' : fmtMonths(base.payoff[l.id])]) } });
+
+    // 5. Assets
+    const cats = Object.create(null);
+    appState.assets.forEach((a) => { cats[a.category] = (cats[a.category] || 0) + n(a.amount); });
+    add('Aset', { table: { head: ['Aset', 'Pemilik', 'Kategori', 'Baki', 'Pulangan', 'Status'],
+        rows: appState.assets.map((a, i) => [mk('Aset', i, a.name, a.category), who(a.owner), a.category, formatRM(a.amount), `${n(a.yieldPercent).toFixed(2)}%`, a.isLocked ? 'Terkunci' : 'Liquid']) },
+        note: `Ikut kategori: ${Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${formatRM(v)}`).join(', ')}.` });
+
+    // 6. Income and expenses
+    add('Pendapatan', { table: { head: ['Sumber', 'Pemilik', 'Bersih / bln', 'Kasar / bln'], rows: appState.income.map((i, idx) => [mk('Pendapatan', idx, i.name, i.category), who(i.owner), formatRM(i.amount), formatRM(i.grossAmount)]) } });
+    const ec = Object.create(null);
+    M.expenses.forEach((e) => { ec[e.category] = (ec[e.category] || 0) + e.amount; });
+    add('Belanja ikut kategori', { table: { head: ['Kategori', 'Jumlah / bln', '% belanja'], rows: Object.entries(ec).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, formatRM(v), M.totalExp > 0 ? pct(v / M.totalExp * 100) : '—']) } });
+
+    // 7. Budget vs actual (selected month)
+    const br = budgetRows(ym);
+    if (br.some((r) => r.has)) {
+        add(`Bajet vs sebenar ${ymLabel(ym)}`, { table: { head: ['Kategori', 'Bajet', 'Sebenar', 'Beza'],
+            rows: br.map((r) => [r.cat, formatRM(r.budget), r.has ? formatRM(r.actual) : '—', r.has ? `${r.actual > r.budget ? 'Lebih ' : 'Baki '}${formatRM(Math.abs(r.budget - r.actual))}` : '—']) } });
+        br.filter((r) => r.has && r.budget > 0 && r.actual > r.budget * 1.1).forEach((r) => flags.push(`${r.cat} melebihi bajet ${ymLabel(ym)}: ${formatRM(r.actual)} vs ${formatRM(r.budget)}.`));
+    } else add(`Bajet vs sebenar ${ymLabel(ym)}`, { note: 'Belum ada belanja sebenar direkod untuk bulan ini.' });
+
+    // 8. Payslips (selected month)
+    const slipRows = [];
+    ['husband', 'wife'].forEach((p) => {
+        const sl = appState.payslips.filter((x) => x.owner === p && x.month === ym).pop();
+        if (!sl) return;
+        const t = psTotals(sl);
+        slipRows.push([who(p), formatRM2(t.gross), formatRM2(t.ded), formatRM2(t.net), sl.earnings.map((l) => `${l.label} ${formatRM2(l.amount)}`).join('; '), sl.deductions.map((l) => `${l.label} ${formatRM2(l.amount)}`).join('; ')]);
+        if (sl.statedNet != null && Math.abs(sl.statedNet - t.net) >= 0.5) flags.push(`Slip ${who(p)} ${ymLabel(ym)}: bersih ikut slip ${formatRM2(sl.statedNet)} tak sama dengan kiraan ${formatRM2(t.net)}.`);
+        const inc = sum(psIncomeGaji(p));
+        if (inc > 0 && Math.abs(inc - t.net) >= 1) flags.push(`Gaji ${who(p)} dalam Pendapatan (${formatRM(inc)}) berbeza daripada slip ${ymLabel(ym)} (${formatRM2(t.net)}).`);
+    });
+    add(`Slip gaji ${ymLabel(ym)}`, slipRows.length ? { table: { head: ['Pemilik', 'Kasar', 'Potongan', 'Bersih', 'Pendapatan', 'Potongan (butiran)'], rows: slipRows } } : { note: 'Tiada slip direkod untuk bulan ini.' });
+
+    // 9. Savings logged (selected month)
+    const deps = appState.deposits.filter((d) => d.date.startsWith(ym));
+    const manual = svNet(deps.filter((d) => d.src !== 'slip'));
+    add(`Simpanan direkod ${ymLabel(ym)}`, deps.length ? { table: { head: ['Tarikh', 'Aset', 'Jenis', 'Jumlah'], rows: deps.sort((a, b) => a.date.localeCompare(b.date)).map((d) => [d.date, mask ? 'Aset (rekod)' : (appState.assets.find((a) => a.id === d.assetId)?.name || d.assetName), `${d.kind === 'masuk' ? 'Masuk' : 'Keluar'}${d.src === 'slip' ? ' (slip)' : ''}`, formatRM2(d.amount)]) },
+        note: `Simpanan manual direkod ${formatRM2(manual)}; anggaran simpanan (pendapatan − belanja) ${formatRM(M.savings)}.` } : { note: `Tiada simpanan direkod. Anggaran simpanan (pendapatan − belanja) ${formatRM(M.savings)}.` });
+    if (M.savings > 0 && ym === currentYM() && manual < M.savings * 0.5) flags.push(`Simpanan direkod ${formatRM(manual)} kurang separuh daripada anggaran ${formatRM(M.savings)}: ke mana baki duit pergi?`);
+
+    // 10. Goals, zakat, takaful
+    const gl = computeGoals('combined').list;
+    add('Matlamat', gl.length ? { table: { head: ['Matlamat', 'Sasaran', 'Terkumpul', 'Siap', 'Sasaran tarikh', 'Status'],
+        rows: gl.map((g, i) => [mask ? `Matlamat ${i + 1} (${GOAL_KINDS[g.kind].label})` : g.name, formatRM(g.targetScoped), formatRM(g.current), pct(g.pct, 0), g.targetMonth ? ymLabel(g.targetMonth) : '—', { done: 'Siap', overdue: 'Lewat', behind: 'Ketinggalan', ok: 'Atas landasan' }[g.status]]) } } : { note: 'Tiada matlamat.' });
+    gl.filter((g) => g.status === 'behind' || g.status === 'overdue').forEach((g, i) => flags.push(`Matlamat ${mask ? `(${i + 1})` : `"${g.name}"`} ${g.status === 'overdue' ? 'lewat' : 'ketinggalan'}.`));
+    const zk = ['husband', 'wife'].map((p) => [who(p), formatRM(computeZakat(p).total)]);
+    const tk = ['husband', 'wife'].map((p) => { const g = computeTakafulGap(p); return [who(p), formatRM(g.need), formatRM(g.have), formatRM(g.gap)]; });
+    add('Zakat dan perlindungan', { kv: zk.map(([a, b]) => [`Anggaran zakat setahun, ${a}`, b]), table: { head: ['Perlindungan', 'Keperluan', 'Ada', 'Jurang'], rows: tk } });
+
+    // 11. Snapshot comparison
+    const snaps = [...appState.historySnapshots].sort((a, b) => a.key.localeCompare(b.key));
+    const cur = snaps.find((x) => x.key === ym), prevS = [...snaps].reverse().find((x) => x.key < ym);
+    if (cur && prevS) {
+        add(`Perubahan vs ${prevS.dateLabel}`, { table: { head: ['', prevS.dateLabel, cur.dateLabel, 'Beza'],
+            rows: [['Nilai bersih', cur.netWorth, prevS.netWorth], ['Aset liquid', cur.liquidAssets, prevS.liquidAssets], ['Pendapatan', cur.income, prevS.income], ['Belanja', cur.expenses, prevS.expenses], ['Simpanan', cur.savings, prevS.savings]]
+                .map(([l, c, p]) => [l, formatRM(p), formatRM(c), `${c - p >= 0 ? '+' : '−'}${formatRM(Math.abs(c - p))}`]) } });
+    } else add('Perubahan vs bulan lepas', { note: cur ? 'Tiada snapshot bulan sebelumnya untuk dibandingkan.' : `Tiada snapshot untuk ${ymLabel(ym)}. Simpan snapshot di tab Sejarah supaya perbandingan bulanan tersedia.` });
+
+    // Flags first
+    sections.unshift({ title: 'Perkara perlu perhatian', list: flags.length ? flags : ['Tiada isyarat merah daripada semakan automatik.'] });
+    return sections;
+}
+
+function reportHtml(sections, ym) {
+    const body = sections.map((s) => {
+        let h = `<div class="card-sub p-4 space-y-2 report-sec"><h4 class="text-sm font-bold">${esc(s.title)}</h4>`;
+        if (s.list) h += `<ul class="text-xs space-y-1">${s.list.map((x) => `<li>• ${esc(x)}</li>`).join('')}</ul>`;
+        if (s.kv) h += `<div class="text-xs">${s.kv.map(([k, v]) => `<div class="flex justify-between gap-3 py-1 border-b bd"><span class="t-muted">${esc(k)}</span><span class="num font-semibold text-right">${esc(v)}</span></div>`).join('')}</div>`;
+        if (s.table) h += `<div class="scroll-x"><table class="tbl"><thead><tr>${s.table.head.map((c, i) => `<th${i ? ' class="text-right"' : ''}>${esc(c)}</th>`).join('')}</tr></thead><tbody>${s.table.rows.map((r) => `<tr>${r.map((c, i) => `<td${i ? ' class="text-right num"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+        if (s.note) h += `<p class="text-[11px] t-faint">${esc(s.note)}</p>`;
+        return h + '</div>';
+    }).join('');
+    return `<div class="card-sub p-4 report-sec"><h3 class="text-base font-extrabold">Laporan Kewangan Isi Rumah, ${esc(ymLabel(ym))}</h3><p class="text-[11px] t-faint">Dijana ${esc(new Date().toLocaleString('ms-MY'))} · RM · Data sensitif, simpan dan kongsi dengan berhati-hati.</p></div>${body}`;
+}
+
+const CLAUDE_PROMPT = `## Arahan untuk Claude
+Aku dan pasangan aku isi rumah di Malaysia (RM; ada KWSP, ASB, Tabung Haji, zakat, PERKESO). Di atas ialah laporan kewangan bulanan kami. Tolong analisa dengan jujur dan terus terang:
+1. Kesihatan kewangan: beri skor 1-10 dan sebab ringkas.
+2. Risiko utama (cashflow, DSR, dana kecemasan, hutang, pendedahan aset) dan apa yang paling mendesak.
+3. Semak keganjilan: slip gaji vs pendapatan, simpanan direkod vs anggaran, belanja vs bajet.
+4. Tiga tindakan keutamaan untuk bulan depan, dengan angka RM yang jelas.
+5. Soalan yang aku perlu jawab kalau data tak cukup.
+Peraturan: jangan reka angka yang tiada dalam laporan, tandakan andaian, dan ingat ini bukan nasihat kewangan berlesen.`;
+
+function reportMarkdown(sections, ym) {
+    const out = [`# Laporan Kewangan Isi Rumah, ${ymLabel(ym)}`, `Dijana ${todayISO()}. Mata wang RM. Pendapatan dan belanja ialah angka bulanan semasa; aset dan hutang ialah baki semasa.`, ''];
+    const cell = (c) => String(c ?? '').replace(/\|/g, '/').replace(/\n/g, ' ');
+    sections.forEach((s) => {
+        out.push(`## ${s.title}`);
+        if (s.list) s.list.forEach((x) => out.push(`- ${x}`));
+        if (s.kv) s.kv.forEach(([k, v]) => out.push(`- ${k}: ${v}`));
+        if (s.table) {
+            out.push('', `| ${s.table.head.map(cell).join(' | ')} |`, `| ${s.table.head.map(() => '---').join(' | ')} |`);
+            s.table.rows.forEach((r) => out.push(`| ${r.map(cell).join(' | ')} |`));
+        }
+        if (s.note) out.push('', s.note);
+        out.push('');
+    });
+    out.push(CLAUDE_PROMPT);
+    return out.join('\n');
+}
+function currentReport() {
+    const ym = rpMonth || currentYM();
+    const mask = $('rp-mask').checked;
+    const sections = reportSections(ym, mask);
+    return { ym, sections };
+}
+function renderReport() {
+    if (!rpMonth) rpMonth = currentYM();
+    if (document.activeElement !== $('rp-month')) $('rp-month').value = rpMonth;
+    const { ym, sections } = currentReport();
+    $('report-body').innerHTML = reportHtml(sections, ym);
+}
+function printReport() {
+    renderReport(); refreshIcons();
+    document.body.classList.add('print-report');
+    const done = () => { document.body.classList.remove('print-report'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    window.print();
+    setTimeout(done, 1500);
+}
+async function copyReport() {
+    const { ym, sections } = currentReport();
+    try { await navigator.clipboard.writeText(reportMarkdown(sections, ym)); showToast('Laporan disalin. Tampal dalam Claude untuk dianalisa.', 'success'); }
+    catch { showToast('Salin gagal. Guna butang .md untuk muat turun.', 'error'); }
+}
+function downloadReport() {
+    const { ym, sections } = currentReport();
+    downloadBlob(reportMarkdown(sections, ym), `Laporan_Kewangan_${ym}.md`, 'text/markdown;charset=utf-8');
+    showToast('Laporan .md dimuat turun.', 'success');
+}
+
 /* ---------- Kalkulator nafkah ---------- */
 // Always from the husband's side. Pure check: does his income cover debts + nafkah (+ his other spending)?
 // Tiers = how much nafkah leaves a given savings rate. They are affordability ceilings, not an entitlement amount.
@@ -4954,6 +5328,7 @@ function switchProfile(p) {
 }
 function switchTab(tab) {
     activeTab = tab;
+    if (tab === 'report') { renderReport(); refreshIcons(); }
     document.querySelectorAll('.view-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.view-tab-content').forEach((c) => c.classList.toggle('hidden', c.id !== `tab-${tab}`));
     document.querySelectorAll('.mnav').forEach((b) => { b.style.color = b.dataset.tab === tab ? 'var(--sage)' : 'var(--muted)'; });
@@ -4992,6 +5367,9 @@ document.addEventListener('click', (e) => {
         'apply-payslip': () => applyPayslip(t.dataset.id),
         'csv-payslips': exportCsvPayslips,
         'post-payslip': () => openPsPost(t.dataset.id),
+        'report-print': printReport,
+        'report-copy': copyReport,
+        'report-md': downloadReport,
         'delete-sv': () => deleteDeposit(t.dataset.id),
         'ps-del-line': () => {
             readPsRows();
@@ -5094,6 +5472,7 @@ document.addEventListener('change', (e) => {
         if (a) { a.saveTarget = rng(el.value, 0, 1e7, 0); saveState(); renderSavings(); refreshIcons(); }
         return;
     }
+    if (el.id === 'rp-month' || el.id === 'rp-mask') { rpMonth = /^\d{4}-\d{2}$/.test($('rp-month').value) ? $('rp-month').value : currentYM(); renderReport(); refreshIcons(); return; }
     if (el.id === 'ps-year') { psYear = el.value; renderPayslips(); refreshIcons(); return; }
     if (el.id === 'ps-owner') { if (!editingPsId) { psPrepareNew(el.value); renderPsRows(); updatePsTotals(); refreshIcons(); } return; }
     if (el.id === 'ps-add-earn' || el.id === 'ps-add-ded') { addPsLine(el); return; }

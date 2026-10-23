@@ -264,6 +264,7 @@
                 <span><strong id="k-savings" class="num pv">RM 0</strong>/bln</span>
                 <span class="badge b-sage">Runway <span id="k-runway" class="num">0</span> bln</span>
             </div>
+            <p id="k-srate-note" class="text-[10px] t-faint mt-2 hidden pv"></p>
         </div>
     </section>
 
@@ -380,6 +381,38 @@
                     </table>
                 </div>
                 <div id="alloc-advice" class="text-xs space-y-1"></div>
+            </div>
+
+            <!-- Rekod simpanan ke aset -->
+            <div class="card-sub p-4 space-y-3">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="piggy-bank" class="t-sage"></i>Rekod Simpanan ke Aset</h3>
+                    <p class="text-xs t-muted">Rekod setiap transfer ke Versa, Wahed, ASB dan lain-lain. Baki aset naik sendiri dan jumlah modal dijejak, jadi bila kau kemas kini baki sebenar dari app, untung/rugi nampak. Jangan rekod ini sebagai belanja.</p>
+                </div>
+                <form id="form-sv" novalidate class="grid grid-cols-2 md:grid-cols-6 gap-2 items-end no-print">
+                    <div class="col-span-2"><label class="lbl" for="sv-asset">Aset</label><select id="sv-asset" class="field"></select></div>
+                    <div><label class="lbl" for="sv-kind">Jenis</label><select id="sv-kind" class="field"><option value="masuk">Masuk</option><option value="keluar">Keluar</option></select></div>
+                    <div><label class="lbl" for="sv-date">Tarikh</label><input id="sv-date" type="date" class="field"></div>
+                    <div><label class="lbl" for="sv-amount">Jumlah (RM)</label><input id="sv-amount" type="number" min="0" step="0.01" inputmode="decimal" class="field num"></div>
+                    <button type="submit" class="btn btn-primary"><i data-lucide="plus"></i>Rekod</button>
+                    <div class="col-span-2 md:col-span-6"><input id="sv-note" type="text" maxlength="80" class="field" placeholder="Nota (pilihan), contoh: auto-debit bulanan" aria-label="Nota"></div>
+                </form>
+                <div class="flex items-center gap-2 no-print">
+                    <label class="text-[11px] t-muted" for="sv-month">Bulan</label>
+                    <input id="sv-month" type="month" class="field" style="width:auto">
+                </div>
+                <div id="sv-summary" class="text-xs space-y-1"></div>
+                <div class="scroll-x">
+                    <table class="tbl">
+                        <thead><tr><th>Aset</th><th class="text-right">Sasaran / bln</th><th class="text-right">Bulan ni</th><th class="text-right">Baki</th><th class="text-right">Modal bersih</th><th class="text-right">Untung / rugi</th><th>Status</th></tr></thead>
+                        <tbody id="tbody-sv"></tbody>
+                    </table>
+                </div>
+                <p class="text-[11px] t-faint">Untung/rugi = baki − baki awal jejak − modal bersih. Ia tepat bila baki aset dikemas kini dari app sebenar. Jejak bermula pada rekod pertama setiap aset.</p>
+                <details class="text-xs">
+                    <summary class="cursor-pointer t-muted font-semibold">Semua rekod (<span id="sv-count">0</span>)</summary>
+                    <div class="scroll-x mt-2"><table class="tbl"><thead><tr><th>Tarikh</th><th>Aset</th><th>Jenis</th><th class="text-right">Jumlah</th><th>Nota</th><th class="text-right no-print"></th></tr></thead><tbody id="tbody-sv-list"></tbody></table></div>
+                </details>
             </div>
 
             <!-- Dividend records -->
@@ -504,6 +537,29 @@
                         <thead><tr><th>Pemilik</th><th>Item</th><th>Kategori</th><th>Jenis</th><th class="text-right">Jumlah / Bln</th><th class="text-right no-print">Tindakan</th></tr></thead>
                         <tbody id="tbody-expenses"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Kalkulator nafkah -->
+            <div class="space-y-3">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="heart-handshake" class="t-sage"></i>Kalkulator Nafkah Isteri</h3>
+                    <p class="text-xs t-muted">Isi angka kau sendiri. Ini alat semak kemampuan, bukan cadangan jumlah. Nafkah ikut keperluan isteri dan kemampuan suami, dan tak ada formula tetap. Kalau kau tambah baris nafkah dalam Belanja, ia tak ditolak dua kali.</p>
+                </div>
+                <div class="card-sub p-4 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div><label class="lbl" for="nf-wajib">Nafkah wajib / bln (RM)</label>
+                            <input id="nf-wajib" type="number" min="0" step="1" inputmode="decimal" class="field num" placeholder="Makan, tempat tinggal, pakaian, utiliti isteri">
+                            <p class="text-[11px] t-faint mt-1">Bahagian isteri sahaja, bukan seluruh belanja rumah.</p></div>
+                        <div><label class="lbl" for="nf-elaun">Elaun peribadi isteri / bln (RM)</label>
+                            <input id="nf-elaun" type="number" min="0" step="1" inputmode="decimal" class="field num" placeholder="Wang poket, kecantikan, hobi">
+                            <p class="text-[11px] t-faint mt-1">Kira berasingan daripada nafkah wajib.</p></div>
+                        <div><label class="lbl" for="nf-target">Sasaran simpanan bebas (% gaji)</label>
+                            <input id="nf-target" type="number" min="0" max="90" step="1" inputmode="decimal" class="field num" placeholder="10">
+                            <p class="text-[11px] t-faint mt-1">Lebihan di luar KWSP, simpanan gaji & matlamat. Untuk tahap di bawah.</p></div>
+                    </div>
+                    <div id="nf-tiers" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+                    <div id="nf-result" class="space-y-2 text-xs"></div>
                 </div>
             </div>
 
@@ -1065,6 +1121,7 @@
             </div>
             <div><label class="lbl" for="ps-note">Nota (pilihan)</label><input id="ps-note" type="text" maxlength="120" class="field" placeholder="Contoh: kenaikan gaji, bayaran tunggakan"></div>
             <label class="flex items-center gap-2 text-xs"><input id="ps-special" type="checkbox" class="w-4 h-4 accent-emerald-600">Bulan luar biasa (bonus / tunggakan / OT besar), jangan jadikan rujukan gaji biasa</label>
+            <label class="flex items-center gap-2 text-xs"><input id="ps-posted" type="checkbox" class="w-4 h-4 accent-emerald-600">Simpanan slip ni dah dimasukkan ke baki aset (elak berganda)</label>
 
             <div class="flex justify-between gap-2 pt-2">
                 <button type="button" id="ps-delete" class="btn btn-danger hidden" data-action="delete-payslip"><i data-lucide="trash-2"></i>Padam</button>
@@ -1072,6 +1129,24 @@
                     <button type="button" class="btn" data-action="close-modal" data-modal="modal-payslip">Batal</button>
                     <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL: Slip gaji -> aset ================= -->
+<div id="modal-pspost" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-lg p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-pspost" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div>
+            <h3 id="pp-title" class="text-sm font-bold">Masuk ke aset</h3>
+            <p class="text-xs t-muted">Tambah simpanan bulan ni ke baki aset. Buat sekali sahaja untuk setiap slip. Kalau kau dah kemas kini baki aset sendiri, jangan tambah lagi sebab akan berganda.</p>
+        </div>
+        <form id="form-pspost" novalidate class="space-y-3">
+            <div id="pp-rows" class="space-y-3"></div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" class="btn" data-action="close-modal" data-modal="modal-pspost">Batal</button>
+                <button type="submit" class="btn btn-primary">Tambah ke aset</button>
             </div>
         </form>
     </div>
@@ -1242,7 +1317,7 @@
    ===================================================================== */
 const DATA_CLASSIFICATION = 'Sensitive';      // household salary/assets: local only, never synced
 const STORAGE_KEY = 'fire_hub_malaysia_data'; // same key as old version so existing data migrates
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 // Display names come from Tetapan (personalised), fallback Suami/Isteri
 function ownerLabel(o) {
@@ -1370,6 +1445,7 @@ const DEFAULT_SETTINGS = {
     takaful: { replaceYears: 5, finalExpenses: 10000, mortgageCovered: true, countKwsp: true },
     allocation: { tunai: 20, asbth: 30, ekuiti: 40, emas: 10, lain: 0 },
     taxYear: 2026, taxLimits: {},
+    nafkah: { wajib: 0, elaun: 0, target: 10 },
     debtPlan: { strategy: 'avalanche', extra: 0, includeMortgage: false, mortgageId: '', mortgageExtra: 0, lump: 0 }
 };
 
@@ -1412,6 +1488,12 @@ const SAMPLE_DATA = {
     ],
     actuals: {},
     checklist: { husband: {}, wife: {} },
+    deposits: [
+        { id: 'dp1', assetId: 'a2', assetName: 'ASB Suami', date: '2026-09-25', amount: 500, kind: 'masuk', src: '', note: 'Auto-debit bulanan' },
+        { id: 'dp2', assetId: 'a2', assetName: 'ASB Suami', date: '2026-10-10', amount: 500, kind: 'masuk', src: '', note: '' },
+        { id: 'dp3', assetId: 'a7', assetName: 'Robo-Advisor', date: '2026-09-05', amount: 300, kind: 'masuk', src: '', note: '' },
+        { id: 'dp4', assetId: 'a7', assetName: 'Robo-Advisor', date: '2026-10-05', amount: 300, kind: 'masuk', src: '', note: '' }
+    ],
     payslips: [
         { id: 'ps1', owner: 'husband', month: '2026-08', special: false, note: '', kwspEmployer: 1105, statedNet: 6830,
           earnings: [{ label: 'Gaji pokok', tag: 'pokok', amount: 7000 }, { label: 'Elaun tetap', tag: 'elaun', amount: 1500 }],
@@ -1424,12 +1506,12 @@ const SAMPLE_DATA = {
     ],
     assets: [
         { id: 'a1', owner: 'husband', name: 'KWSP Suami', category: 'KWSP', amount: 145000, yieldPercent: 5.5, isLocked: true, zakatType: 'tiada' },
-        { id: 'a2', owner: 'husband', name: 'ASB Suami', category: 'ASB / ASN', amount: 65000, yieldPercent: 5.25, isLocked: false, zakatType: 'simpanan' },
+        { id: 'a2', owner: 'husband', name: 'ASB Suami', category: 'ASB / ASN', amount: 65000, yieldPercent: 5.25, isLocked: false, zakatType: 'simpanan', saveTarget: 500, track: { startBalance: 64000, startDate: '2026-09-01' } },
         { id: 'a3', owner: 'husband', name: 'Portfolio Saham & ETF', category: 'Saham & ETF', amount: 32000, yieldPercent: 8.0, isLocked: false, zakatType: 'simpanan' },
         { id: 'a4', owner: 'husband', name: 'Dana Kecemasan Suami', category: 'Tunai & Simpanan', amount: 18000, yieldPercent: 2.5, isLocked: false, zakatType: 'simpanan' },
         { id: 'a5', owner: 'wife', name: 'KWSP Isteri', category: 'KWSP', amount: 120000, yieldPercent: 5.5, isLocked: true, zakatType: 'tiada' },
         { id: 'a6', owner: 'wife', name: 'Tabung Haji Isteri', category: 'Tabung Haji', amount: 45000, yieldPercent: 3.25, isLocked: false, zakatType: 'tiada' },
-        { id: 'a7', owner: 'wife', name: 'Robo-Advisor', category: 'Unit Amanah / Robo', amount: 24000, yieldPercent: 6.5, isLocked: false, zakatType: 'simpanan' },
+        { id: 'a7', owner: 'wife', name: 'Robo-Advisor', category: 'Unit Amanah / Robo', amount: 24000, yieldPercent: 6.5, isLocked: false, zakatType: 'simpanan', saveTarget: 300, track: { startBalance: 23000, startDate: '2026-09-01' } },
         { id: 'a8', owner: 'wife', name: 'Dana Kecemasan Isteri', category: 'Tunai & Simpanan', amount: 15000, yieldPercent: 2.5, isLocked: false, zakatType: 'simpanan' },
         { id: 'a9', owner: 'wife', name: 'Emas GAP', category: 'Emas', amount: 12000, yieldPercent: 0, isLocked: false, zakatType: 'emas' },
         { id: 'a10', owner: 'shared', name: 'Rumah Utama (nilai pasaran)', category: 'Hartanah', amount: 470000, yieldPercent: 3.0, isLocked: true, zakatType: 'tiada' }
@@ -1600,6 +1682,7 @@ function normaliseState(raw) {
         },
         allocation: Object.fromEntries(Object.keys(ASSET_CLASSES).map((k) => [k, rng(s.allocation?.[k], 0, 100, DEFAULT_SETTINGS.allocation[k])])),
         taxYear: rng(s.taxYear, 2020, 2100, new Date().getFullYear()),
+        nafkah: { wajib: rng(s.nafkah?.wajib, 0, 1e6, 0), elaun: rng(s.nafkah?.elaun, 0, 1e6, 0), target: rng(s.nafkah?.target, 0, 90, 10) },
         debtPlan: {
             strategy: ['avalanche', 'snowball'].includes(s.debtPlan?.strategy) ? s.debtPlan.strategy : 'avalanche',
             extra: rng(s.debtPlan?.extra, 0, 1e6, 0),
@@ -1622,7 +1705,11 @@ function normaliseState(raw) {
             id: safeId(a.id, 'a'), owner: safeOwner(a.owner), name: cleanText(a.name) || 'Aset', category,
             amount: Math.max(0, n(a.amount)), yieldPercent: n(a.yieldPercent),
             isLocked: isV1 ? (def.locked || !!a.isLocked) : !!a.isLocked,
-            zakatType: ['simpanan', 'emas', 'tiada'].includes(a.zakatType) ? a.zakatType : def.zakat
+            zakatType: ['simpanan', 'emas', 'tiada'].includes(a.zakatType) ? a.zakatType : def.zakat,
+            saveTarget: rng(a.saveTarget, 0, 1e7, 0),
+            // deposit tracking baseline: balance before the first logged deposit (needed for profit/loss)
+            track: a.track && typeof a.track === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(a.track.startDate)
+                ? { startBalance: Math.max(0, n(a.track.startBalance)), startDate: a.track.startDate } : null
         };
     });
     const liabilities = arr(raw.liabilities).map((l) => ({
@@ -1711,12 +1798,17 @@ function normaliseState(raw) {
         .filter((l) => l.amount > 0);
     const payslips = arr(raw.payslips).filter((p) => monthRe.test(p.month)).slice(0, 600).map((p) => ({
         id: safeId(p.id, 'ps'), owner: p.owner === 'wife' ? 'wife' : 'husband', month: p.month,
-        special: !!p.special, note: cleanText(p.note, 120),
+        special: !!p.special, assetPosted: !!p.assetPosted, note: cleanText(p.note, 120),
         kwspEmployer: r2(rng(p.kwspEmployer, 0, 1e7, 0)),
         statedNet: p.statedNet != null && p.statedNet !== '' && n(p.statedNet) > 0 ? r2(rng(p.statedNet, 0, 1e8, 0)) : null,
         earnings: psLines(p.earnings, PS_EARN_TAGS), deductions: psLines(p.deductions, PS_DED_TAGS)
     }));
-    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, checklist, dividends, payslips };
+    const deposits = arr(raw.deposits).filter((d) => dateRe.test(d.date) && n(d.amount) > 0).slice(0, 5000).map((d) => ({
+        id: safeId(d.id, 'dp'), assetId: typeof d.assetId === 'string' ? d.assetId : '', assetName: cleanText(d.assetName, 80) || 'Aset',
+        date: d.date, amount: r2(rng(d.amount, 0, 1e9, 0)), kind: d.kind === 'keluar' ? 'keluar' : 'masuk',
+        src: d.src === 'slip' ? 'slip' : '', note: cleanText(d.note, 80)
+    })).filter((d) => d.amount > 0);       // Infinity / NaN clamp to 0 above, drop those too
+    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, checklist, dividends, payslips, deposits };
     syncLinkedExpenses(state);
     return state;
 }
@@ -2118,6 +2210,8 @@ function renderAll() {
     renderCalendar();
     renderBudget();
     renderPayslips();
+    renderSavings();
+    renderNafkah();
     renderRetirement();
     renderAllocation(m);
     renderDividends();
@@ -2173,6 +2267,13 @@ function renderKpis(m) {
     $('k-srate').className = `text-2xl font-extrabold num mt-1 pv ${m.savings < 0 ? 't-rose' : 't-gold'}`;
     setText('k-savings', formatRM(m.savings));
     setText('k-runway', m.runway.toFixed(1));
+    // Payslip deductions that are really saving (KWSP pekerja, koperasi, TH) are NOT in the rate above.
+    const a = autoSavings(activeProfile);
+    $('k-srate-note').classList.toggle('hidden', a.amount <= 0);
+    if (a.amount > 0) {
+        const full = m.netIncome + a.amount > 0 ? (m.savings + a.amount) / (m.netIncome + a.amount) * 100 : 0;
+        setText('k-srate-note', `Termasuk potongan gaji (KWSP pekerja + simpanan ${formatRM(a.amount)}/bln): ${pct(full)}`);
+    }
 }
 
 // Levels are based on liquid FI progress + safety buffers, not net worth (which includes house & EPF)
@@ -3909,6 +4010,14 @@ function psDiff(cur, prev) {
     });
     return out;
 }
+// Deductions that are saving, not spending. They never reach take-home pay, so savings rate misses them.
+const psSavingLines = (slip) => slip.deductions.filter((l) => l.tag === 'kwsp' || l.tag === 'simpan');
+function autoSavings(profile) {
+    const persons = profile === 'combined' ? ['husband', 'wife'] : [profile];
+    let amount = 0;
+    persons.forEach((p) => { const all = psSorted(p); const s = all.find((x) => !x.special) || all[0]; if (s) amount += psSum(psSavingLines(s)); });
+    return { amount: round2(amount) };
+}
 // Loans cut from salary on the slip vs loans flagged "potong gaji" in Liabiliti. DSR uses the Liabiliti side.
 function psLoanCheck(person, slip) {
     const onSlip = psByTag(slip.deductions, 'loan'), inApp = round2(salaryDeductions(person));
@@ -3958,6 +4067,21 @@ function psCardHtml(person) {
         : Math.abs(incNet - t.net) < 1 ? '<span class="badge b-sage">Sepadan dengan Pendapatan</span>'
         : `<span class="badge b-gold pv">Pendapatan: ${formatRM2(incNet)}</span>`;
 
+    // Deductions that are really saving (KWSP pekerja, koperasi, TH) never reach take-home, so show them here
+    const sv = psSum(psSavingLines(cur)), er = n(cur.kwspEmployer);
+    let saveHtml = '';
+    if (sv > 0 || er > 0) {
+        const m = computeMetrics(person);
+        const rateNow = m.savingsRate, rateFull = m.netIncome + sv > 0 ? (m.savings + sv) / (m.netIncome + sv) * 100 : 0;
+        saveHtml = `<div class="text-[11px] space-y-0.5 card-sub p-2.5">
+            <p class="font-semibold uppercase tracking-wider t-muted text-[10px]">Simpanan automatik dari gaji</p>
+            <p class="pv">KWSP pekerja + simpanan: <strong class="num">${formatRM2(sv)}</strong>/bln${er > 0 ? ` · KWSP majikan <strong class="num">${formatRM2(er)}</strong>` : ''}</p>
+            ${sv > 0 ? `<p class="pv">Kadar simpanan ${pct(rateNow)} (tanpa potongan) → <strong>${pct(rateFull)}</strong> (termasuk potongan gaji)</p>` : ''}
+            ${cur.assetPosted ? '<span class="badge b-sage">Sudah ditambah ke aset</span>'
+                : '<p class="t-gold">Baki aset belum dikemas kini dengan jumlah ni. Guna "Masuk ke aset".</p>'}
+        </div>`;
+    }
+
     const diffs = prev ? psDiff(cur, prev) : [];
     const diffHtml = diffs.length ? `<div class="text-[11px] space-y-0.5">
         <p class="font-semibold uppercase tracking-wider t-muted text-[10px]">Perubahan vs ${esc(ymLabel(prev.month))}</p>
@@ -3988,11 +4112,13 @@ function psCardHtml(person) {
             <div class="space-y-1"><p class="font-semibold uppercase tracking-wider t-muted text-[10px]">Pendapatan</p>${cur.earnings.map(lineHtml).join('')}</div>
             <div class="space-y-1"><p class="font-semibold uppercase tracking-wider t-muted text-[10px]">Potongan</p>${cur.deductions.map(lineHtml).join('') || '<p class="t-faint">Tiada</p>'}</div>
         </div>
+        ${saveHtml}
         ${diffHtml}
         ${warns.map((w) => `<p class="text-[11px] t-gold flex gap-1.5"><i data-lucide="triangle-alert" class="shrink-0"></i><span>${esc(w)}</span></p>`).join('')}
         ${cur.note ? `<p class="text-[11px] t-faint">Nota: ${esc(cur.note)}</p>` : ''}
         <div class="flex flex-wrap gap-2 pt-1 no-print">
             <button class="btn btn-primary" data-action="apply-payslip" data-id="${esc(cur.id)}"><i data-lucide="refresh-cw"></i>Guna sebagai gaji semasa</button>
+            ${(sv > 0 || er > 0) && !cur.assetPosted ? `<button class="btn" data-action="post-payslip" data-id="${esc(cur.id)}"><i data-lucide="piggy-bank"></i>Masuk ke aset</button>` : ''}
             <button class="btn" data-action="edit-payslip" data-id="${esc(cur.id)}"><i data-lucide="pencil"></i>Edit</button>
             <button class="btn" data-action="add-payslip" data-owner="${person}"><i data-lucide="plus"></i>Slip bulan baru</button>
         </div>
@@ -4092,7 +4218,7 @@ function psPrepareNew(owner) {
     let month = latest ? psAddMonths(latest.month, 1) : nowYM;
     if (psMonthIdx(month) > psMonthIdx(nowYM)) month = nowYM;
     $('ps-month').value = month;
-    $('ps-special').checked = false; $('ps-note').value = ''; $('ps-stated').value = '';
+    $('ps-special').checked = false; $('ps-posted').checked = false; $('ps-note').value = ''; $('ps-stated').value = '';
     $('ps-kwsp-er').value = base && base.kwspEmployer ? base.kwspEmployer : '';
     psSeed(owner, base);
     $('ps-hint').textContent = base ? `Diisi dari slip ${ymLabel(base.month)}. Semak setiap angka dan tukar yang berbeza sahaja.` : 'Slip pertama: isi ikut slip kau. Baris tanpa jumlah akan diabaikan.';
@@ -4114,7 +4240,7 @@ function openPayslip(id = null, owner = null) {
     $('ps-title').textContent = p ? 'Kemaskini Slip Gaji' : 'Slip Gaji Baru';
     $('ps-delete').classList.toggle('hidden', !p);
     if (p) {
-        $('ps-month').value = p.month; $('ps-special').checked = p.special; $('ps-note').value = p.note;
+        $('ps-month').value = p.month; $('ps-special').checked = p.special; $('ps-posted').checked = p.assetPosted; $('ps-note').value = p.note;
         $('ps-kwsp-er').value = p.kwspEmployer || ''; $('ps-stated').value = p.statedNet != null ? p.statedNet : '';
         psSeed(own, p);
         $('ps-hint').textContent = 'Kemaskini ikut slip. Baris tanpa jumlah akan diabaikan.';
@@ -4184,7 +4310,7 @@ function handlePayslipSubmit(e) {
     if (psSum(deductions) > psSum(earnings)) { showToast('Potongan lebih besar dari pendapatan, semak semula.', 'error'); return; }
     const stated = $('ps-stated').value;
     const rec = {
-        owner: $('ps-owner').value === 'wife' ? 'wife' : 'husband', month, special: $('ps-special').checked, note: cleanText($('ps-note').value, 120),
+        owner: $('ps-owner').value === 'wife' ? 'wife' : 'husband', month, special: $('ps-special').checked, assetPosted: $('ps-posted').checked, note: cleanText($('ps-note').value, 120),
         kwspEmployer: round2(Math.max(0, n($('ps-kwsp-er').value))), statedNet: stated !== '' && n(stated) > 0 ? round2(n(stated)) : null,
         earnings, deductions
     };
@@ -4230,6 +4356,202 @@ function applyPayslip(id) {
         showToast(`Gaji ${who} dikemas kini: bersih ${formatRM2(t.net)}.`, 'success');
     }, 'Guna');
 }
+// ---- Slip -> baki aset (KWSP pekerja + majikan, koperasi, TH). Flag assetPosted stops double-adding. ----
+let psPostId = null;
+let psPostLines = [];
+function openPsPost(id) {
+    const p = appState.payslips.find((x) => x.id === id);
+    if (!p) return;
+    psPostId = id;
+    psPostLines = psSavingLines(p).map((l) => ({ label: l.label, tag: l.tag, amount: l.amount }));
+    if (n(p.kwspEmployer) > 0) psPostLines.push({ label: 'KWSP majikan', tag: 'kwsp', amount: p.kwspEmployer });
+    const owned = appState.assets.filter((a) => a.owner === p.owner || a.owner === 'shared');
+    const guess = (l) => {
+        if (l.tag === 'kwsp' || /kwsp|epf/i.test(l.label)) return owned.find((a) => a.category === 'KWSP' && a.owner === p.owner)?.id || '';
+        if (/tabung haji|\bth\b/i.test(l.label)) return owned.find((a) => a.category === 'Tabung Haji' && a.owner === p.owner)?.id || '';
+        return '';
+    };
+    const opts = (sel) => '<option value="">Jangan tambah</option>' + owned.map((a) => `<option value="${esc(a.id)}"${a.id === sel ? ' selected' : ''}>${esc(a.name)} · ${esc(ownerLabel(a.owner))} · ${formatRM(a.amount)}</option>`).join('');
+    $('pp-title').textContent = `Masuk ke aset: slip ${ymLabel(p.month)} (${ownerLabel(p.owner)})`;
+    $('pp-rows').innerHTML = psPostLines.map((l, i) => `<div class="card-sub p-3 space-y-2" data-pp="${i}">
+        <div class="flex justify-between text-xs"><span class="font-semibold">${esc(l.label)}</span><span class="num font-bold">${formatRM2(l.amount)}</span></div>
+        <select class="field pp-asset" aria-label="Aset untuk ${esc(l.label)}">${opts(guess(l))}</select></div>`).join('');
+    openModal('modal-pspost'); refreshIcons();
+}
+function handlePsPostSubmit(e) {
+    e.preventDefault();
+    const p = appState.payslips.find((x) => x.id === psPostId);
+    if (!p) { closeModal('modal-pspost'); return; }
+    const add = new Map();
+    document.querySelectorAll('#pp-rows [data-pp]').forEach((row) => {
+        const id = row.querySelector('.pp-asset').value, line = psPostLines[Number(row.dataset.pp)];
+        if (id && line && appState.assets.some((a) => a.id === id)) add.set(id, round2((add.get(id) || 0) + line.amount));
+    });
+    if (!add.size) { showToast('Pilih sekurang-kurangnya satu aset.', 'warning'); return; }
+    add.forEach((amt, id) => { logDeposit(appState.assets.find((x) => x.id === id), amt, 'masuk', todayISO(), `Slip ${ymLabel(p.month)}`, 'slip'); });
+    p.assetPosted = true;
+    saveState(); closeModal('modal-pspost'); renderAll();
+    showToast(`Baki aset dikemas kini (${add.size} akaun).`, 'success');
+}
+
+/* ---------- Rekod simpanan ke aset ---------- */
+// Each deposit raises the asset balance and is kept as a record. Baseline (asset.track) = balance before the first
+// logged deposit, so profit/loss = balance - startBalance - net deposits stays correct when balance is later set to the real NAV.
+let svMonth = null;
+const svSigned = (d) => (d.kind === 'keluar' ? -d.amount : d.amount);
+const svNet = (list) => round2(list.reduce((s, d) => s + svSigned(d), 0));
+function svAssets() {
+    return appState.assets.filter((a) => a.category !== 'Hartanah' && (activeProfile === 'combined' || a.owner === activeProfile || a.owner === 'shared'));
+}
+function logDeposit(asset, amount, kind, date, note, src) {
+    if (!asset.track) asset.track = { startBalance: round2(asset.amount), startDate: date };
+    asset.amount = Math.max(0, round2(n(asset.amount) + (kind === 'keluar' ? -amount : amount)));
+    appState.deposits.push({ id: uid('dp'), assetId: asset.id, assetName: asset.name, date, amount: round2(amount), kind: kind === 'keluar' ? 'keluar' : 'masuk', src: src || '', note: cleanText(note, 80) });
+}
+function deleteDeposit(id) {
+    const d = appState.deposits.find((x) => x.id === id);
+    if (!d) return;
+    const a = appState.assets.find((x) => x.id === d.assetId);
+    confirmDialog('Padam rekod simpanan?', a
+        ? `Baki ${a.name} akan ${d.kind === 'masuk' ? 'ditolak' : 'ditambah'} ${formatRM2(d.amount)} semula. Kalau baki dah dikemas kini sendiri selepas rekod ni, semak semula.`
+        : 'Aset dah dipadam, hanya rekod dibuang.', () => {
+        const cur = appState.assets.find((x) => x.id === d.assetId);
+        if (cur) cur.amount = Math.max(0, round2(n(cur.amount) - svSigned(d)));
+        appState.deposits = appState.deposits.filter((x) => x.id !== id);
+        if (cur && !appState.deposits.some((x) => x.assetId === cur.id)) cur.track = null;   // no records left: reset baseline
+        saveState(); renderAll(); showToast('Rekod simpanan dipadam.', 'warning');
+    }, 'Padam');
+}
+function handleSvSubmit(e) {
+    e.preventDefault();
+    const a = appState.assets.find((x) => x.id === $('sv-asset').value);
+    const amount = round2(Number($('sv-amount').value)), date = $('sv-date').value, kind = $('sv-kind').value === 'keluar' ? 'keluar' : 'masuk';
+    if (!a) { showToast('Pilih aset.', 'error'); return; }
+    if (!(amount > 0)) { $('sv-amount').classList.add('invalid'); showToast('Jumlah mesti lebih dari 0.', 'error'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { showToast('Pilih tarikh.', 'error'); return; }
+    if (kind === 'keluar' && amount > n(a.amount)) { showToast(`Jumlah keluar melebihi baki ${a.name} (${formatRM2(a.amount)}).`, 'error'); return; }
+    $('sv-amount').classList.remove('invalid');
+    logDeposit(a, amount, kind, date, $('sv-note').value, '');
+    $('sv-amount').value = ''; $('sv-note').value = '';
+    saveState(); renderAll();
+    showToast(`${kind === 'masuk' ? 'Simpanan' : 'Pengeluaran'} ${formatRM2(amount)} ${kind === 'masuk' ? 'ke' : 'dari'} ${a.name} direkod.`, 'success');
+}
+function renderSavings() {
+    const vis = svAssets();
+    if (!svMonth) svMonth = currentYM();
+    if (document.activeElement !== $('sv-month')) $('sv-month').value = svMonth;
+    const sel = $('sv-asset'), prev = sel.value;
+    sel.innerHTML = appState.assets.map((a) => `<option value="${esc(a.id)}">${esc(a.name)} · ${esc(ownerLabel(a.owner))}</option>`).join('');
+    if (prev && appState.assets.some((a) => a.id === prev)) sel.value = prev;
+    if (!$('sv-date').value) $('sv-date').value = todayISO();
+
+    const visIds = new Set(vis.map((a) => a.id));
+    const inMonth = (d) => d.date.startsWith(svMonth);
+    // "Bulan ni" per asset counts everything that went into it (slip savings too); the comparison with the
+    // monthly estimate leaves slip savings out because those never pass through take-home pay.
+    const monthOf = (a) => svNet(appState.deposits.filter((d) => d.assetId === a.id && inMonth(d)));
+    const rows = vis.map((a) => {
+        const dep = appState.deposits.filter((d) => d.assetId === a.id), net = svNet(dep);
+        const gain = a.track ? round2(a.amount - a.track.startBalance - net) : null;
+        const cost = a.track ? a.track.startBalance + net : 0;
+        return { a, month: monthOf(a), net, gain, gainPct: gain != null && cost > 0 ? gain / cost * 100 : null, tracked: !!a.track };
+    });
+    $('tbody-sv').innerHTML = rows.length ? rows.map(({ a, month, net, gain, gainPct, tracked }) => {
+        const tgt = n(a.saveTarget);
+        const status = tgt > 0 ? (month >= tgt ? '<span class="badge b-sage">Cukup</span>' : `<span class="badge b-gold pv">Kurang ${formatRM(tgt - Math.max(0, month))}</span>`) : '<span class="t-faint">—</span>';
+        return `<tr><td class="font-semibold">${esc(a.name)} <span class="t-faint text-[11px]">${esc(ownerLabel(a.owner))}</span></td>
+            <td class="text-right"><input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="width:90px;padding:.3rem .5rem;font-size:12px;text-align:right" data-sv-target="${esc(a.id)}" value="${tgt || ''}" placeholder="0" aria-label="Sasaran bulanan ${esc(a.name)}"></td>
+            <td class="text-right num pv ${month ? '' : 't-faint'}">${month ? formatRM2(month) : '—'}</td>
+            <td class="text-right num pv">${formatRM2(a.amount)}</td>
+            <td class="text-right num pv ${tracked ? '' : 't-faint'}">${tracked ? formatRM2(a.track.startBalance + net) : '—'}</td>
+            <td class="text-right num pv font-semibold ${gain == null ? 't-faint' : gain > 0 ? 't-sage' : gain < 0 ? 't-rose' : ''}">${gain == null ? '—' : `${gain > 0 ? '+' : gain < 0 ? '−' : ''}${formatRM2(Math.abs(gain)).replace('RM ', 'RM ')}${gainPct != null ? ` <span class="text-[11px]">(${gain >= 0 ? '+' : ''}${gainPct.toFixed(1)}%)</span>` : ''}`}</td>
+            <td>${status}</td></tr>`;
+    }).join('') : emptyRow(7, 'Tiada aset untuk direkod.');
+
+    const logged = svNet(appState.deposits.filter((d) => inMonth(d) && d.src !== 'slip' && visIds.has(d.assetId)));
+    const target = round2(vis.reduce((s, a) => s + n(a.saveTarget), 0));
+    const lines = [`<p>Direkod ${esc(ymLabel(svMonth))}: <strong class="num pv">${formatRM2(logged)}</strong>${target > 0 ? ` · sasaran semua aset <strong class="num pv">${formatRM2(target)}</strong>` : ''}</p>`];
+    if (activeProfile === 'combined') {
+        const est = computeMetrics('combined').savings;
+        if (est > 0 && svMonth === currentYM()) {
+            const msg = logged > est * 1.1 ? 'Rekod lebih tinggi daripada anggaran. Mungkin belanja sebenar kurang daripada bajet, atau ada pendapatan belum direkod.'
+                : logged < est * 0.5 ? 'Banyak duit anggaran belum direkod ke aset. Mungkin masih dalam akaun bank, atau belanja sebenar lebih tinggi daripada bajet. Semak Bajet vs Sebenar.'
+                : 'Selaras dengan anggaran.';
+            lines.push(`<p class="t-muted">Anggaran simpanan bulanan (pendapatan − belanja): <span class="num pv">${formatRM2(est)}</span>. ${msg}</p>`);
+        }
+    } else lines.push('<p class="t-faint">Perbandingan dengan anggaran simpanan hanya pada pandangan Bersama.</p>');
+    $('sv-summary').innerHTML = lines.join('');
+
+    const all = [...appState.deposits].sort((x, y) => y.date.localeCompare(x.date));
+    setText('sv-count', all.length);
+    const nameOf = (d) => appState.assets.find((a) => a.id === d.assetId)?.name || `${d.assetName} (aset dipadam)`;
+    $('tbody-sv-list').innerHTML = all.length ? all.slice(0, 200).map((d) => `<tr><td class="num">${esc(d.date)}</td><td>${esc(nameOf(d))}</td>
+        <td>${d.kind === 'masuk' ? '<span class="badge b-sage">Masuk</span>' : '<span class="badge b-rose">Keluar</span>'}${d.src === 'slip' ? ' <span class="badge b-blue">Slip</span>' : ''}</td>
+        <td class="text-right num pv">${formatRM2(d.amount)}</td><td class="t-faint">${esc(d.note)}</td>
+        <td class="text-right no-print"><button class="btn btn-icon btn-danger" style="min-height:28px;width:28px" data-action="delete-sv" data-id="${esc(d.id)}" aria-label="Padam"><i data-lucide="trash-2" class="text-[11px]"></i></button></td></tr>`).join('')
+        : emptyRow(6, 'Belum ada rekod.');
+}
+
+/* ---------- Kalkulator nafkah ---------- */
+// Always from the husband's side. Pure check: does his income cover debts + nafkah (+ his other spending)?
+// Tiers = how much nafkah leaves a given savings rate. They are affordability ceilings, not an entitlement amount.
+function nafkahCalc() {
+    const nf = appState.settings.nafkah;
+    const total = n(nf.wajib) + n(nf.elaun);
+    const pd = personDebt('husband');
+    const income = pd.netBeforeLoans;                       // take-home + salary-deducted loans added back
+    const afterDebt = income - pd.payments - total;
+    // A "Nafkah" line already in Belanja is part of current savings, so don't subtract it twice
+    const existing = sum(appState.expenses.filter((e) => /nafkah/i.test(e.name) && e.owner !== 'wife'));
+    const m = computeMetrics('husband');
+    const afterAll = m.savings - (existing > 0 ? 0 : total);
+    // Tiers use "free cash" = savings left after debts, spending and goal contributions (goals are funded first).
+    // Automatic payslip savings (A: KWSP pekerja + koperasi/TH) are already locked away, so the target applies to what is left.
+    // Free-cash rate after nafkah x = (free - x) / (income + A)
+    const A = autoSavings('husband').amount;
+    const S = m.savings + existing;
+    const goalsPlan = n(m.goals.monthlyPlanActive);
+    const free = Math.max(0, S - goalsPlan);
+    const t = n(nf.target) / 100;
+    const base = income + A;
+    const tier = (label, r) => {
+        const amount = Math.min(free, Math.max(0, free - r * base));
+        return { label, amount: round2(amount), rate: base > 0 ? (free - amount) / base * 100 : 0 };
+    };
+    const tiers = [tier('Selamat', t), tier('Seimbang', t / 2), tier('Maksimum', 0)];
+    return { total, wajib: n(nf.wajib), elaun: n(nf.elaun), income, debts: pd.payments, afterDebt, existing, savings: m.savings, afterAll, pct: income > 0 ? total / income * 100 : 0, A, goalsPlan, free, tiers, target: n(nf.target) };
+}
+function setNafkahField(id, v) {
+    const nf = appState.settings.nafkah;
+    if (id === 'nf-target') nf.target = rng(v, 0, 90, 10); else nf[id === 'nf-wajib' ? 'wajib' : 'elaun'] = rng(v, 0, 1e6, 0);
+}
+function renderNafkah() {
+    const nf = appState.settings.nafkah;
+    if (document.activeElement !== $('nf-wajib')) $('nf-wajib').value = nf.wajib || '';
+    if (document.activeElement !== $('nf-elaun')) $('nf-elaun').value = nf.elaun || '';
+    if (document.activeElement !== $('nf-target')) $('nf-target').value = nf.target;
+    const c = nafkahCalc(), who = ownerLabel('husband');
+    const sub = `Ruang bebas lepas hutang, belanja${c.goalsPlan ? ` & matlamat (${formatRM(c.goalsPlan)})` : ''}: ${formatRM(c.free)}${c.A ? ` · simpanan automatik gaji ${formatRM(c.A)} tak ditolak` : ''}`;
+    $('nf-tiers').innerHTML = c.tiers.map((x, i) => {
+        const hit = c.total > 0 && c.total <= x.amount + 0.5 && (i === 0 || c.total > c.tiers[i - 1].amount + 0.5);
+        return `<div class="card p-3 ${hit ? 'ring-1' : ''}" style="${hit ? 'border-color:var(--sage)' : ''}">
+            <p class="text-[10px] uppercase font-semibold tracking-wider t-muted">${x.label}${hit ? ' · kau di sini' : ''}</p>
+            <p class="text-lg font-extrabold num pv ${i === 0 ? 't-sage' : i === 1 ? '' : 't-gold'}">${formatRM(x.amount)}<span class="text-[11px] t-faint font-semibold">/bln</span></p>
+            <p class="text-[11px] t-faint">Simpanan bebas kekal ${pct(Math.max(0, x.rate))} gaji</p></div>`;
+    }).join('') + `<p class="text-[11px] t-faint sm:col-span-3">${esc(sub)}. Ini had kemampuan, bukan jumlah yang patut diberi.</p>`;
+    const row = (label, val, cls = '', s2 = '') => `<div class="flex justify-between items-start gap-3 py-1.5 border-b bd"><div><p class="font-semibold">${esc(label)}</p>${s2 ? `<p class="text-[11px] t-faint">${esc(s2)}</p>` : ''}</div><p class="num font-bold pv ${cls}">${val}</p></div>`;
+    if (!c.total) { $('nf-result').innerHTML = '<p class="t-faint">Isi jumlah nafkah di atas untuk bandingkan dengan tahap kemampuan.</p>'; return; }
+    const ok = c.afterAll >= 0 && c.afterDebt >= 0;
+    $('nf-result').innerHTML = `
+        ${row('Jumlah nafkah + elaun', formatRM(c.total), '', `Wajib ${formatRM(c.wajib)} + elaun ${formatRM(c.elaun)}`)}
+        ${row(`Peratus gaji bersih ${who}`, pct(c.pct), '', `Gaji bersih ${formatRM(c.income)} (sebelum potongan pembiayaan gaji)`)}
+        <div class="bar"><div style="width:${Math.min(100, c.pct)}%;background:var(--sage)"></div></div>
+        ${row('Baki lepas hutang & nafkah', formatRM(c.afterDebt), c.afterDebt < 0 ? 't-rose' : 't-sage', `${formatRM(c.income)} − hutang ${formatRM(c.debts)} − nafkah ${formatRM(c.total)}`)}
+        ${row('Simpanan bulanan lepas semua belanja & nafkah', formatRM(c.afterAll), c.afterAll < 0 ? 't-rose' : 't-sage',
+            c.existing > 0 ? `Baris "Nafkah" ${formatRM(c.existing)} dalam Belanja dah dikira, tak ditolak lagi` : `Simpanan semasa ${who} ${formatRM(c.savings)} − nafkah. Belum ada baris nafkah dalam Belanja`)}
+        <p class="${ok ? 't-sage' : 't-rose'} font-semibold pt-1">${ok ? 'Mampu: gaji masih cukup selepas nafkah.' : 'Tak cukup: kurangkan belanja lain atau semak semula angka nafkah.'}</p>`;
+}
+
 // Fill the "KWSP (caruman pekerja)" relief from recorded payslips of the tax year.
 // Only recorded months count, so a part-year total understates; the confirm shows the slip count.
 function taxFromPayslips() {
@@ -4546,6 +4868,7 @@ function exportCsvRecords() {
     appState.expenses.forEach((e) => rows.push(['Belanja', O(e.owner), e.name, e.category, '', e.amount, '', '', `${e.isFixed ? 'Tetap' : 'Variabel'}${e.linkedLiabilityId ? '; auto dari liabiliti' : ''}`]));
     appState.goals.forEach((g) => rows.push(['Matlamat', O(g.owner), g.name, GOAL_KINDS[g.kind].label, g.target, g.monthlyPlan, '', g.targetMonth, g.linkedAssetId ? 'Dipaut ke aset' : `Terkumpul ${g.saved}`]));
     appState.events.forEach((e) => rows.push(['Sinking fund', O(e.owner), e.name, SINK_GROUPS[e.category].label, itemAmount(e), '', '', e.hijri ? `${e.hijri.d}/${e.hijri.m} Hijrah` : e.date, `${REPEAT_LABEL[e.repeat]}${e.paused ? '; belum aktif' : ''}`]));
+    appState.deposits.forEach((d) => rows.push([d.kind === 'keluar' ? 'Simpanan keluar' : 'Simpanan masuk', '', appState.assets.find((a) => a.id === d.assetId)?.name || d.assetName, '', d.amount, '', '', d.date, d.note]));
     appState.dividends.forEach((d) => rows.push(['Dividen', '', appState.assets.find((a) => a.id === d.assetId)?.name || d.assetName, '', d.amount, '', '', d.date, '']));
     downloadBlob(toCsv(rows), `Rekod_Kewangan_${todayISO()}.csv`, 'text/csv;charset=utf-8');
     showToast('CSV rekod dimuat turun.', 'success');
@@ -4668,6 +4991,8 @@ document.addEventListener('click', (e) => {
         'delete-payslip': () => deletePayslip(t.dataset.id || editingPsId),
         'apply-payslip': () => applyPayslip(t.dataset.id),
         'csv-payslips': exportCsvPayslips,
+        'post-payslip': () => openPsPost(t.dataset.id),
+        'delete-sv': () => deleteDeposit(t.dataset.id),
         'ps-del-line': () => {
             readPsRows();
             const rows = t.dataset.side === 'earn' ? psDraft.earn : psDraft.ded;
@@ -4759,6 +5084,16 @@ document.addEventListener('change', (e) => {
         return;
     }
     if (el.id === 'budget-month') { renderBudget(); refreshIcons(); return; }
+    if (el.id === 'nf-wajib' || el.id === 'nf-elaun' || el.id === 'nf-target') {
+        setNafkahField(el.id, el.value);
+        saveState(); renderNafkah(); refreshIcons(); return;
+    }
+    if (el.id === 'sv-month') { svMonth = /^\d{4}-\d{2}$/.test(el.value) ? el.value : currentYM(); renderSavings(); refreshIcons(); return; }
+    if (el.dataset.svTarget) {
+        const a = appState.assets.find((x) => x.id === el.dataset.svTarget);
+        if (a) { a.saveTarget = rng(el.value, 0, 1e7, 0); saveState(); renderSavings(); refreshIcons(); }
+        return;
+    }
     if (el.id === 'ps-year') { psYear = el.value; renderPayslips(); refreshIcons(); return; }
     if (el.id === 'ps-owner') { if (!editingPsId) { psPrepareNew(el.value); renderPsRows(); updatePsTotals(); refreshIcons(); } return; }
     if (el.id === 'ps-add-earn' || el.id === 'ps-add-ded') { addPsLine(el); return; }
@@ -4822,7 +5157,14 @@ $('form-pay').addEventListener('submit', handlePaySubmit);
 $('form-odo').addEventListener('submit', handleOdoSubmit);
 $('form-div').addEventListener('submit', handleDivSubmit);
 $('form-payslip').addEventListener('submit', handlePayslipSubmit);
+$('form-pspost').addEventListener('submit', handlePsPostSubmit);
+$('form-sv').addEventListener('submit', handleSvSubmit);
 $('form-payslip').addEventListener('input', updatePsTotals);
+// Nafkah calculator: live preview while typing (saved on change)
+['nf-wajib', 'nf-elaun', 'nf-target'].forEach((id) => $(id).addEventListener('input', (e) => {
+    setNafkahField(id, e.target.value);
+    renderNafkah(); refreshIcons();
+}));
 // What-if recalculates live as you type (no save)
 $('form-whatif').addEventListener('input', () => { renderWhatIf(computeMetrics(activeProfile)); refreshIcons(); });
 $('form-whatif').addEventListener('submit', (e) => e.preventDefault());

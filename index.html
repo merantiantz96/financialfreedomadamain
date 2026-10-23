@@ -283,6 +283,7 @@
             <button class="tab-btn view-tab" data-tab="assets"><i data-lucide="vault"></i>Aset</button>
             <button class="tab-btn view-tab" data-tab="liabilities"><i data-lucide="hand-coins"></i>Liabiliti</button>
             <button class="tab-btn view-tab" data-tab="cashflow"><i data-lucide="banknote"></i>Pendapatan & Belanja</button>
+            <button class="tab-btn view-tab" data-tab="payslip"><i data-lucide="receipt-text"></i>Slip Gaji</button>
             <button class="tab-btn view-tab" data-tab="goals"><i data-lucide="flag"></i>Matlamat</button>
             <button class="tab-btn view-tab" data-tab="calendar"><i data-lucide="calendar-days"></i>Kalendar</button>
             <button class="tab-btn view-tab" data-tab="zakat-tax"><i data-lucide="hand-heart"></i>Zakat & Cukai</button>
@@ -523,6 +524,56 @@
                     <table class="tbl">
                         <thead><tr><th>Kategori</th><th class="text-right">Bajet</th><th style="min-width:130px">Sebenar</th><th class="text-right">Beza</th><th style="min-width:120px">Guna</th></tr></thead>
                         <tbody id="tbody-budget"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Slip Gaji -->
+        <div id="tab-payslip" class="view-tab-content hidden p-4 md:p-6 space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-bold">Slip Gaji</h3>
+                    <p class="text-xs t-muted">Rekod elaun & potongan ikut slip bulanan. Slip baru auto-salin angka bulan lepas, ubah yang berbeza sahaja. Data kekal dalam peranti ni (Sensitif).</p>
+                </div>
+                <div class="flex gap-2 no-print">
+                    <button class="btn" data-action="csv-payslips"><i data-lucide="file-spreadsheet"></i>CSV</button>
+                    <button class="btn btn-primary" data-action="add-payslip"><i data-lucide="plus"></i>Slip baru</button>
+                </div>
+            </div>
+            <div id="ps-cards" class="grid gap-4 lg:grid-cols-2"></div>
+
+            <div class="space-y-3">
+                <div>
+                    <h3 class="text-sm font-bold">Trend Kasar vs Bersih</h3>
+                    <p class="text-xs t-muted">12 bulan terakhir yang ada slip. Pandangan "Bersama" menjumlahkan kedua-dua slip pada bulan yang sama.</p>
+                </div>
+                <div class="card-sub p-4 relative h-64 pv"><canvas id="chart-payslip"></canvas></div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold">Ringkasan Setahun (YTD)</h3>
+                        <p class="text-xs t-muted">Jumlah dari slip yang direkod sahaja. Bulan yang belum direkod tak dikira.</p>
+                    </div>
+                    <select id="ps-year" class="field no-print" style="width:auto" aria-label="Tahun"></select>
+                </div>
+                <div class="scroll-x card-sub">
+                    <table class="tbl">
+                        <thead><tr><th>Pemilik</th><th class="text-right">Slip</th><th class="text-right">Kasar</th><th class="text-right">KWSP</th><th class="text-right">PERKESO+SIP</th><th class="text-right">PCB</th><th class="text-right">Zakat</th><th class="text-right">Pembiayaan</th><th class="text-right">Lain</th><th class="text-right">Bersih</th><th class="text-right">KWSP majikan</th></tr></thead>
+                        <tbody id="tbody-ps-ytd"></tbody>
+                    </table>
+                </div>
+                <p class="text-[11px] t-faint">PCB & zakat gaji terkumpul berguna untuk semak dengan Penyata EA / borang cukai. Angka ni dari slip yang kau taip, bukan data rasmi.</p>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="text-sm font-bold">Semua Slip</h3>
+                <div class="scroll-x card-sub">
+                    <table class="tbl">
+                        <thead><tr><th>Bulan</th><th>Pemilik</th><th class="text-right">Kasar</th><th class="text-right">Potongan</th><th class="text-right">Bersih</th><th class="text-right">Beza bersih</th><th></th><th class="text-right no-print">Tindakan</th></tr></thead>
+                        <tbody id="tbody-ps-list"></tbody>
                     </table>
                 </div>
             </div>
@@ -967,6 +1018,64 @@
     </div>
 </div>
 
+<!-- ================= MODAL: Slip gaji ================= -->
+<div id="modal-payslip" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
+    <div class="card w-full max-w-2xl p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
+        <button class="absolute top-3 right-3 btn btn-icon" data-action="close-modal" data-modal="modal-payslip" aria-label="Tutup"><i data-lucide="x"></i></button>
+        <div>
+            <h3 id="ps-title" class="text-sm font-bold">Slip Gaji Baru</h3>
+            <p id="ps-hint" class="text-xs t-muted">Isi ikut slip. Baris tanpa jumlah akan diabaikan.</p>
+        </div>
+        <form id="form-payslip" novalidate class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="lbl" for="ps-owner">Pemilik slip</label><select id="ps-owner" class="field"></select></div>
+                <div><label class="lbl" for="ps-month">Bulan gaji</label><input id="ps-month" type="month" class="field">
+                    <p id="err-ps-month" class="text-[11px] t-rose mt-1 hidden">Pilih bulan/tahun.</p></div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center gap-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider t-muted">Pendapatan / elaun</p>
+                    <select id="ps-add-earn" class="field" style="width:auto;max-width:60%" aria-label="Tambah baris pendapatan"></select>
+                </div>
+                <div id="ps-earn-rows" class="space-y-2"></div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center gap-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider t-muted">Potongan</p>
+                    <select id="ps-add-ded" class="field" style="width:auto;max-width:60%" aria-label="Tambah baris potongan"></select>
+                </div>
+                <div id="ps-ded-rows" class="space-y-2"></div>
+            </div>
+
+            <div class="card-sub p-3 grid grid-cols-3 gap-3 text-center">
+                <div><p class="text-[10px] uppercase font-semibold tracking-wider t-muted">Kasar</p><p id="ps-t-gross" class="num font-bold text-sm">RM 0.00</p></div>
+                <div><p class="text-[10px] uppercase font-semibold tracking-wider t-muted">Potongan</p><p id="ps-t-ded" class="num font-bold text-sm t-rose">RM 0.00</p></div>
+                <div><p class="text-[10px] uppercase font-semibold tracking-wider t-muted">Bersih (kiraan)</p><p id="ps-t-net" class="num font-bold text-sm t-sage">RM 0.00</p></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="lbl" for="ps-stated">Bersih ikut slip (semakan)</label>
+                    <input id="ps-stated" type="number" min="0" step="0.01" inputmode="decimal" class="field num" placeholder="Jumlah akhir di slip">
+                    <p id="ps-stated-msg" class="text-[11px] mt-1 t-faint">Isi untuk semak kalau ada baris tertinggal.</p></div>
+                <div><label class="lbl" for="ps-kwsp-er">KWSP majikan (RM, pilihan)</label>
+                    <input id="ps-kwsp-er" type="number" min="0" step="0.01" inputmode="decimal" class="field num" placeholder="Tak masuk bersih"></div>
+            </div>
+            <div><label class="lbl" for="ps-note">Nota (pilihan)</label><input id="ps-note" type="text" maxlength="120" class="field" placeholder="Contoh: kenaikan gaji, bayaran tunggakan"></div>
+            <label class="flex items-center gap-2 text-xs"><input id="ps-special" type="checkbox" class="w-4 h-4 accent-emerald-600">Bulan luar biasa (bonus / tunggakan / OT besar), jangan jadikan rujukan gaji biasa</label>
+
+            <div class="flex justify-between gap-2 pt-2">
+                <button type="button" id="ps-delete" class="btn btn-danger hidden" data-action="delete-payslip"><i data-lucide="trash-2"></i>Padam</button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" class="btn" data-action="close-modal" data-modal="modal-payslip">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ================= MODAL: Sinking / calendar item ================= -->
 <div id="modal-event" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(8,12,16,.6); backdrop-filter: blur(4px);">
     <div class="card w-full max-w-lg p-5 space-y-4 max-h-[92vh] overflow-y-auto relative">
@@ -1132,7 +1241,7 @@
    ===================================================================== */
 const DATA_CLASSIFICATION = 'Sensitive';      // household salary/assets: local only, never synced
 const STORAGE_KEY = 'fire_hub_malaysia_data'; // same key as old version so existing data migrates
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 // Display names come from Tetapan (personalised), fallback Suami/Isteri
 function ownerLabel(o) {
@@ -1265,6 +1374,22 @@ const DEFAULT_SETTINGS = {
 
 function clonePeople(p) { return JSON.parse(JSON.stringify(p)); }
 
+// ---- Slip gaji: tag = what the line MEANS (used for YTD totals and loan/DSR cross-check) ----
+const PS_EARN_TAGS = { pokok: 'Gaji pokok', elaun: 'Elaun', ot: 'Lebih masa', bonus: 'Bonus / insentif', lain: 'Lain-lain' };
+const PS_DED_TAGS = { kwsp: 'KWSP', perkeso: 'PERKESO', sip: 'SIP', pcb: 'PCB / cukai', zakat: 'Zakat', loan: 'Pembiayaan', simpan: 'Simpanan / koperasi', takaful: 'Takaful', lain: 'Lain-lain' };
+const PS_EARN_TPL = [
+    ['Gaji pokok', 'pokok'], ['Elaun tetap', 'elaun'], ['Elaun perumahan', 'elaun'], ['Elaun pengangkutan', 'elaun'],
+    ['Elaun sara hidup (COLA)', 'elaun'], ['Elaun jawatan / khas', 'elaun'], ['Lebih masa (OT)', 'ot'],
+    ['Bonus', 'bonus'], ['Insentif / komisen', 'bonus'], ['Tuntutan / lain-lain', 'lain']
+];
+const PS_DED_TPL = [
+    ['KWSP (pekerja)', 'kwsp'], ['PERKESO', 'perkeso'], ['SIP (EIS)', 'sip'], ['PCB / MTD (cukai)', 'pcb'], ['Zakat gaji', 'zakat'],
+    ['Pembiayaan peribadi', 'loan'], ['Pembiayaan kenderaan', 'loan'], ['Pembiayaan rumah', 'loan'], ['PTPTN', 'loan'],
+    ['Koperasi', 'simpan'], ['Simpanan Tabung Haji', 'simpan'], ['Takaful / insurans', 'takaful'], ['Potongan lain', 'lain']
+];
+const PS_EARN_DEFAULT = ['Gaji pokok', 'Elaun tetap'];
+const PS_DED_DEFAULT = ['KWSP (pekerja)', 'PERKESO', 'SIP (EIS)', 'PCB / MTD (cukai)', 'Zakat gaji'];
+
 const SAMPLE_DATA = {
     schemaVersion: SCHEMA_VERSION,
     settings: { ...DEFAULT_SETTINGS, people: clonePeople(DEFAULT_PEOPLE) },
@@ -1286,6 +1411,16 @@ const SAMPLE_DATA = {
     ],
     actuals: {},
     checklist: { husband: {}, wife: {} },
+    payslips: [
+        { id: 'ps1', owner: 'husband', month: '2026-08', special: false, note: '', kwspEmployer: 1105, statedNet: 6830,
+          earnings: [{ label: 'Gaji pokok', tag: 'pokok', amount: 7000 }, { label: 'Elaun tetap', tag: 'elaun', amount: 1500 }],
+          deductions: [{ label: 'KWSP (pekerja)', tag: 'kwsp', amount: 935 }, { label: 'PERKESO', tag: 'perkeso', amount: 29.75 }, { label: 'SIP (EIS)', tag: 'sip', amount: 11.9 },
+              { label: 'PCB / MTD (cukai)', tag: 'pcb', amount: 273.35 }, { label: 'Zakat gaji', tag: 'zakat', amount: 120 }, { label: 'Koperasi', tag: 'simpan', amount: 300 }] },
+        { id: 'ps2', owner: 'husband', month: '2026-09', special: false, note: '', kwspEmployer: 1105, statedNet: 6800,
+          earnings: [{ label: 'Gaji pokok', tag: 'pokok', amount: 7000 }, { label: 'Elaun tetap', tag: 'elaun', amount: 1500 }],
+          deductions: [{ label: 'KWSP (pekerja)', tag: 'kwsp', amount: 935 }, { label: 'PERKESO', tag: 'perkeso', amount: 29.75 }, { label: 'SIP (EIS)', tag: 'sip', amount: 11.9 },
+              { label: 'PCB / MTD (cukai)', tag: 'pcb', amount: 273.35 }, { label: 'Zakat gaji', tag: 'zakat', amount: 150 }, { label: 'Koperasi', tag: 'simpan', amount: 300 }] }
+    ],
     assets: [
         { id: 'a1', owner: 'husband', name: 'KWSP Suami', category: 'KWSP', amount: 145000, yieldPercent: 5.5, isLocked: true, zakatType: 'tiada' },
         { id: 'a2', owner: 'husband', name: 'ASB Suami', category: 'ASB / ASN', amount: 65000, yieldPercent: 5.25, isLocked: false, zakatType: 'simpanan' },
@@ -1568,7 +1703,19 @@ function normaliseState(raw) {
         id: safeId(d.id, 'dv'), assetId: typeof d.assetId === 'string' ? d.assetId : '', assetName: cleanText(d.assetName, 80) || 'Aset',
         date: d.date, amount: Math.max(0, n(d.amount))
     }));
-    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, checklist, dividends };
+    // Payslips: one slip = one person + one month. Lines with no amount are dropped; money rounded to sen.
+    const r2 = (v) => Math.round(v * 100) / 100;
+    const psLines = (x, tags) => (Array.isArray(x) ? x : []).filter((l) => l && typeof l === 'object' && !Array.isArray(l)).slice(0, 40)
+        .map((l) => ({ label: cleanText(l.label, 40) || 'Lain-lain', tag: has(tags, l.tag) ? l.tag : 'lain', amount: r2(rng(l.amount, 0, 1e7, 0)) }))
+        .filter((l) => l.amount > 0);
+    const payslips = arr(raw.payslips).filter((p) => monthRe.test(p.month)).slice(0, 600).map((p) => ({
+        id: safeId(p.id, 'ps'), owner: p.owner === 'wife' ? 'wife' : 'husband', month: p.month,
+        special: !!p.special, note: cleanText(p.note, 120),
+        kwspEmployer: r2(rng(p.kwspEmployer, 0, 1e7, 0)),
+        statedNet: p.statedNet != null && p.statedNet !== '' && n(p.statedNet) > 0 ? r2(rng(p.statedNet, 0, 1e8, 0)) : null,
+        earnings: psLines(p.earnings, PS_EARN_TAGS), deductions: psLines(p.deductions, PS_DED_TAGS)
+    }));
+    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, checklist, dividends, payslips };
     syncLinkedExpenses(state);
     return state;
 }
@@ -1969,6 +2116,7 @@ function renderAll() {
     renderChecklist();
     renderCalendar();
     renderBudget();
+    renderPayslips();
     renderRetirement();
     renderAllocation(m);
     renderDividends();
@@ -3425,6 +3573,8 @@ function renderCharts(m) {
                 tooltip: { callbacks: { ...tip.callbacks, footer: (items) => { const nt = snaps[items[0]?.dataIndex]?.note; return nt ? `📝 ${nt}` : ''; } } } },
             scales: axes }
     });
+
+    renderPayslipChart(th, axes);
 }
 function upsertChart(key, canvasId, config) {
     if (charts[key] && charts[key].config.type === config.type) {
@@ -3716,6 +3866,383 @@ function updateSplitPreview() {
     setText('s-split-preview', `Belanja bersama: ${ownerLabel('husband')} ${Math.round(r * 100)}% · ${ownerLabel('wife')} ${Math.round((1 - r) * 100)}%`);
 }
 const clampPct = (v) => { const x = Number(v); return Number.isFinite(x) && v !== '' ? Math.min(100, Math.max(0, x)) : 50; };
+
+/* =====================================================================
+   SLIP GAJI (payslip tracker)
+   Slip = rekod sejarah. Ia TIDAK ubah Pendapatan/DSR melainkan kau tekan "Guna sebagai gaji semasa".
+   ===================================================================== */
+const formatRM2 = (v) => { const x = n(v); const s = 'RM ' + Math.abs(x).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return x < 0 ? '−' + s : s; };
+const round2 = (v) => Math.round(n(v) * 100) / 100;
+const psSum = (lines) => round2(lines.reduce((s, l) => s + n(l.amount), 0));
+const psByTag = (lines, tag) => psSum(lines.filter((l) => l.tag === tag));
+function psTotals(p) {
+    const gross = psSum(p.earnings), ded = psSum(p.deductions);
+    return { gross, ded, net: round2(gross - ded), dedPct: gross > 0 ? ded / gross * 100 : 0 };
+}
+// newest month first; same month: the one added later first
+function psSorted(owner) {
+    return appState.payslips.map((p, idx) => ({ p, idx })).filter((x) => !owner || x.p.owner === owner)
+        .sort((a, b) => b.p.month.localeCompare(a.p.month) || b.idx - a.idx).map((x) => x.p);
+}
+const psMonthIdx = (ym) => { const [y, m] = ym.split('-').map(Number); return y * 12 + m - 1; };
+const psAddMonths = (ym, k) => { const i = psMonthIdx(ym) + k; return `${Math.floor(i / 12)}-${String(i % 12 + 1).padStart(2, '0')}`; };
+const psIncomeGaji = (owner) => appState.income.filter((i) => i.owner === owner && i.category === 'Gaji');
+
+// What changed between two slips of the same person (new / gone / different amount, per line label)
+function psDiff(cur, prev) {
+    const out = [];
+    const key = (l) => l.label.trim().toLowerCase();
+    const mk = (list) => {
+        const m = new Map();
+        list.forEach((l) => { const k = key(l); const e = m.get(k); if (e) e.amount = round2(e.amount + l.amount); else m.set(k, { label: l.label, amount: l.amount }); });
+        return m;
+    };
+    ['earnings', 'deductions'].forEach((side) => {
+        const a = mk(cur[side]), b = mk(prev[side]);
+        a.forEach((v, k) => {
+            const o = b.get(k);
+            if (!o) out.push({ side, kind: 'baru', label: v.label, to: v.amount });
+            else if (Math.abs(o.amount - v.amount) >= 0.005) out.push({ side, kind: 'ubah', label: v.label, from: o.amount, to: v.amount });
+        });
+        b.forEach((v, k) => { if (!a.has(k)) out.push({ side, kind: 'hilang', label: v.label, from: v.amount }); });
+    });
+    return out;
+}
+// Loans cut from salary on the slip vs loans flagged "potong gaji" in Liabiliti. DSR uses the Liabiliti side.
+function psLoanCheck(person, slip) {
+    const onSlip = psByTag(slip.deductions, 'loan'), inApp = round2(salaryDeductions(person));
+    return { onSlip, inApp, bad: Math.abs(onSlip - inApp) >= 1 };
+}
+
+let psYear = null;
+function renderPayslips() {
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    $('ps-cards').innerHTML = persons.map(psCardHtml).join('');
+    renderPsYtd(persons);
+    renderPsList(persons);
+}
+
+function psCardHtml(person) {
+    const list = psSorted(person);
+    if (!list.length) {
+        return `<div class="card-sub p-4 space-y-2">
+            <div class="flex justify-between items-center">${ownerBadge(person)}</div>
+            <p class="text-xs t-faint">Belum ada slip untuk ${esc(ownerLabel(person))}.</p>
+            <button class="btn btn-primary no-print" data-action="add-payslip" data-owner="${person}"><i data-lucide="plus"></i>Rekod slip pertama</button>
+        </div>`;
+    }
+    const cur = list[0], prev = list[1] || null;
+    const t = psTotals(cur), pt = prev ? psTotals(prev) : null;
+    const dNet = pt ? round2(t.net - pt.net) : 0;
+    const dPct = pt && pt.net > 0 ? dNet / pt.net * 100 : 0;
+    const dCls = dNet > 0 ? 't-sage' : dNet < 0 ? 't-rose' : 't-faint';
+    const dTxt = !pt ? '' : dNet === 0 ? `Bersih sama dengan ${ymLabel(prev.month)}`
+        : `Bersih ${dNet > 0 ? '▲' : '▼'} ${formatRM2(Math.abs(dNet))} (${dPct > 0 ? '+' : ''}${dPct.toFixed(1)}%) vs ${ymLabel(prev.month)}`;
+    const lineHtml = (l) => `<div class="flex justify-between gap-2"><span class="truncate">${esc(l.label)}</span><span class="num pv shrink-0">${formatRM2(l.amount)}</span></div>`;
+
+    const warns = [];
+    if (cur.statedNet != null && Math.abs(cur.statedNet - t.net) >= 0.5) {
+        warns.push(`Bersih ikut slip ${formatRM2(cur.statedNet)} tak sama dengan kiraan ${formatRM2(t.net)}. Mungkin ada baris tertinggal atau salah taip.`);
+    }
+    const lc = psLoanCheck(person, cur);
+    if (lc.bad) warns.push(`Slip potong pembiayaan ${formatRM2(lc.onSlip)}, tapi tab Liabiliti tanda "potong gaji" ${formatRM2(lc.inApp)}. DSR guna angka Liabiliti, jadi betulkan salah satu.`);
+    const nowYM = currentYM();
+    if (psMonthIdx(cur.month) < psMonthIdx(nowYM) && (psMonthIdx(nowYM) - psMonthIdx(cur.month) >= 2 || new Date().getDate() >= 25)) {
+        warns.push(`Slip ${ymLabel(psAddMonths(cur.month, 1))} belum direkod.`);
+    }
+
+    const inc = psIncomeGaji(person);
+    const incNet = round2(sum(inc));
+    const sync = !inc.length ? '<span class="badge b-gold">Belum ada rekod Gaji di Pendapatan</span>'
+        : Math.abs(incNet - t.net) < 1 ? '<span class="badge b-sage">Sepadan dengan Pendapatan</span>'
+        : `<span class="badge b-gold pv">Pendapatan: ${formatRM2(incNet)}</span>`;
+
+    const diffs = prev ? psDiff(cur, prev) : [];
+    const diffHtml = diffs.length ? `<div class="text-[11px] space-y-0.5">
+        <p class="font-semibold uppercase tracking-wider t-muted text-[10px]">Perubahan vs ${esc(ymLabel(prev.month))}</p>
+        ${diffs.slice(0, 8).map((d) => {
+            const delta = n(d.to) - n(d.from);
+            const good = d.side === 'earnings' ? delta > 0 : delta < 0;
+            const side = d.side === 'earnings' ? 'Pendapatan' : 'Potongan';
+            const txt = d.kind === 'baru' ? `Baru: ${esc(d.label)} ${formatRM2(d.to)}`
+                : d.kind === 'hilang' ? `Tiada lagi: ${esc(d.label)} (dulu ${formatRM2(d.from)})`
+                : `${esc(d.label)} ${formatRM2(d.from)} → ${formatRM2(d.to)}`;
+            return `<p class="${good ? 't-sage' : 't-rose'} pv"><span class="t-faint">${side} ·</span> ${txt}</p>`;
+        }).join('')}
+        ${diffs.length > 8 ? `<p class="t-faint">+${diffs.length - 8} lagi</p>` : ''}
+    </div>` : '';
+
+    return `<div class="card-sub p-4 space-y-3">
+        <div class="flex justify-between items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-2">${ownerBadge(person)}<span class="badge b-sage">${esc(ymLabel(cur.month))}</span>${cur.special ? '<span class="badge b-gold">Luar biasa</span>' : ''}</div>
+            ${sync}
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+            <div><p class="text-[10px] uppercase font-semibold tracking-wider t-muted">Kasar</p><p class="num font-bold pv">${formatRM2(t.gross)}</p></div>
+            <div><p class="text-[10px] uppercase font-semibold tracking-wider t-muted">Potongan</p><p class="num font-bold t-rose pv">${formatRM2(t.ded)}</p><p class="num text-[11px] t-faint">${t.dedPct.toFixed(1)}% kasar</p></div>
+            <div><p class="text-[10px] uppercase font-semibold tracking-wider t-muted">Bersih</p><p class="text-xl font-extrabold num t-sage pv">${formatRM2(t.net)}</p></div>
+        </div>
+        ${dTxt ? `<p class="text-xs font-semibold ${dCls} pv">${dTxt}</p>` : ''}
+        <div class="grid grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1"><p class="font-semibold uppercase tracking-wider t-muted text-[10px]">Pendapatan</p>${cur.earnings.map(lineHtml).join('')}</div>
+            <div class="space-y-1"><p class="font-semibold uppercase tracking-wider t-muted text-[10px]">Potongan</p>${cur.deductions.map(lineHtml).join('') || '<p class="t-faint">Tiada</p>'}</div>
+        </div>
+        ${diffHtml}
+        ${warns.map((w) => `<p class="text-[11px] t-gold flex gap-1.5"><i data-lucide="triangle-alert" class="shrink-0"></i><span>${esc(w)}</span></p>`).join('')}
+        ${cur.note ? `<p class="text-[11px] t-faint">Nota: ${esc(cur.note)}</p>` : ''}
+        <div class="flex flex-wrap gap-2 pt-1 no-print">
+            <button class="btn btn-primary" data-action="apply-payslip" data-id="${esc(cur.id)}"><i data-lucide="refresh-cw"></i>Guna sebagai gaji semasa</button>
+            <button class="btn" data-action="edit-payslip" data-id="${esc(cur.id)}"><i data-lucide="pencil"></i>Edit</button>
+            <button class="btn" data-action="add-payslip" data-owner="${person}"><i data-lucide="plus"></i>Slip bulan baru</button>
+        </div>
+    </div>`;
+}
+
+function renderPsYtd(persons) {
+    const years = [...new Set(appState.payslips.map((p) => p.month.slice(0, 4)))].sort().reverse();
+    if (!years.length) years.push(String(new Date().getFullYear()));
+    if (!psYear || !years.includes(psYear)) psYear = years[0];
+    const sel = $('ps-year');
+    sel.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join('');
+    sel.value = psYear;
+    const ytd = (slips) => {
+        const o = { count: slips.length, gross: 0, kwsp: 0, ps: 0, pcb: 0, zakat: 0, loan: 0, other: 0, net: 0, er: 0 };
+        slips.forEach((p) => {
+            const t = psTotals(p);
+            const k = psByTag(p.deductions, 'kwsp'), s = psByTag(p.deductions, 'perkeso') + psByTag(p.deductions, 'sip');
+            const c = psByTag(p.deductions, 'pcb'), z = psByTag(p.deductions, 'zakat'), l = psByTag(p.deductions, 'loan');
+            o.gross += t.gross; o.kwsp += k; o.ps += s; o.pcb += c; o.zakat += z; o.loan += l; o.other += t.ded - k - s - c - z - l; o.net += t.net; o.er += p.kwspEmployer;
+        });
+        return o;
+    };
+    const cell = (v) => `<td class="text-right num pv">${v ? formatRM2(v) : '<span class="t-faint">—</span>'}</td>`;
+    const row = (label, o, bold) => `<tr class="${bold ? 'font-bold' : ''}"><td>${label}</td><td class="text-right num">${o.count}</td>${cell(o.gross)}${cell(o.kwsp)}${cell(o.ps)}${cell(o.pcb)}${cell(o.zakat)}${cell(o.loan)}${cell(o.other)}${cell(o.net)}${cell(o.er)}</tr>`;
+    const per = persons.map((p) => ({ p, o: ytd(appState.payslips.filter((x) => x.owner === p && x.month.startsWith(psYear))) }));
+    let html = per.map(({ p, o }) => row(ownerBadge(p), o, false)).join('');
+    if (persons.length > 1) html += row('Jumlah', ytd(appState.payslips.filter((x) => x.month.startsWith(psYear))), true);
+    $('tbody-ps-ytd').innerHTML = per.some(({ o }) => o.count) ? html : emptyRow(11, `Tiada slip direkod untuk ${psYear}.`);
+}
+
+function renderPsList(persons) {
+    const entries = persons.flatMap((person) => { const l = psSorted(person); return l.map((p, i) => ({ p, prev: l[i + 1] || null })); })
+        .sort((a, b) => b.p.month.localeCompare(a.p.month) || a.p.owner.localeCompare(b.p.owner));
+    const shown = entries.slice(0, 60);
+    $('tbody-ps-list').innerHTML = shown.length ? shown.map(({ p, prev }) => {
+        const t = psTotals(p), d = prev ? round2(t.net - psTotals(prev).net) : null;
+        const mismatch = p.statedNet != null && Math.abs(p.statedNet - t.net) >= 0.5;
+        return `<tr>
+            <td class="num font-semibold">${esc(ymLabel(p.month))}</td><td>${ownerBadge(p.owner)}</td>
+            <td class="text-right num pv">${formatRM2(t.gross)}</td><td class="text-right num pv t-rose">${formatRM2(t.ded)}</td>
+            <td class="text-right num pv font-semibold">${formatRM2(t.net)}</td>
+            <td class="text-right num pv ${d == null || d === 0 ? 't-faint' : d > 0 ? 't-sage' : 't-rose'}">${d == null ? '—' : d === 0 ? '0' : (d > 0 ? '+' : '−') + formatRM2(Math.abs(d)).replace('RM ', '')}</td>
+            <td>${p.special ? '<span class="badge b-gold">Luar biasa</span> ' : ''}${mismatch ? '<span class="badge b-rose">Bersih ≠ slip</span>' : ''}</td>
+            <td class="text-right no-print"><span class="inline-flex gap-1">
+                <button class="btn btn-icon" style="min-height:32px;width:32px" data-action="apply-payslip" data-id="${esc(p.id)}" aria-label="Guna sebagai gaji semasa" title="Guna sebagai gaji semasa"><i data-lucide="refresh-cw" class="text-[11px]"></i></button>
+                <button class="btn btn-icon" style="min-height:32px;width:32px" data-action="edit-payslip" data-id="${esc(p.id)}" aria-label="Edit"><i data-lucide="pencil" class="text-[11px]"></i></button>
+                <button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete-payslip" data-id="${esc(p.id)}" aria-label="Padam"><i data-lucide="trash-2" class="text-[11px]"></i></button>
+            </span></td></tr>`;
+    }).join('') + (entries.length > shown.length ? `<tr><td colspan="8" class="text-center t-faint py-3">${entries.length - shown.length} slip lama lagi (lihat dalam CSV).</td></tr>` : '')
+        : emptyRow(8, 'Belum ada slip gaji. Tekan "Slip baru".');
+}
+
+function renderPayslipChart(th, axes) {
+    const persons = activeProfile === 'combined' ? ['husband', 'wife'] : [activeProfile];
+    const by = new Map();
+    appState.payslips.filter((p) => persons.includes(p.owner)).forEach((p) => {
+        const t = psTotals(p), e = by.get(p.month) || { gross: 0, ded: 0, net: 0 };
+        e.gross += t.gross; e.ded += t.ded; e.net += t.net; by.set(p.month, e);
+    });
+    const months = [...by.keys()].sort().slice(-12);
+    upsertChart('payslip', 'chart-payslip', {
+        type: 'line',
+        data: {
+            labels: months.map(ymLabel),
+            datasets: [
+                { label: 'Kasar', data: months.map((m) => round2(by.get(m).gross)), borderColor: '#4a7fb5', tension: .3 },
+                { label: 'Bersih', data: months.map((m) => round2(by.get(m).net)), borderColor: '#40916c', backgroundColor: 'rgba(64,145,108,.12)', fill: true, borderWidth: 3, tension: .3 },
+                { label: 'Potongan', data: months.map((m) => round2(by.get(m).ded)), borderColor: '#d1495b', borderDash: [5, 5], tension: .3 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { labels: { boxWidth: 12, color: th.text } }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${formatRM2(c.raw)}` } } },
+            scales: axes }
+    });
+}
+
+// ---- Payslip modal ----
+let editingPsId = null;
+let psDraft = { earn: [], ded: [] };
+const psTplLines = (tpl, names) => names.map((nm) => { const t = tpl.find((x) => x[0] === nm); return { label: nm, tag: t ? t[1] : 'lain', amount: '' }; });
+
+function psSeed(owner, fromSlip) {
+    if (fromSlip) {
+        psDraft = { earn: fromSlip.earnings.map((l) => ({ ...l })), ded: fromSlip.deductions.map((l) => ({ ...l })) };
+        return;
+    }
+    // First slip ever: common lines + any loan you already flagged as salary-deducted in Liabiliti
+    const loans = appState.liabilities.filter((l) => l.payMethod === 'salary' && l.payer === owner && n(l.monthlyPayment) > 0)
+        .map((l) => ({ label: cleanText(l.name, 40), tag: 'loan', amount: round2(l.monthlyPayment) }));
+    psDraft = { earn: psTplLines(PS_EARN_TPL, PS_EARN_DEFAULT), ded: [...psTplLines(PS_DED_TPL, PS_DED_DEFAULT), ...loans] };
+}
+// New slip: copy the last normal slip so only changes need typing
+function psPrepareNew(owner) {
+    const all = psSorted(owner), latest = all[0] || null, base = all.find((x) => !x.special) || latest;
+    const nowYM = currentYM();
+    let month = latest ? psAddMonths(latest.month, 1) : nowYM;
+    if (psMonthIdx(month) > psMonthIdx(nowYM)) month = nowYM;
+    $('ps-month').value = month;
+    $('ps-special').checked = false; $('ps-note').value = ''; $('ps-stated').value = '';
+    $('ps-kwsp-er').value = base && base.kwspEmployer ? base.kwspEmployer : '';
+    psSeed(owner, base);
+    $('ps-hint').textContent = base ? `Diisi dari slip ${ymLabel(base.month)}. Semak setiap angka dan tukar yang berbeza sahaja.` : 'Slip pertama: isi ikut slip kau. Baris tanpa jumlah akan diabaikan.';
+}
+function fillPsAddSelects() {
+    const mk = (tpl) => '<option value="">+ Tambah baris…</option>' + tpl.map((t, i) => `<option value="${i}">${esc(t[0])}</option>`).join('') + '<option value="custom">Baris custom…</option>';
+    $('ps-add-earn').innerHTML = mk(PS_EARN_TPL);
+    $('ps-add-ded').innerHTML = mk(PS_DED_TPL);
+}
+function openPayslip(id = null, owner = null) {
+    const p = id ? appState.payslips.find((x) => x.id === id) : null;
+    editingPsId = p ? p.id : null;
+    $('form-payslip').reset();
+    $('ps-month').classList.remove('invalid'); $('err-ps-month').classList.add('hidden');
+    const own = p ? p.owner : (owner === 'wife' || owner === 'husband') ? owner : activeProfile === 'wife' ? 'wife' : 'husband';
+    $('ps-owner').innerHTML = ['husband', 'wife'].map((o) => `<option value="${o}">${esc(ownerLabel(o))}</option>`).join('');
+    $('ps-owner').value = own;
+    fillPsAddSelects();
+    $('ps-title').textContent = p ? 'Kemaskini Slip Gaji' : 'Slip Gaji Baru';
+    $('ps-delete').classList.toggle('hidden', !p);
+    if (p) {
+        $('ps-month').value = p.month; $('ps-special').checked = p.special; $('ps-note').value = p.note;
+        $('ps-kwsp-er').value = p.kwspEmployer || ''; $('ps-stated').value = p.statedNet != null ? p.statedNet : '';
+        psSeed(own, p);
+        $('ps-hint').textContent = 'Kemaskini ikut slip. Baris tanpa jumlah akan diabaikan.';
+    } else {
+        psPrepareNew(own);
+    }
+    renderPsRows(); updatePsTotals();
+    openModal('modal-payslip'); refreshIcons();
+}
+function psRowHtml(side, i, l) {
+    const tags = side === 'earn' ? PS_EARN_TAGS : PS_DED_TAGS;
+    const opts = Object.entries(tags).map(([k, v]) => `<option value="${k}"${k === l.tag ? ' selected' : ''}>${esc(v)}</option>`).join('');
+    return `<div class="grid grid-cols-[1fr_7rem_auto] sm:grid-cols-[1fr_9rem_8rem_auto] gap-2 items-center" data-ps-row="${side}">
+        <input type="text" maxlength="40" class="field ps-label min-w-0 col-span-3 sm:col-span-1" value="${esc(l.label)}" placeholder="Nama baris" aria-label="Nama baris">
+        <select class="field ps-tag min-w-0" aria-label="Jenis baris">${opts}</select>
+        <input type="number" min="0" step="0.01" inputmode="decimal" class="field num ps-amt min-w-0" value="${l.amount === '' || l.amount == null ? '' : esc(l.amount)}" placeholder="0.00" aria-label="Jumlah (RM)">
+        <button type="button" class="btn btn-icon btn-danger" data-action="ps-del-line" data-side="${side}" data-i="${i}" aria-label="Buang baris"><i data-lucide="x"></i></button>
+    </div>`;
+}
+function renderPsRows() {
+    $('ps-earn-rows').innerHTML = psDraft.earn.map((l, i) => psRowHtml('earn', i, l)).join('') || '<p class="text-xs t-faint">Tiada baris. Guna "+ Tambah baris".</p>';
+    $('ps-ded-rows').innerHTML = psDraft.ded.map((l, i) => psRowHtml('ded', i, l)).join('') || '<p class="text-xs t-faint">Tiada potongan.</p>';
+}
+function readPsRows() {
+    const read = (id) => [...document.querySelectorAll(`#${id} [data-ps-row]`)].map((row) => ({
+        label: row.querySelector('.ps-label').value, tag: row.querySelector('.ps-tag').value, amount: row.querySelector('.ps-amt').value
+    }));
+    psDraft = { earn: read('ps-earn-rows'), ded: read('ps-ded-rows') };
+}
+function updatePsTotals() {
+    readPsRows();
+    const total = (rows) => round2(rows.reduce((s, r) => s + Math.max(0, n(r.amount)), 0));
+    const g = total(psDraft.earn), d = total(psDraft.ded), net = round2(g - d);
+    setText('ps-t-gross', formatRM2(g)); setText('ps-t-ded', formatRM2(d)); setText('ps-t-net', formatRM2(net));
+    const stated = $('ps-stated').value, msg = $('ps-stated-msg');
+    if (stated === '') { msg.textContent = 'Isi untuk semak kalau ada baris tertinggal.'; msg.className = 'text-[11px] mt-1 t-faint'; return; }
+    const diff = round2(n(stated) - net);
+    if (Math.abs(diff) < 0.5) { msg.textContent = 'Sepadan dengan kiraan ✓'; msg.className = 'text-[11px] mt-1 t-sage'; }
+    else { msg.textContent = `Kiraan ${diff > 0 ? 'lebih rendah' : 'lebih tinggi'} ${formatRM2(Math.abs(diff))} dari slip. Semak baris tertinggal atau salah taip.`; msg.className = 'text-[11px] mt-1 t-gold'; }
+}
+function addPsLine(el) {
+    const side = el.id === 'ps-add-earn' ? 'earn' : 'ded';
+    const tpl = side === 'earn' ? PS_EARN_TPL : PS_DED_TPL;
+    const v = el.value; el.value = '';
+    if (v === '') return;
+    readPsRows();
+    const list = side === 'earn' ? psDraft.earn : psDraft.ded;
+    if (list.length >= 40) { showToast('Maksimum 40 baris.', 'warning'); return; }
+    const t = v === 'custom' ? null : tpl[Number(v)];
+    list.push({ label: t ? t[0] : '', tag: t ? t[1] : 'lain', amount: '' });
+    renderPsRows(); updatePsTotals(); refreshIcons();
+    const rows = document.querySelectorAll(`#ps-${side}-rows [data-ps-row]`);
+    rows[rows.length - 1]?.querySelector(t ? '.ps-amt' : '.ps-label')?.focus();
+}
+function handlePayslipSubmit(e) {
+    e.preventDefault();
+    readPsRows();
+    const month = $('ps-month').value;
+    const monthOk = /^\d{4}-(0[1-9]|1[0-2])$/.test(month);
+    $('ps-month').classList.toggle('invalid', !monthOk); $('err-ps-month').classList.toggle('hidden', monthOk);
+    if (!monthOk) return;
+    if ([...psDraft.earn, ...psDraft.ded].some((r) => r.amount !== '' && Number(r.amount) < 0)) { showToast('Jumlah tak boleh negatif.', 'error'); return; }
+    const clean = (rows, tags) => rows.map((r) => ({ label: cleanText(r.label, 40) || 'Lain-lain', tag: has(tags, r.tag) ? r.tag : 'lain', amount: round2(Number(r.amount)) }))
+        .filter((r) => Number.isFinite(r.amount) && r.amount > 0);
+    const earnings = clean(psDraft.earn, PS_EARN_TAGS), deductions = clean(psDraft.ded, PS_DED_TAGS);
+    if (!earnings.length) { showToast('Isi sekurang-kurangnya satu pendapatan (contoh: gaji pokok).', 'error'); return; }
+    if (psSum(deductions) > psSum(earnings)) { showToast('Potongan lebih besar dari pendapatan, semak semula.', 'error'); return; }
+    const stated = $('ps-stated').value;
+    const rec = {
+        owner: $('ps-owner').value === 'wife' ? 'wife' : 'husband', month, special: $('ps-special').checked, note: cleanText($('ps-note').value, 120),
+        kwspEmployer: round2(Math.max(0, n($('ps-kwsp-er').value))), statedNet: stated !== '' && n(stated) > 0 ? round2(n(stated)) : null,
+        earnings, deductions
+    };
+    const targetId = editingPsId;
+    const commit = () => {
+        const ex = targetId ? appState.payslips.find((x) => x.id === targetId) : null;
+        if (ex) Object.assign(ex, rec); else appState.payslips.push({ id: uid('ps'), ...rec });
+        psYear = month.slice(0, 4);
+        saveState(); closeModal('modal-payslip'); renderAll();
+        showToast(`Slip ${ymLabel(month)} disimpan.`, 'success');
+    };
+    const dup = appState.payslips.some((x) => x.owner === rec.owner && x.month === month && x.id !== targetId);
+    if (dup) confirmDialog('Slip bulan ni dah ada', `${ownerLabel(rec.owner)} dah ada slip ${ymLabel(month)}. Simpan juga? (contoh: slip bonus berasingan)`, commit, 'Simpan juga');
+    else commit();
+}
+function deletePayslip(id) {
+    const p = appState.payslips.find((x) => x.id === id);
+    if (!p) return;
+    confirmDialog('Padam slip?', `Slip ${ymLabel(p.month)} (${ownerLabel(p.owner)}) akan dibuang. Rekod Pendapatan tidak berubah.`, () => {
+        appState.payslips = appState.payslips.filter((x) => x.id !== id);
+        saveState(); closeModal('modal-payslip'); renderAll(); showToast('Slip dipadam.', 'warning');
+    }, 'Padam');
+}
+// Push a slip into Pendapatan: take-home (bersih) = money into account, gross = for zakat/KWSP projection
+function applyPayslip(id) {
+    const p = appState.payslips.find((x) => x.id === id);
+    if (!p) return;
+    const t = psTotals(p), who = ownerLabel(p.owner), recs = psIncomeGaji(p.owner);
+    if (recs.length > 1) { showToast(`Ada ${recs.length} rekod "Gaji" untuk ${who}. Gabungkan jadi satu di tab Pendapatan dulu supaya tak berganda.`, 'error'); return; }
+    const cur = recs[0];
+    const lc = psLoanCheck(p.owner, p);
+    const text = (p.special ? 'AMARAN: slip ni ditanda luar biasa (bonus/tunggakan), mungkin bukan gaji biasa. ' : '')
+        + (cur ? `Sekarang: bersih ${formatRM2(cur.amount)}, kasar ${formatRM2(cur.grossAmount)}. ` : 'Belum ada rekod Gaji, satu akan dibuat. ')
+        + `Jadi: bersih ${formatRM2(t.net)}, kasar ${formatRM2(t.gross)}. `
+        + (lc.bad ? `PERHATIAN: potongan pembiayaan di slip (${formatRM2(lc.onSlip)}) tak sama dengan tab Liabiliti (${formatRM2(lc.inApp)}), DSR mungkin tak tepat. ` : '')
+        + 'Bersih = masuk akaun lepas semua potongan; pembiayaan potong gaji ditambah balik automatik untuk DSR.';
+    confirmDialog(`Guna slip ${ymLabel(p.month)} (${who}) sebagai gaji semasa?`, text, () => {
+        const now = psIncomeGaji(p.owner);
+        if (now.length > 1) { showToast('Rekod Gaji berubah, cuba lagi.', 'error'); return; }
+        if (now[0]) { now[0].amount = t.net; now[0].grossAmount = t.gross; }
+        else appState.income.push({ id: uid('i'), owner: p.owner, name: `Gaji ${who}`, category: 'Gaji', amount: t.net, grossAmount: t.gross, isPassive: false });
+        saveState(); renderAll();
+        showToast(`Gaji ${who} dikemas kini: bersih ${formatRM2(t.net)}.`, 'success');
+    }, 'Guna');
+}
+function exportCsvPayslips() {
+    const rows = [['Bulan', 'Pemilik', 'Jenis', 'Butiran', 'Kategori', 'Jumlah (RM)', 'Luar biasa', 'Nota']];
+    [...appState.payslips].sort((a, b) => a.month.localeCompare(b.month) || a.owner.localeCompare(b.owner)).forEach((p) => {
+        const o = ownerLabel(p.owner), sp = p.special ? 'Ya' : '', t = psTotals(p);
+        p.earnings.forEach((l) => rows.push([p.month, o, 'Pendapatan', l.label, PS_EARN_TAGS[l.tag], l.amount, sp, p.note]));
+        p.deductions.forEach((l) => rows.push([p.month, o, 'Potongan', l.label, PS_DED_TAGS[l.tag], l.amount, sp, p.note]));
+        rows.push([p.month, o, 'Jumlah', 'Kasar', '', t.gross, sp, p.note]);
+        rows.push([p.month, o, 'Jumlah', 'Potongan', '', t.ded, sp, p.note]);
+        rows.push([p.month, o, 'Jumlah', 'Bersih', '', t.net, sp, p.note]);
+        if (p.kwspEmployer) rows.push([p.month, o, 'Maklumat', 'KWSP majikan', '', p.kwspEmployer, sp, p.note]);
+    });
+    downloadBlob(toCsv(rows), `Slip_Gaji_${todayISO()}.csv`, 'text/csv;charset=utf-8');
+    showToast('CSV slip gaji dimuat turun.', 'success');
+}
 
 /* ---------- Goal modal ---------- */
 let editingGoalId = null;
@@ -4118,6 +4645,17 @@ document.addEventListener('click', (e) => {
             saveState(); renderAll(); showToast('Snapshot dipadam.', 'warning');
         }, 'Padam'),
         'snapshot': takeSnapshot,
+        'add-payslip': () => openPayslip(null, t.dataset.owner),
+        'edit-payslip': () => openPayslip(t.dataset.id),
+        'delete-payslip': () => deletePayslip(t.dataset.id || editingPsId),
+        'apply-payslip': () => applyPayslip(t.dataset.id),
+        'csv-payslips': exportCsvPayslips,
+        'ps-del-line': () => {
+            readPsRows();
+            const rows = t.dataset.side === 'earn' ? psDraft.earn : psDraft.ded;
+            rows.splice(Number(t.dataset.i), 1);
+            renderPsRows(); updatePsTotals(); refreshIcons();
+        },
         'add-goal': () => openGoal(),
         'edit-goal': () => openGoal(t.dataset.id),
         'delete-goal': () => { const id = editingGoalId; confirmDialog('Padam matlamat?', 'Matlamat ni akan dibuang. Aset berkaitan tidak terjejas.', () => {
@@ -4202,6 +4740,9 @@ document.addEventListener('change', (e) => {
         return;
     }
     if (el.id === 'budget-month') { renderBudget(); refreshIcons(); return; }
+    if (el.id === 'ps-year') { psYear = el.value; renderPayslips(); refreshIcons(); return; }
+    if (el.id === 'ps-owner') { if (!editingPsId) { psPrepareNew(el.value); renderPsRows(); updatePsTotals(); refreshIcons(); } return; }
+    if (el.id === 'ps-add-earn' || el.id === 'ps-add-ded') { addPsLine(el); return; }
     if (el.id === 's-splitmode' || el.id === 's-split') { updateSplitPreview(); return; }
     if (el.id === 'g-asset') { toggleGoalSaved(); return; }
     if (el.id === 'ev-odo-on') { setOdoUI(el.checked); return; }
@@ -4261,6 +4802,8 @@ $('form-event').addEventListener('submit', handleEventSubmit);
 $('form-pay').addEventListener('submit', handlePaySubmit);
 $('form-odo').addEventListener('submit', handleOdoSubmit);
 $('form-div').addEventListener('submit', handleDivSubmit);
+$('form-payslip').addEventListener('submit', handlePayslipSubmit);
+$('form-payslip').addEventListener('input', updatePsTotals);
 // What-if recalculates live as you type (no save)
 $('form-whatif').addEventListener('input', () => { renderWhatIf(computeMetrics(activeProfile)); refreshIcons(); });
 $('form-whatif').addEventListener('submit', (e) => e.preventDefault());

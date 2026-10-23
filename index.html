@@ -667,6 +667,7 @@
                     <div class="flex items-center gap-2">
                         <label class="text-[11px] t-muted" for="tax-year">Tahun taksiran</label>
                         <input id="tax-year" type="number" min="2020" max="2100" class="field num" style="width:90px;padding:.3rem .5rem;font-size:12px">
+                        <button class="btn no-print" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="tax-from-payslips" title="Isi KWSP pekerja dari slip gaji tahun taksiran"><i data-lucide="receipt-text"></i>KWSP dari slip</button>
                         <button class="btn no-print" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="tax-edit-limits"><i data-lucide="pencil"></i><span id="tax-edit-label">Edit had</span></button>
                     </div>
                 </div>
@@ -4229,6 +4230,23 @@ function applyPayslip(id) {
         showToast(`Gaji ${who} dikemas kini: bersih ${formatRM2(t.net)}.`, 'success');
     }, 'Guna');
 }
+// Fill the "KWSP (caruman pekerja)" relief from recorded payslips of the tax year.
+// Only recorded months count, so a part-year total understates; the confirm shows the slip count.
+function taxFromPayslips() {
+    const y = String(appState.settings.taxYear);
+    const calc = ['husband', 'wife'].map((p) => {
+        const slips = appState.payslips.filter((x) => x.owner === p && x.month.startsWith(y));
+        const total = round2(slips.reduce((s, x) => s + psByTag(x.deductions, 'kwsp'), 0));
+        return { p, count: slips.length, total, now: n(appState.taxRelief[p].epf) };
+    }).filter((c) => c.count > 0 && c.total > 0);
+    if (!calc.length) { showToast(`Tiada slip dengan potongan KWSP untuk tahun ${y}.`, 'warning'); return; }
+    const text = calc.map((c) => `${ownerLabel(c.p)}: ${formatRM2(c.now)} → ${formatRM2(c.total)} (dari ${c.count} slip${c.count < 12 ? ', belum setahun penuh' : ''})`).join(' · ')
+        + `. Had pelepasan ${formatRM(taxLimit(TAX_RELIEFS.find((r) => r.key === 'epf')))}; lebihan tak boleh dituntut. Jumlah lama diganti.`;
+    confirmDialog(`Isi KWSP pelepasan YA ${y} dari slip?`, text, () => {
+        calc.forEach((c) => { appState.taxRelief[c.p].epf = c.total; });
+        saveState(); renderAll(); showToast('KWSP pelepasan dikemas kini dari slip.', 'success');
+    }, 'Isi');
+}
 function exportCsvPayslips() {
     const rows = [['Bulan', 'Pemilik', 'Jenis', 'Butiran', 'Kategori', 'Jumlah (RM)', 'Luar biasa', 'Nota']];
     [...appState.payslips].sort((a, b) => a.month.localeCompare(b.month) || a.owner.localeCompare(b.owner)).forEach((p) => {
@@ -4684,6 +4702,7 @@ document.addEventListener('click', (e) => {
         'csv-records': exportCsvRecords,
         'csv-history': exportCsvHistory,
         'tax-edit-limits': () => { taxEditing = !taxEditing; renderTax(); refreshIcons(); },
+        'tax-from-payslips': taxFromPayslips,
         'cycle-add': () => { readCycleRows(); if (cycleDraft.length >= 8) return; cycleDraft.push({ label: '', amount: '' }); renderCycleRows(); },
         'cycle-del': () => { readCycleRows(); const i = Number(t.dataset.idx); cycleDraft.splice(i, 1); if (!cycleDraft.length) { setCycleUI(false); return; } if (cycleCur >= cycleDraft.length || cycleCur === i) cycleCur = 0; else if (cycleCur > i) cycleCur--; renderCycleRows(); },
         'sink-paid': () => markSinkPaid(t.dataset.id),

@@ -284,8 +284,8 @@
     </section>
 
     <!-- Tabs -->
-    <section class="card overflow-hidden">
-        <div class="border-b bd p-2 flex gap-1 scroll-x no-print" style="background: var(--sub)">
+    <section class="card" style="overflow: clip">
+        <div id="tabbar" class="border-b bd p-2 flex gap-1 scroll-x no-print sticky z-30" style="background: var(--bg); top: var(--hdr-h, 0px)">
             <button class="tab-btn view-tab active" data-tab="dashboard"><i data-lucide="chart-pie"></i>Ringkasan</button>
             <button class="tab-btn view-tab" data-tab="assets"><i data-lucide="vault"></i>Aset</button>
             <button class="tab-btn view-tab" data-tab="liabilities"><i data-lucide="hand-coins"></i>Liabiliti</button>
@@ -512,12 +512,22 @@
                 <div id="cs-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
                 <div class="scroll-x"><table class="tbl"><thead><tr><th>Bulan</th><th>Hutang tamat</th><th class="text-right">Cashflow bersih / bln</th><th class="text-right">Tambahan</th></tr></thead><tbody id="tbody-cs"></tbody></table></div>
                 <div class="relative h-60 pv"><canvas id="chart-cs"></canvas></div>
+                <div class="border bd rounded-lg p-3 space-y-3">
+                    <label class="flex items-start gap-2 text-xs font-semibold"><input id="kh-on" type="checkbox" class="w-4 h-4 mt-0.5 accent-emerald-600"><span>Simulasi: keluarkan KWSP (Akaun Sejahtera) untuk ansuran rumah<span class="block font-normal t-muted">Duit masuk ke akaun bank tiap bulan sehingga baki habis. Ini simulasi sahaja, tak mengubah baki aset KWSP kau.</span></span></label>
+                    <div id="kh-fields" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div><label class="lbl" for="kh-owner">Pemilik KWSP</label><select id="kh-owner" class="field"><option value="husband">Suami</option><option value="wife">Isteri</option></select></div>
+                        <div><label class="lbl" for="kh-bal">Baki Akaun Sejahtera (RM)</label><input id="kh-bal" type="number" min="0" step="1" inputmode="decimal" class="field num" placeholder="Dari Penyata KWSP"></div>
+                        <div><label class="lbl" for="kh-monthly">Keluar / bln (RM)</label><input id="kh-monthly" type="number" min="0" step="1" inputmode="decimal" class="field num" placeholder="Maks = ansuran rumah"></div>
+                        <div><label class="lbl" for="kh-age">Umur pemilik</label><input id="kh-age" type="number" min="0" max="100" step="1" inputmode="numeric" class="field num" placeholder="Henti pada 55"></div>
+                    </div>
+                    <div id="kh-result" class="text-xs space-y-1"></div>
+                </div>
                 <div id="cs-notes" class="text-[11px] t-faint space-y-1"></div>
             </div>
             <div class="card-sub p-4 space-y-3">
                 <div>
                     <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="life-buoy" class="t-gold"></i>Pelan Tampung Defisit dari Aset</h3>
-                    <p class="text-xs t-muted">Kalau cashflow negatif sebab hutang, dashboard cadang tarik aset liquid ikut urutan selamat (tunai → ASB → unit amanah/robo → saham → emas) sehingga cashflow positif. KWSP, Tabung Haji, hartanah dan aset matlamat tak disentuh. Guna bayaran minimum, bukan bayaran tambahan.</p>
+                    <p class="text-xs t-muted">Ansuran hutang tetap dibayar penuh setiap bulan (wajib, dibayar dulu dari pendapatan). Kalau baki pendapatan tak cukup untuk belanja bulanan lain, jurang tu ditampung dengan tarik aset liquid ikut urutan selamat (tunai → ASB → unit amanah/robo → saham → emas) sehingga cashflow positif. KWSP, Tabung Haji, hartanah dan aset matlamat tak disentuh.</p>
                 </div>
                 <div id="sf-body" class="space-y-3 text-xs"></div>
             </div>
@@ -1489,6 +1499,7 @@ const DEFAULT_SETTINGS = {
     allocation: { tunai: 20, asbth: 30, ekuiti: 40, emas: 10, lain: 0 },
     taxYear: 2026, taxLimits: {},
     nafkah: { wajib: 0, elaun: 0, target: 10 },
+    kwspHouse: { on: false, owner: 'husband', monthly: 0, balance: 0, age: 0 },
     debtPlan: { strategy: 'avalanche', extra: 0, includeMortgage: false, mortgageId: '', mortgageExtra: 0, lump: 0 }
 };
 
@@ -1725,6 +1736,7 @@ function normaliseState(raw) {
         },
         allocation: Object.fromEntries(Object.keys(ASSET_CLASSES).map((k) => [k, rng(s.allocation?.[k], 0, 100, DEFAULT_SETTINGS.allocation[k])])),
         taxYear: rng(s.taxYear, 2020, 2100, new Date().getFullYear()),
+        kwspHouse: { on: s.kwspHouse?.on === true, owner: s.kwspHouse?.owner === 'wife' ? 'wife' : 'husband', monthly: rng(s.kwspHouse?.monthly, 0, 1e5, 0), balance: rng(s.kwspHouse?.balance, 0, 1e8, 0), age: rng(s.kwspHouse?.age, 0, 100, 0) },
         nafkah: { wajib: rng(s.nafkah?.wajib, 0, 1e6, 0), elaun: rng(s.nafkah?.elaun, 0, 1e6, 0), target: rng(s.nafkah?.target, 0, 90, 10) },
         debtPlan: {
             strategy: ['avalanche', 'snowball'].includes(s.debtPlan?.strategy) ? s.debtPlan.strategy : 'avalanche',
@@ -4557,17 +4569,44 @@ function cashflowScenario(profile) {
     const fixedOutside = [...lineAmt.entries()].filter(([id]) => !modelled.has(id)).reduce((s2, [, v]) => s2 + v, 0);
     const modelledTotal = debts.reduce((s2, d) => s2 + lineOf(d.id), 0);
     const endMin = (d) => (base.payoff[d.id] == null ? 600 : base.payoff[d.id]);   // payment made while t < end
-    const horizon = Math.min(600, Math.max(base.months, plan.months));
+    // KWSP Akaun Sejahtera -> housing loan instalment withdrawal (what-if). Paid to the member's bank, so it eases cashflow.
+    const kh = appState.settings.kwspHouse;
+    const mortIds = new Set(appState.liabilities.filter((l) => l.category === 'Pembiayaan Rumah').map((l) => l.id));
+    const mortLine = [...lineAmt.entries()].filter(([id]) => mortIds.has(id)).reduce((s2, [, v]) => s2 + v, 0);
+    const inScope = profile === 'combined' || profile === kh.owner;
+    const kw = { on: kh.on && inScope && mortLine > 0 && kh.monthly > 0 && kh.balance > 0, w: 0, months: 0, total: 0, lost: 0, rate: 0, mortRate: 0, cappedByAge: false, cappedByBalance: false, mortEnd: 600 };
+    if (kw.on) {
+        kw.w = Math.min(kh.monthly, mortLine);
+        const byBal = Math.floor(kh.balance / kw.w);
+        const byAge = kh.age > 0 ? Math.max(0, Math.round((55 - kh.age) * 12)) : Infinity;
+        const mDebts = debts.filter((d) => d.isMortgage);
+        kw.mortEnd = mDebts.length ? Math.min(...mDebts.map(endMin)) : 600;   // modelled mortgage stops costing the instalment when it ends
+        const hardEnd = mDebts.length ? Math.max(...mDebts.map(endMin)) : 600;
+        kw.months = Math.min(byBal, byAge, hardEnd, 600);
+        kw.cappedByAge = byAge < byBal && byAge <= kw.months;
+        kw.cappedByBalance = byBal <= byAge && byBal < hardEnd;
+        kw.total = kw.w * kw.months;
+        const asset = appState.assets.find((a) => a.category === 'KWSP' && a.owner === kh.owner);
+        kw.rate = n(asset?.yieldPercent) || 5.5;
+        const mr = appState.liabilities.find((l) => mortIds.has(l.id));
+        kw.mortRate = mr ? effRate(mr) : 0;
+        const r = kw.rate / 100 / 12;
+        for (let t = 0; t < kw.months; t++) kw.lost += kw.w * (Math.pow(1 + r, kw.months - t) - 1);   // dividends not earned by the end of the period
+        kw.lost = round2(kw.lost);
+    }
+    const horizon = Math.min(600, Math.max(base.months, plan.months, kw.on ? kw.months : 0));
     const netMin = [], netPlan = [];
     for (let t = 0; t <= horizon; t++) {
         netMin.push(free - fixedOutside - debts.reduce((s2, d) => s2 + (t < endMin(d) ? lineOf(d.id) : 0), 0));
         netPlan.push(free - fixedOutside - (t < plan.months ? modelledTotal + n(dp.extra) : 0));
     }
+    const netUse = netMin.map((v, t) => v + (kw.on && t < kw.months ? kw.w : 0));
     const byMonth = new Map();
     debts.forEach((d) => { const k = endMin(d); if (k >= 600) return; if (!byMonth.has(k)) byMonth.set(k, []); byMonth.get(k).push(d.name); });
     const milestones = [...byMonth.entries()].sort((a, b) => a[0] - b[0])
         .map(([k, names]) => ({ month: k, label: monthLabel(k), names, net: netMin[Math.min(k, horizon)], gain: netMin[Math.min(k, horizon)] - netMin[0] }));
-    return { m, debts, base, plan, free, fixedOutside, horizon, netMin, netPlan, netNow: netMin[0], netAfter: netMin[horizon], milestones, extra: n(dp.extra), lump: n(dp.lump), includeMortgage: dp.includeMortgage };
+    const otherExp = m.totalExp - debtLines;
+    return { kw, kh, netUse, m, otherExp, debtNow: free - netMin[0], debts, base, plan, free, fixedOutside, horizon, netMin, netPlan, netNow: netMin[0], netAfter: netMin[horizon], milestones, extra: n(dp.extra), lump: n(dp.lump), includeMortgage: dp.includeMortgage };
 }
 
 const DRAW_ORDER = ['Tunai & Simpanan', 'ASB / ASN', 'Unit Amanah / Robo', 'Saham & ETF', 'Emas', 'Lain-lain'];
@@ -4586,9 +4625,9 @@ function shortfallPlan(profile, sc) {
     const rows = [];
     let unfunded = 0, firstShort = null, positiveFrom = null, deficitMonths = 0, total = 0;
     for (let t = 0; t <= sc.horizon; t++) {
-        if (sc.netMin[t] >= 0) { positiveFrom = t; break; }
+        if (sc.netUse[t] >= 0) { positiveFrom = t; break; }
         deficitMonths++;
-        let gap = -sc.netMin[t];
+        let gap = -sc.netUse[t];
         const draws = [];
         for (const p of pool) {
             if (gap <= 0.005) break;
@@ -4599,7 +4638,7 @@ function shortfallPlan(profile, sc) {
             if (p.left <= 0.005 && p.depletedAt == null) p.depletedAt = t;
         }
         if (gap > 0.005) { unfunded += gap; if (firstShort == null) firstShort = t; }
-        if (rows.length < 60) rows.push({ t, net: sc.netMin[t], draws, short: gap > 0.005 ? gap : 0, liquidLeft: pool.reduce((s2, p) => s2 + p.left, 0) });
+        if (rows.length < 60) rows.push({ t, net: sc.netUse[t], draws, short: gap > 0.005 ? gap : 0, liquidLeft: pool.reduce((s2, p) => s2 + p.left, 0) });
     }
     const cashDrawn = pool.filter((p) => p.category === 'Tunai & Simpanan').reduce((s2, p) => s2 + p.drawn, 0);
     const runwayAfter = sc.m.totalExp > 0 ? Math.max(0, sc.m.emergencyCash - cashDrawn) / sc.m.totalExp : 0;
@@ -4608,6 +4647,7 @@ function shortfallPlan(profile, sc) {
 
 function renderCashflowScenario() {
     const sc = cashflowScenario(activeProfile);
+    renderKwspHouse(sc);
     const kpi = (label, val, sub, stripe, cls = '') => `<div class="card kpi p-3" style="--stripe:${stripe}"><p class="text-xs font-semibold uppercase tracking-wider t-muted">${label}</p><p class="text-lg font-extrabold num pv ${cls}">${val}</p><p class="text-[10px] t-faint">${sub}</p></div>`;
     if (!sc.debts.length) {
         $('cs-kpis').innerHTML = kpi('Cashflow sekarang', formatRM(sc.netNow), 'tiada hutang dalam pelan', '#40916c', sc.netNow < 0 ? 't-rose' : 't-sage');
@@ -4633,6 +4673,7 @@ function renderCashflowScenario() {
     if (sc.fixedOutside > 0) notes.push(`Ansuran ${formatRM(sc.fixedOutside)}/bln (contoh rumah, kalau tak dimasukkan dalam pelan) kekal dan tak diambil kira dalam tarikh tamat.`);
     if (sc.extra > 0) notes.push(`Dengan pelan, cashflow kekal rata sehingga semua hutang selesai kerana ansuran yang dibebaskan disalurkan ke hutang seterusnya (tambahan ${formatRM(sc.extra)}/bln), lepas tu terus melonjak.`);
     if (sc.lump > 0) notes.push(`Lump sum ${formatRM(sc.lump)} dianggap dibayar dari aset sekarang, jadi tak masuk cashflow bulanan.`);
+    if (sc.kw.on) notes.push(`Garis biru putus-putus ialah cashflow dengan pengeluaran KWSP ${formatRM(sc.kw.w)}/bln. Pelan tampung defisit di bawah guna angka ini.`);
     if (sc.debts.some((d) => d.l.rateType === 'flat')) notes.push('Tarikh tamat guna kadar efektif anggaran untuk hutang flat. Semak tarikh tamat sebenar dengan penyata bank.');
     $('cs-notes').innerHTML = notes.map((t) => `<p>• ${esc(t)}</p>`).join('');
 
@@ -4646,6 +4687,7 @@ function renderCashflowScenario() {
             data: { labels: idx.map((t) => monthLabel(t)), datasets: [
                 { label: 'Bayar minimum', data: idx.map((t) => Math.round(sc.netMin[t])), borderColor: '#d1495b', pointRadius: 0, stepped: true },
                 { label: 'Dengan pelan', data: idx.map((t) => Math.round(sc.netPlan[t])), borderColor: '#40916c', backgroundColor: 'rgba(64,145,108,.12)', fill: true, borderWidth: 3, pointRadius: 0, stepped: true },
+                ...(sc.kw.on ? [{ label: 'Dengan KWSP rumah', data: idx.map((t) => Math.round(sc.netUse[t])), borderColor: '#4a7fb5', borderDash: [6, 3], pointRadius: 0, stepped: true }] : []),
                 { label: 'Sifar', data: idx.map(() => 0), borderColor: '#8d99ae', borderDash: [4, 4], pointRadius: 0 }
             ] },
             options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
@@ -4656,25 +4698,52 @@ function renderCashflowScenario() {
     renderShortfall(sc);
 }
 
+function renderKwspHouse(sc) {
+    const kh = appState.settings.kwspHouse, kw = sc.kw;
+    $('kh-on').checked = kh.on; $('kh-fields').classList.toggle('hidden', !kh.on);
+    $('kh-owner').value = kh.owner;
+    [['kh-bal', kh.balance], ['kh-monthly', kh.monthly], ['kh-age', kh.age]].forEach(([id, v]) => { if (document.activeElement !== $(id)) $(id).value = v || ''; });
+    const out = $('kh-result');
+    if (!kh.on) { out.innerHTML = ''; return; }
+    const lines = [];
+    if (!kw.on) {
+        lines.push(`<p class="t-gold">${activeProfile !== 'combined' && activeProfile !== kh.owner ? `Simulasi ni milik ${esc(ownerLabel(kh.owner))}. Tukar paparan ke Gabungan atau ${esc(ownerLabel(kh.owner))}.` : 'Isi baki Akaun Sejahtera dan jumlah keluar sebulan. Perlu ada liabiliti kategori "Pembiayaan Rumah" dengan ansuran.'}</p>`);
+    } else {
+        lines.push(`<p class="font-semibold t-sage">Cashflow naik ${formatRM(kw.w)}/bln selama ${kw.months} bulan (${(kw.months / 12).toFixed(1)} thn), jumlah dikeluarkan ${formatRM(kw.total)}.</p>`);
+        lines.push(`<p class="t-muted">Berhenti sebab: ${kw.cappedByAge ? 'umur 55 (bayaran ansuran tak dibenarkan selepas 55)' : kw.cappedByBalance ? 'baki Akaun Sejahtera habis' : 'pembiayaan rumah tamat'}.</p>`);
+        lines.push(`<p class="${kw.rate > kw.mortRate ? 't-gold' : 't-muted'}">Kos peluang: dividen KWSP yang tak diperolehi dianggar ${formatRM(kw.lost)} pada hujung tempoh (anggaran ${kw.rate.toFixed(2)}% setahun). Kadar pembiayaan rumah kau anggaran ${kw.mortRate.toFixed(2)}%.${kw.rate > kw.mortRate ? ' KWSP biasanya beri pulangan lebih tinggi daripada kos pinjaman, jadi ini bantuan cashflow, bukan cara jimat kos.' : ''}</p>`);
+    }
+    lines.push('<p class="t-faint">Syarat KWSP (semak laman rasmi): daripada Akaun Sejahtera sahaja; rumah dibeli daripada pemaju Malaysia; had satu isi rumah bagi setiap ahli; bayaran bulanan tak dibenarkan selepas umur 55; boleh dibatalkan jika rumah dijual atau pembiayaan selesai; tiada penjelasan tentang rumah kedua atau keperluan diduduki sendiri, jadi sahkan dengan KWSP sebab kau duduk di rumah sewa.</p>');
+    out.innerHTML = lines.join('');
+}
+
 function renderShortfall(sc) {
     const sf = shortfallPlan(activeProfile, sc);
     const dp = appState.settings.debtPlan;
     const goalsPlan = n(sc.m.goals.monthlyPlanActive);
     if (sf.positiveFrom === 0) {
-        const tight = sc.netNow < goalsPlan;
-        $('sf-body').innerHTML = `<p class="t-sage font-semibold">Tiada defisit bulan ni: cashflow ${formatRM(sc.netNow)}/bln. Tak perlu tarik aset.</p>` +
-            (tight ? `<p class="t-gold">Cashflow ${formatRM(sc.netNow)} kurang daripada caruman matlamat ${formatRM(goalsPlan)}/bln, jadi matlamat tak penuh dibiaya. Itu bukan defisit, tapi semak keutamaan.</p>` : '');
+        const now0 = sc.netUse[0];
+        const tight = now0 < goalsPlan;
+        $('sf-body').innerHTML = `<p class="t-sage font-semibold">Tiada jurang bulan ni: lepas ansuran hutang, pendapatan cukup untuk belanja lain. Cashflow ${formatRM(sc.netNow)}/bln. Tak perlu tarik aset.</p>` +
+            (tight ? `<p class="t-gold">Cashflow ${formatRM(now0)} kurang daripada caruman matlamat ${formatRM(goalsPlan)}/bln, jadi matlamat tak penuh dibiaya. Itu bukan defisit, tapi semak keutamaan.</p>` : '');
         return;
     }
     const never = sf.positiveFrom == null;
-    const head = `<p class="t-rose font-semibold">Cashflow negatif ${formatRM(-sc.netNow)}/bln. ${never ? 'Kekal negatif walaupun semua hutang dalam pelan tamat.' : `Kekal negatif sehingga ${esc(monthLabel(sf.positiveFrom))} (${sf.deficitMonths} bulan).`} Jumlah perlu ditampung: ${formatRM(sf.total + sf.unfunded)}.</p>`;
+    const kw0 = sc.kw.on ? sc.kw.w : 0;
+    const afterDebt = sc.m.netIncome - sc.debtNow + kw0;
+    const brk = `<div class="border bd rounded-lg p-3 space-y-1"><div class="flex justify-between"><span class="t-muted">Pendapatan bersih</span><span class="num pv font-semibold">${formatRM(sc.m.netIncome)}</span></div>
+        <div class="flex justify-between"><span class="t-muted">− Ansuran hutang (wajib, dibayar penuh)</span><span class="num pv">${formatRM(sc.debtNow)}</span></div>
+        ${kw0 ? `<div class="flex justify-between"><span class="t-muted">+ Pengeluaran KWSP untuk ansuran rumah</span><span class="num pv">${formatRM(kw0)}</span></div>` : ''}<div class="flex justify-between border-t bd pt-1"><span class="t-muted">= Baki untuk belanja lain</span><span class="num pv font-semibold">${formatRM(afterDebt)}</span></div>
+        <div class="flex justify-between"><span class="t-muted">− Belanja bulanan lain (bukan hutang)</span><span class="num pv">${formatRM(sc.otherExp)}</span></div>
+        <div class="flex justify-between border-t bd pt-1"><span class="font-semibold">Jurang belanja bulanan</span><span class="num pv font-bold t-rose">${formatRM(sc.netUse[0])}</span></div></div>`;
+    const head = brk + `<p class="t-rose font-semibold">Belanja bulanan lain kurang ditampung ${formatRM(-sc.netUse[0])}/bln. ${never ? 'Kekal negatif walaupun semua hutang dalam pelan tamat.' : `Jurang kekal sehingga ${esc(monthLabel(sf.positiveFrom))} (${sf.deficitMonths} bulan), bila ansuran hutang mula tamat atau pengeluaran KWSP berubah.`} Jumlah ditampung dari aset: ${formatRM(sf.total + sf.unfunded)}.</p>`;
     const warn = [];
     if (sf.unfunded > 0.5) warn.push(`<span class="t-rose font-semibold">Aset liquid yang selamat ditarik tak cukup: habis pada ${esc(monthLabel(sf.firstShort))}, kekurangan ${formatRM(sf.unfunded)} lagi.</span> Pilihan: kurangkan belanja, rundingkan ansuran atau tempoh dengan bank, atau tambah pendapatan. Aset terkunci (KWSP, Tabung Haji) jalan terakhir sahaja.`);
     if (sf.cashDrawn > 0 && sf.runwayAfter < sf.emergencyMin) warn.push(`<span class="t-gold font-semibold">Dana kecemasan jatuh ke ${sf.runwayAfter.toFixed(1)} bulan, bawah minimum ${sf.emergencyMin} bulan.</span> Tarik dari aset lain dulu kalau boleh, atau kurangkan belanja.`);
-    if (dp.extra > 0) warn.push(`Berhenti bayar tambahan ${formatRM(dp.extra)}/bln sementara defisit. Pelan ni kira bayaran minimum sahaja.`);
+    if (dp.extra > 0) warn.push(`Bayaran tambahan ${formatRM(dp.extra)}/bln patut dihentikan sementara jurang ada. Ansuran minimum tetap dibayar, jadi pelan ni tak sentuh bayaran hutang.`);
     if (goalsPlan > 0) warn.push(`Caruman matlamat ${formatRM(goalsPlan)}/bln patut dijeda semasa defisit.`);
     const byAsset = sf.pool.filter((p) => p.drawn > 0.005).map((p) => `<div class="flex justify-between gap-3 py-1 border-b bd"><span>${esc(p.name)} <span class="t-faint">${esc(p.category)}</span>${p.depletedAt != null ? ` <span class="badge b-rose">habis ${esc(monthLabel(p.depletedAt))}</span>` : ''}</span><span class="num font-bold pv">${formatRM(p.drawn)} <span class="t-faint font-normal">dari ${formatRM(p.start)}</span></span></div>`).join('');
-    const table = `<div class="scroll-x"><table class="tbl"><thead><tr><th>Bulan</th><th class="text-right">Cashflow</th><th>Tarik dari</th><th class="text-right">Baki liquid</th></tr></thead><tbody>${sf.rows.map((r) => `<tr>
+    const table = `<div class="scroll-x"><table class="tbl"><thead><tr><th>Bulan</th><th class="text-right">Cashflow</th><th>Tampung belanja dari</th><th class="text-right">Baki liquid</th></tr></thead><tbody>${sf.rows.map((r) => `<tr>
         <td class="num font-semibold">${esc(monthLabel(r.t))}</td><td class="text-right num pv t-rose">${formatRM(r.net)}</td>
         <td>${r.draws.map((d) => `${esc(d.name)} <span class="num pv">${formatRM(d.amount)}</span>`).join(' · ') || '<span class="t-faint">—</span>'}${r.short ? ` <span class="t-rose">kurang ${formatRM(r.short)}</span>` : ''}</td>
         <td class="text-right num pv">${formatRM(r.liquidLeft)}</td></tr>`).join('')}</tbody></table></div>${sf.deficitMonths > sf.rows.length ? `<p class="t-faint">+${sf.deficitMonths - sf.rows.length} bulan lagi (jadual dipotong pada 60 bulan).</p>` : ''}`;
@@ -4723,10 +4792,11 @@ function reportSections(ym, mask) {
     add('Cashflow dan tempoh hutang', { kv: [
         ['Cashflow bersih sekarang', formatRM(sc.netNow)],
         ['Cashflow selepas hutang dalam pelan tamat', `${formatRM(sc.netAfter)}${sc.milestones.length ? ` (bermula ${sc.milestones[sc.milestones.length - 1].label})` : ''}`],
+        ...(sc.kw.on ? [['Simulasi KWSP untuk ansuran rumah', `${formatRM(sc.kw.w)}/bln selama ${sc.kw.months} bulan, jumlah ${formatRM(sc.kw.total)}; dividen terlepas anggaran ${formatRM(sc.kw.lost)}`]] : []),
         ['Pelan langsai', `${sc.plan.months >= 600 ? '50+ thn' : monthLabel(sc.plan.months)}${sc.extra ? `, tambahan ${formatRM(sc.extra)}/bln` : ''}`]
     ], table: sc.milestones.length ? { head: ['Bulan', 'Hutang tamat', 'Cashflow bersih', 'Tambahan'], rows: sc.milestones.map((x) => [x.label, x.names.map((nm, i) => mask ? `Hutang (${i + 1})` : nm).join(', '), formatRM(x.net), `+${formatRM(x.gain)}`]) } : null,
-        note: sf.positiveFrom === 0 ? 'Tiada defisit bulan ni.' : `Defisit ${sf.deficitMonths} bulan sehingga ${sf.positiveFrom == null ? 'tak positif' : monthLabel(sf.positiveFrom)}; perlu tampung ${formatRM(sf.total + sf.unfunded)}${sf.unfunded > 0.5 ? `, aset selamat kurang ${formatRM(sf.unfunded)}` : ''}.` });
-    if (sf.positiveFrom !== 0) flags.push(`Cashflow negatif sehingga ${sf.positiveFrom == null ? 'hutang dalam pelan tamat pun masih negatif' : monthLabel(sf.positiveFrom)}.`);
+        note: sf.positiveFrom === 0 ? 'Tiada jurang belanja bulan ni.' : `Selepas ansuran hutang dibayar penuh, belanja lain kurang ditampung selama ${sf.deficitMonths} bulan sehingga ${sf.positiveFrom == null ? 'tak positif' : monthLabel(sf.positiveFrom)}; perlu tampung ${formatRM(sf.total + sf.unfunded)}${sf.unfunded > 0.5 ? `, aset selamat kurang ${formatRM(sf.unfunded)}` : ''}.` });
+    if (sf.positiveFrom !== 0) flags.push(`Lepas bayar semua ansuran hutang, belanja lain masih kurang ditampung sehingga ${sf.positiveFrom == null ? 'hutang dalam pelan tamat pun masih negatif' : monthLabel(sf.positiveFrom)}.`);
 
     // 4. Liabilities
     const base = simulateDebts(debtsFor('combined', true), { rollover: false });
@@ -5326,8 +5396,11 @@ function switchProfile(p) {
     document.querySelectorAll('.profile-tab').forEach((b) => b.classList.toggle('active', b.dataset.profile === p));
     renderAll();
 }
+function setHdrH() { const h = document.querySelector('header'); if (h) document.documentElement.style.setProperty('--hdr-h', `${Math.round(h.getBoundingClientRect().height)}px`); }
+window.addEventListener('resize', setHdrH);
 function switchTab(tab) {
     activeTab = tab;
+    setHdrH();
     if (tab === 'report') { renderReport(); refreshIcons(); }
     document.querySelectorAll('.view-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.view-tab-content').forEach((c) => c.classList.toggle('hidden', c.id !== `tab-${tab}`));
@@ -5346,7 +5419,16 @@ document.addEventListener('click', (e) => {
         return;
     }
     if (t.dataset.profile && !t.dataset.action) return switchProfile(t.dataset.profile);
-    if (t.dataset.tab && !t.dataset.action) return switchTab(t.dataset.tab);
+    if (t.dataset.tab && !t.dataset.action) {
+        switchTab(t.dataset.tab);
+        // If the tab bar is stuck to the top (page scrolled), jump to the top of the new tab content
+        const bar = $('tabbar');
+        if (bar && bar.getBoundingClientRect().top <= (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hdr-h')) || 0) + 2) {
+            const y = bar.parentElement.getBoundingClientRect().top + window.scrollY - (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hdr-h')) || 0);
+            window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+        }
+        return;
+    }
     const a = t.dataset.action;
     const actions = {
         'privacy': togglePrivacy,
@@ -5471,6 +5553,12 @@ document.addEventListener('change', (e) => {
         const a = appState.assets.find((x) => x.id === el.dataset.svTarget);
         if (a) { a.saveTarget = rng(el.value, 0, 1e7, 0); saveState(); renderSavings(); refreshIcons(); }
         return;
+    }
+    if (el.id === 'kh-on' || el.id === 'kh-owner' || el.id === 'kh-bal' || el.id === 'kh-monthly' || el.id === 'kh-age') {
+        const kh = appState.settings.kwspHouse;
+        if (el.id === 'kh-on') kh.on = el.checked; else if (el.id === 'kh-owner') kh.owner = el.value === 'wife' ? 'wife' : 'husband';
+        else if (el.id === 'kh-bal') kh.balance = rng(el.value, 0, 1e8, 0); else if (el.id === 'kh-monthly') kh.monthly = rng(el.value, 0, 1e5, 0); else kh.age = rng(el.value, 0, 100, 0);
+        saveState(); renderCashflowScenario(); refreshIcons(); return;
     }
     if (el.id === 'rp-month' || el.id === 'rp-mask') { rpMonth = /^\d{4}-\d{2}$/.test($('rp-month').value) ? $('rp-month').value : currentYM(); renderReport(); refreshIcons(); return; }
     if (el.id === 'ps-year') { psYear = el.value; renderPayslips(); refreshIcons(); return; }

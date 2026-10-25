@@ -526,6 +526,28 @@
             </div>
             <div class="card-sub p-4 space-y-3">
                 <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="trending-up" class="t-blue"></i>Senario Naik Gaji, Bonus dan Elaun Haji</h3>
+                    <p class="text-xs t-muted">Tambah anggaran pendapatan akan datang atas cashflow di atas (selepas hutang tamat dan simulasi KWSP kalau dihidupkan). Semua ini anggaran, bukan jaminan: bonus dan elaun boleh berubah.</p>
+                </div>
+                <label class="flex items-center gap-2 text-xs font-semibold"><input id="gr-on" data-gr="on" type="checkbox" class="w-4 h-4 accent-emerald-600">Hidupkan senario pendapatan</label>
+                <div id="gr-fields" class="space-y-3">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div><label class="lbl" for="gr-owner">Pemilik gaji</label><select id="gr-owner" data-gr="owner" class="field"><option value="husband">Suami</option><option value="wife">Isteri</option></select></div>
+                        <div><label class="lbl" for="gr-basic">Gaji pokok / bln (RM)</label><input id="gr-basic" data-gr="basic" type="number" min="0" step="1" inputmode="decimal" class="field num" placeholder="Auto dari slip"></div>
+                        <div><label class="lbl" for="gr-pct">Naik gaji (% gaji pokok)</label><input id="gr-pct" data-gr="raisePct" type="number" min="0" max="50" step="0.1" inputmode="decimal" class="field num"></div>
+                        <div><label class="lbl" for="gr-rmonth">Bulan naik gaji</label><select id="gr-rmonth" data-gr="raiseMonth" class="field gr-month"></select></div>
+                        <div><label class="lbl" for="gr-bmonth">Bulan bonus masuk</label><select id="gr-bmonth" data-gr="bonusMonth" class="field gr-month"></select></div>
+                        <div><label class="lbl" for="gr-bmin">Bonus minimum (bulan)</label><input id="gr-bmin" data-gr="bonusMin" type="number" min="0" step="0.5" inputmode="decimal" class="field num"></div>
+                        <div><label class="lbl" for="gr-bhope">Bonus harapan (bulan)</label><input id="gr-bhope" data-gr="bonusHope" type="number" min="0" step="0.5" inputmode="decimal" class="field num"></div>
+                        <div><label class="lbl" for="gr-ded">Potongan atas gaji/bonus (%)</label><input id="gr-ded" data-gr="ded" type="number" min="0" max="60" step="0.5" inputmode="decimal" class="field num"></div>
+                    </div>
+                    <div id="gr-haji" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+                    <div class="max-w-xs"><label class="lbl" for="gr-hded">Potongan atas elaun haji (%)</label><input id="gr-hded" data-gr="hajiDed" type="number" min="0" max="60" step="0.5" inputmode="decimal" class="field num"></div>
+                </div>
+                <div id="gr-out" class="space-y-3"></div>
+            </div>
+            <div class="card-sub p-4 space-y-3">
+                <div>
                     <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="life-buoy" class="t-gold"></i>Pelan Tampung Defisit dari Aset</h3>
                     <p class="text-xs t-muted">Ansuran hutang tetap dibayar penuh setiap bulan (wajib, dibayar dulu dari pendapatan). Kalau baki pendapatan tak cukup untuk belanja bulanan lain, jurang tu ditampung dengan tarik aset liquid ikut urutan selamat (tunai → ASB → unit amanah/robo → saham → emas) sehingga cashflow positif. KWSP, Tabung Haji, hartanah dan aset matlamat tak disentuh.</p>
                 </div>
@@ -1501,6 +1523,8 @@ const DEFAULT_SETTINGS = {
     taxYear: 2026, taxLimits: {},
     nafkah: { wajib: 0, elaun: 0, target: 10 },
     kwspHouse: { on: false, owner: 'husband', monthly: 0, balance: 0, age: 0 },
+    growth: { on: false, owner: 'husband', basic: 0, raisePct: 3, raiseMonth: 4, bonusMonth: 3, bonusMin: 1, bonusHope: 2, ded: 11, hajiDed: 0,
+        haji: [{ label: 'Operasi Haji Tanah Air', month: 4, days: 0, rate: 110 }, { label: 'Operasi Haji Tanah Suci', month: 6, days: 0, rate: 110 }] },
     debtPlan: { strategy: 'avalanche', extra: 0, includeMortgage: false, mortgageId: '', mortgageExtra: 0, lump: 0 }
 };
 
@@ -1738,6 +1762,10 @@ function normaliseState(raw) {
         },
         allocation: Object.fromEntries(Object.keys(ASSET_CLASSES).map((k) => [k, rng(s.allocation?.[k], 0, 100, DEFAULT_SETTINGS.allocation[k])])),
         taxYear: rng(s.taxYear, 2020, 2100, new Date().getFullYear()),
+        growth: (() => { const g = s.growth || {}; const mo = (v, d) => Math.round(rng(v, 1, 12, d));
+            return { on: g.on === true, owner: g.owner === 'wife' ? 'wife' : 'husband', basic: rng(g.basic, 0, 1e6, 0), raisePct: rng(g.raisePct, 0, 50, 3), raiseMonth: mo(g.raiseMonth, 4),
+                bonusMonth: mo(g.bonusMonth, 3), bonusMin: rng(g.bonusMin, 0, 24, 1), bonusHope: rng(g.bonusHope, 0, 24, 2), ded: rng(g.ded, 0, 60, 11), hajiDed: rng(g.hajiDed, 0, 60, 0),
+                haji: [0, 1].map((i) => { const h = arr(g.haji)[i] || {}; return { label: i ? 'Operasi Haji Tanah Suci' : 'Operasi Haji Tanah Air', month: mo(h.month, i ? 6 : 4), days: Math.round(rng(h.days, 0, 366, 0)), rate: rng(h.rate, 0, 1e5, 110) }; }) }; })(),
         kwspHouse: { on: s.kwspHouse?.on === true, owner: s.kwspHouse?.owner === 'wife' ? 'wife' : 'husband', monthly: rng(s.kwspHouse?.monthly, 0, 1e5, 0), balance: rng(s.kwspHouse?.balance, 0, 1e8, 0), age: rng(s.kwspHouse?.age, 0, 100, 0) },
         nafkah: { wajib: rng(s.nafkah?.wajib, 0, 1e6, 0), elaun: rng(s.nafkah?.elaun, 0, 1e6, 0), target: rng(s.nafkah?.target, 0, 90, 10) },
         debtPlan: {
@@ -4703,6 +4731,7 @@ function shortfallPlan(profile, sc) {
 function renderCashflowScenario() {
     const sc = cashflowScenario(activeProfile);
     renderKwspHouse(sc);
+    renderGrowth(sc);
     const kpi = (label, val, sub, stripe, cls = '') => `<div class="card kpi p-3" style="--stripe:${stripe}"><p class="text-xs font-semibold uppercase tracking-wider t-muted">${label}</p><p class="text-lg font-extrabold num pv ${cls}">${val}</p><p class="text-[10px] t-faint">${sub}</p></div>`;
     if (!sc.debts.length) {
         $('cs-kpis').innerHTML = kpi('Cashflow sekarang', formatRM(sc.netNow), 'tiada hutang dalam pelan', '#40916c', sc.netNow < 0 ? 't-rose' : 't-sage');
@@ -4853,6 +4882,11 @@ function reportSections(ym, mask) {
         note: sf.positiveFrom === 0 ? 'Tiada jurang belanja bulan ni.' : `Selepas ansuran hutang dibayar penuh, belanja lain kurang ditampung selama ${sf.deficitMonths} bulan sehingga ${sf.positiveFrom == null ? 'tak positif' : monthLabel(sf.positiveFrom)}; perlu tampung ${formatRM(sf.total + sf.unfunded)}${sf.unfunded > 0.5 ? `, aset selamat kurang ${formatRM(sf.unfunded)}` : ''}.` });
     if (sf.positiveFrom !== 0) flags.push(`Lepas bayar semua ansuran hutang, belanja lain masih kurang ditampung sehingga ${sf.positiveFrom == null ? 'hutang dalam pelan tamat pun masih negatif' : monthLabel(sf.positiveFrom)}.`);
 
+    const gsr = growthScenario('combined', sc);
+    if (gsr) add('Senario naik gaji, bonus dan elaun haji (anggaran)', { table: { head: ['Tahun', 'Asas', 'Naik gaji', 'Bonus min', 'Bonus harap', 'Elaun haji', 'Jumlah min', 'Jumlah harap'],
+        rows: gsr.years.map((y) => [`${y.from} – ${y.to}`, formatRM(y.base), formatRM(y.raise), formatRM(y.bMin), formatRM(y.bHope), formatRM(y.haji), formatRM(y.min), formatRM(y.hope)]) },
+        note: `Andaian: gaji pokok ${formatRM(gsr.b0)}, naik ${gsr.g.raisePct}% tiap ${MONTHS_MS[gsr.g.raiseMonth - 1]}, bonus ${gsr.g.bonusMin}-${gsr.g.bonusHope} bulan masuk ${MONTHS_MS[gsr.g.bonusMonth - 1]}, potongan ${gsr.g.ded}%.` });
+
     // 4. Liabilities
     const base = simulateDebts(debtsFor('combined', true), { rollover: false });
     add('Liabiliti', { table: { head: ['Hutang', 'Pemilik', 'Baki', 'Bayaran / bln', 'Kadar', 'Cara bayar', 'Tamat'],
@@ -4989,6 +5023,94 @@ function downloadReport() {
     const { ym, sections } = currentReport();
     downloadBlob(reportMarkdown(sections, ym), `Laporan_Kewangan_${ym}.md`, 'text/markdown;charset=utf-8');
     showToast('Laporan .md dimuat turun.', 'success');
+}
+
+/* ---------- Senario pendapatan: naik gaji, bonus, elaun haji ---------- */
+function growthBasic(g) {
+    if (g.basic > 0) return g.basic;
+    const sl = psSorted(g.owner)[0];
+    if (sl) { const b = round2(sl.earnings.filter((l) => l.tag === 'pokok').reduce((s2, l) => s2 + n(l.amount), 0)); if (b > 0) return b; }
+    return sum(psIncomeGaji(g.owner), 'grossAmount');
+}
+// 60 months from now. Base = scenario cashflow (debts ending, KWSP what-if). Extras are added on top, after the % deductions you set.
+function growthScenario(profile, sc) {
+    const g = appState.settings.growth;
+    if (!g.on || !(profile === 'combined' || profile === g.owner)) return null;
+    const b0 = growthBasic(g), cm = Number(currentYM().slice(5, 7)), keep = 1 - g.ded / 100, hkeep = 1 - g.hajiDed / 100;
+    const months = [];
+    let basicK = b0;
+    for (let t = 0; t < 60; t++) {
+        const mo = (cm - 1 + t) % 12 + 1;
+        if (mo === g.raiseMonth && t > 0) basicK *= 1 + g.raisePct / 100;
+        const base = sc.netUse[Math.min(t, sc.horizon)];
+        const raise = (basicK - b0) * keep;
+        const bMin = mo === g.bonusMonth ? basicK * g.bonusMin * keep : 0;
+        const bHope = mo === g.bonusMonth ? basicK * g.bonusHope * keep : 0;
+        const haji = g.haji.reduce((s2, h) => s2 + (h.month === mo ? h.days * h.rate * hkeep : 0), 0);
+        months.push({ t, mo, base, raise, bMin, bHope, haji, min: base + raise + bMin + haji, hope: base + raise + bHope + haji });
+    }
+    const years = [0, 1, 2, 3, 4].map((y) => {
+        const ms = months.slice(y * 12, y * 12 + 12);
+        const tot = (k) => ms.reduce((s2, m) => s2 + m[k], 0);
+        return { y, from: monthLabel(y * 12), to: monthLabel(y * 12 + 11), base: tot('base'), raise: tot('raise'), bMin: tot('bMin'), bHope: tot('bHope'), haji: tot('haji'), min: tot('min'), hope: tot('hope') };
+    });
+    return { g, b0, months, years, extraMin5: years.reduce((s2, y) => s2 + y.min - y.base, 0), extraHope5: years.reduce((s2, y) => s2 + y.hope - y.base, 0) };
+}
+
+function renderGrowth(sc) {
+    const g = appState.settings.growth;
+    $('gr-on').checked = g.on; $('gr-fields').classList.toggle('hidden', !g.on);
+    document.querySelectorAll('.gr-month').forEach((el) => { if (!el.options.length) el.innerHTML = MONTHS_MS.map((m, i) => `<option value="${i + 1}">${esc(m)}</option>`).join(''); });
+    const setv = (id, v) => { const el = $(id); if (document.activeElement !== el) el.value = v; };
+    $('gr-owner').value = g.owner; setv('gr-basic', g.basic || ''); setv('gr-pct', g.raisePct); $('gr-rmonth').value = g.raiseMonth; $('gr-bmonth').value = g.bonusMonth;
+    setv('gr-bmin', g.bonusMin); setv('gr-bhope', g.bonusHope); setv('gr-ded', g.ded); setv('gr-hded', g.hajiDed);
+    if (!$('gr-haji').children.length || $('gr-haji').dataset.rendered !== '1') {
+        $('gr-haji').innerHTML = g.haji.map((h, i) => `<div class="border bd rounded-lg p-3 space-y-2"><p class="text-xs font-semibold">${esc(h.label)}</p>
+            <div class="grid grid-cols-3 gap-2">
+                <div><label class="lbl" for="gr-hm${i}">Bulan dibayar</label><select id="gr-hm${i}" data-gr="hmonth" data-i="${i}" class="field gr-month">${MONTHS_MS.map((m, k) => `<option value="${k + 1}">${esc(m)}</option>`).join('')}</select></div>
+                <div><label class="lbl" for="gr-hd${i}">Bilangan hari</label><input id="gr-hd${i}" data-gr="hdays" data-i="${i}" type="number" min="0" max="366" step="1" inputmode="numeric" class="field num"></div>
+                <div><label class="lbl" for="gr-hr${i}">RM sehari</label><input id="gr-hr${i}" data-gr="hrate" data-i="${i}" type="number" min="0" step="1" inputmode="decimal" class="field num"></div>
+            </div></div>`).join('');
+        $('gr-haji').dataset.rendered = '1';
+    }
+    g.haji.forEach((h, i) => { $(`gr-hm${i}`).value = h.month; setv(`gr-hd${i}`, h.days); setv(`gr-hr${i}`, h.rate); });
+    const out = $('gr-out');
+    const gs = growthScenario(activeProfile, sc);
+    if (!g.on) { out.innerHTML = ''; if (charts.gr) { charts.gr.destroy(); delete charts.gr; } return; }
+    if (!gs) { out.innerHTML = `<p class="text-xs t-gold">Senario ini milik ${esc(ownerLabel(g.owner))}. Tukar paparan ke Gabungan atau ${esc(ownerLabel(g.owner))}.</p>`; return; }
+    const y1 = gs.years[0], y5 = gs.years[4];
+    const card = (l, v, sub, c = '') => `<div class="card kpi p-3"><p class="text-xs font-semibold uppercase tracking-wider t-muted">${l}</p><p class="text-lg font-extrabold num pv ${c}">${v}</p><p class="text-[10px] t-faint">${sub}</p></div>`;
+    const notes = [];
+    if (gs.b0 <= 0) notes.push('Gaji pokok tak ditemui. Isi "Gaji pokok / bln" supaya kenaikan dan bonus boleh dikira.');
+    notes.push(`Gaji pokok dianggar ${formatRM(gs.b0)}${g.basic > 0 ? ' (diisi sendiri)' : ' (dari slip terkini atau gaji kasar dalam Pendapatan)'}. Naik ${g.raisePct}% tiap ${MONTHS_MS[g.raiseMonth - 1]} bermula ${MONTHS_MS[g.raiseMonth - 1]} akan datang, dan bonus ikut gaji pokok semasa.`);
+    notes.push(`Potongan ${g.ded}% atas kenaikan dan bonus (anggaran KWSP; cukai tak dikira kecuali kau naikkan peratus). Elaun haji potongan ${g.hajiDed}%, dianggap masuk penuh pada bulan dibayar.`);
+    if (!g.haji.some((h) => h.days > 0)) notes.push('Elaun haji belum dikira: isi bilangan hari.');
+    notes.push('Cashflow bulan bonus dan haji melonjak sekali gus; jangan jadikan ia belanja tetap. Pelan tampung jurang kekal guna angka asas tanpa bonus atau kenaikan (lebih berjaga-jaga).');
+    out.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        ${card('Tahun 1, purata/bln', formatRM(y1.min / 12), `harapan ${formatRM(y1.hope / 12)}`, y1.min < 0 ? 't-rose' : 't-sage')}
+        ${card('Tahun 5, purata/bln', formatRM(y5.min / 12), `harapan ${formatRM(y5.hope / 12)}`, y5.min < 0 ? 't-rose' : 't-sage')}
+        ${card('Tambahan 5 thn (min)', `+${formatRM(gs.extraMin5)}`, 'naik gaji + bonus 1× + haji')}
+        ${card('Tambahan 5 thn (harap)', `+${formatRM(gs.extraHope5)}`, `bonus ${g.bonusHope} bulan`)}</div>
+        <div class="scroll-x"><table class="tbl"><thead><tr><th>Tahun</th><th class="text-right">Asas</th><th class="text-right">+ Naik gaji</th><th class="text-right">+ Bonus min</th><th class="text-right">+ Bonus harap</th><th class="text-right">+ Elaun haji</th><th class="text-right">Jumlah min</th><th class="text-right">Jumlah harap</th></tr></thead><tbody>
+        ${gs.years.map((y) => `<tr><td class="num font-semibold">${esc(y.from)} – ${esc(y.to)}</td><td class="text-right num pv">${formatRM(y.base)}</td><td class="text-right num pv t-sage">+${formatRM(y.raise)}</td><td class="text-right num pv t-sage">+${formatRM(y.bMin)}</td><td class="text-right num pv t-sage">+${formatRM(y.bHope)}</td><td class="text-right num pv t-sage">+${formatRM(y.haji)}</td><td class="text-right num pv font-semibold ${y.min < 0 ? 't-rose' : ''}">${formatRM(y.min)}</td><td class="text-right num pv font-semibold ${y.hope < 0 ? 't-rose' : ''}">${formatRM(y.hope)}</td></tr>`).join('')}
+        </tbody></table></div>
+        <details class="text-xs"><summary class="cursor-pointer font-semibold">12 bulan akan datang (bulan demi bulan)</summary><div class="scroll-x mt-2"><table class="tbl"><thead><tr><th>Bulan</th><th class="text-right">Asas</th><th class="text-right">Naik gaji</th><th class="text-right">Bonus min</th><th class="text-right">Elaun haji</th><th class="text-right">Jumlah min</th></tr></thead><tbody>
+        ${gs.months.slice(0, 12).map((m) => `<tr><td class="num font-semibold">${esc(monthLabel(m.t))}</td><td class="text-right num pv">${formatRM(m.base)}</td><td class="text-right num pv">${m.raise ? '+' + formatRM(m.raise) : '—'}</td><td class="text-right num pv">${m.bMin ? '+' + formatRM(m.bMin) : '—'}</td><td class="text-right num pv">${m.haji ? '+' + formatRM(m.haji) : '—'}</td><td class="text-right num pv font-semibold ${m.min < 0 ? 't-rose' : ''}">${formatRM(m.min)}</td></tr>`).join('')}
+        </tbody></table></div></details>
+        <div class="relative h-56 pv"><canvas id="chart-gr"></canvas></div>
+        <div class="text-[11px] t-faint space-y-1">${notes.map((x) => `<p>• ${esc(x)}</p>`).join('')}</div>`;
+    if (typeof Chart !== 'undefined') {
+        const th = chartTheme();
+        upsertChart('gr', 'chart-gr', {
+            type: 'bar',
+            data: { labels: gs.years.map((y) => y.from), datasets: [
+                { label: 'Asas', data: gs.years.map((y) => Math.round(y.base / 12)), backgroundColor: '#8d99ae' },
+                { label: 'Min', data: gs.years.map((y) => Math.round(y.min / 12)), backgroundColor: '#40916c' },
+                { label: 'Harapan', data: gs.years.map((y) => Math.round(y.hope / 12)), backgroundColor: '#d4a373' }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, color: th.text } }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${formatRM(c.raw)}/bln` } } },
+                scales: { x: { grid: { color: th.grid } }, y: { grid: { color: th.grid }, ticks: { callback: rmTick } } } }
+        });
+    }
 }
 
 /* ---------- Kalkulator nafkah ---------- */
@@ -5622,6 +5744,19 @@ document.addEventListener('change', (e) => {
         const a = appState.assets.find((x) => x.id === el.dataset.svTarget);
         if (a) { a.saveTarget = rng(el.value, 0, 1e7, 0); saveState(); renderSavings(); refreshIcons(); }
         return;
+    }
+    if (el.dataset.gr != null) {
+        const g = appState.settings.growth, k = el.dataset.gr;
+        if (k === 'on') g.on = el.checked; else if (k === 'owner') g.owner = el.value === 'wife' ? 'wife' : 'husband';
+        else if (k === 'basic') g.basic = rng(el.value, 0, 1e6, 0); else if (k === 'raisePct') g.raisePct = rng(el.value, 0, 50, 3);
+        else if (k === 'raiseMonth' || k === 'bonusMonth') g[k] = Math.round(rng(el.value, 1, 12, k === 'raiseMonth' ? 4 : 3));
+        else if (k === 'bonusMin' || k === 'bonusHope') g[k] = rng(el.value, 0, 24, k === 'bonusMin' ? 1 : 2);
+        else if (k === 'ded' || k === 'hajiDed') g[k] = rng(el.value, 0, 60, k === 'ded' ? 11 : 0);
+        else if (el.dataset.i === '0' || el.dataset.i === '1') {
+            const h = g.haji[Number(el.dataset.i)];
+            if (k === 'hmonth') h.month = Math.round(rng(el.value, 1, 12, h.month)); else if (k === 'hdays') h.days = Math.round(rng(el.value, 0, 366, 0)); else if (k === 'hrate') h.rate = rng(el.value, 0, 1e5, 110);
+        }
+        saveState(); renderCashflowScenario(); refreshIcons(); return;
     }
     if (el.id === 'kh-on' || el.id === 'kh-owner' || el.id === 'kh-bal' || el.id === 'kh-monthly' || el.id === 'kh-age') {
         const kh = appState.settings.kwspHouse;

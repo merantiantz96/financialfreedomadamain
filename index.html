@@ -539,6 +539,7 @@
                         <div><label class="lbl" for="gr-bmonth">Bulan bonus masuk</label><select id="gr-bmonth" data-gr="bonusMonth" class="field gr-month"></select></div>
                         <div><label class="lbl" for="gr-bmin">Bonus minimum (bulan)</label><input id="gr-bmin" data-gr="bonusMin" type="number" min="0" step="0.5" inputmode="decimal" class="field num"></div>
                         <div><label class="lbl" for="gr-bhope">Bonus harapan (bulan)</label><input id="gr-bhope" data-gr="bonusHope" type="number" min="0" step="0.5" inputmode="decimal" class="field num"></div>
+                        <div><label class="lbl" for="gr-plan">Pelan tampung jurang guna</label><select id="gr-plan" data-gr="plan" class="field"><option value="none">Asas sahaja</option><option value="raise">+ Naik gaji</option><option value="bonus">+ Naik gaji & bonus min (rata)</option></select></div>
                         <div><label class="lbl" for="gr-ded">Potongan atas gaji/bonus (%)</label><input id="gr-ded" data-gr="ded" type="number" min="0" max="60" step="0.5" inputmode="decimal" class="field num"></div>
                     </div>
                     <div id="gr-haji" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
@@ -1523,7 +1524,7 @@ const DEFAULT_SETTINGS = {
     taxYear: 2026, taxLimits: {},
     nafkah: { wajib: 0, elaun: 0, target: 10 },
     kwspHouse: { on: false, owner: 'husband', monthly: 0, balance: 0, age: 0 },
-    growth: { on: false, owner: 'husband', basic: 0, raisePct: 3, raiseMonth: 4, bonusMonth: 3, bonusMin: 1, bonusHope: 2, ded: 11, hajiDed: 0,
+    growth: { on: false, owner: 'husband', basic: 0, raisePct: 3, raiseMonth: 4, bonusMonth: 3, bonusMin: 1, bonusHope: 2, ded: 11, hajiDed: 0, plan: 'raise',
         haji: [{ label: 'Operasi Haji Tanah Air', month: 4, days: 0, rate: 110 }, { label: 'Operasi Haji Tanah Suci', month: 6, days: 0, rate: 110 }] },
     debtPlan: { strategy: 'avalanche', extra: 0, includeMortgage: false, mortgageId: '', mortgageExtra: 0, lump: 0 }
 };
@@ -1764,7 +1765,7 @@ function normaliseState(raw) {
         taxYear: rng(s.taxYear, 2020, 2100, new Date().getFullYear()),
         growth: (() => { const g = s.growth || {}; const mo = (v, d) => Math.round(rng(v, 1, 12, d));
             return { on: g.on === true, owner: g.owner === 'wife' ? 'wife' : 'husband', basic: rng(g.basic, 0, 1e6, 0), raisePct: rng(g.raisePct, 0, 50, 3), raiseMonth: mo(g.raiseMonth, 4),
-                bonusMonth: mo(g.bonusMonth, 3), bonusMin: rng(g.bonusMin, 0, 24, 1), bonusHope: rng(g.bonusHope, 0, 24, 2), ded: rng(g.ded, 0, 60, 11), hajiDed: rng(g.hajiDed, 0, 60, 0),
+                bonusMonth: mo(g.bonusMonth, 3), bonusMin: rng(g.bonusMin, 0, 24, 1), bonusHope: rng(g.bonusHope, 0, 24, 2), ded: rng(g.ded, 0, 60, 11), hajiDed: rng(g.hajiDed, 0, 60, 0), plan: ['none', 'raise', 'bonus'].includes(g.plan) ? g.plan : 'raise',
                 haji: [0, 1].map((i) => { const h = arr(g.haji)[i] || {}; return { label: i ? 'Operasi Haji Tanah Suci' : 'Operasi Haji Tanah Air', month: mo(h.month, i ? 6 : 4), days: Math.round(rng(h.days, 0, 366, 0)), rate: rng(h.rate, 0, 1e5, 110) }; }) }; })(),
         kwspHouse: { on: s.kwspHouse?.on === true, owner: s.kwspHouse?.owner === 'wife' ? 'wife' : 'husband', monthly: rng(s.kwspHouse?.monthly, 0, 1e5, 0), balance: rng(s.kwspHouse?.balance, 0, 1e8, 0), age: rng(s.kwspHouse?.age, 0, 100, 0) },
         nafkah: { wajib: rng(s.nafkah?.wajib, 0, 1e6, 0), elaun: rng(s.nafkah?.elaun, 0, 1e6, 0), target: rng(s.nafkah?.target, 0, 90, 10) },
@@ -4708,9 +4709,9 @@ function shortfallPlan(profile, sc) {
     const rows = [];
     let unfunded = 0, firstShort = null, positiveFrom = null, deficitMonths = 0, total = 0;
     for (let t = 0; t <= sc.horizon; t++) {
-        if (sc.netUse[t] >= 0) { positiveFrom = t; break; }
+        if ((sc.planNet || sc.netUse)[t] >= 0) { positiveFrom = t; break; }
         deficitMonths++;
-        let gap = -sc.netUse[t];
+        let gap = -(sc.planNet || sc.netUse)[t];
         const draws = [];
         for (const p of pool) {
             if (gap <= 0.005) break;
@@ -4721,7 +4722,7 @@ function shortfallPlan(profile, sc) {
             if (p.left <= 0.005 && p.depletedAt == null) p.depletedAt = t;
         }
         if (gap > 0.005) { unfunded += gap; if (firstShort == null) firstShort = t; }
-        if (rows.length < 60) rows.push({ t, net: sc.netUse[t], draws, short: gap > 0.005 ? gap : 0, liquidLeft: pool.reduce((s2, p) => s2 + p.left, 0) });
+        if (rows.length < 60) rows.push({ t, net: (sc.planNet || sc.netUse)[t], draws, short: gap > 0.005 ? gap : 0, liquidLeft: pool.reduce((s2, p) => s2 + p.left, 0) });
     }
     const cashDrawn = pool.filter((p) => p.category === 'Tunai & Simpanan').reduce((s2, p) => s2 + p.drawn, 0);
     const runwayAfter = sc.m.totalExp > 0 ? Math.max(0, sc.m.emergencyCash - cashDrawn) / sc.m.totalExp : 0;
@@ -4731,6 +4732,7 @@ function shortfallPlan(profile, sc) {
 function renderCashflowScenario() {
     const sc = cashflowScenario(activeProfile);
     renderKwspHouse(sc);
+    attachPlan(sc, activeProfile);
     renderGrowth(sc);
     const kpi = (label, val, sub, stripe, cls = '') => `<div class="card kpi p-3" style="--stripe:${stripe}"><p class="text-xs font-semibold uppercase tracking-wider t-muted">${label}</p><p class="text-lg font-extrabold num pv ${cls}">${val}</p><p class="text-[10px] t-faint">${sub}</p></div>`;
     if (!sc.debts.length) {
@@ -4803,10 +4805,11 @@ function renderKwspHouse(sc) {
 
 function renderShortfall(sc) {
     const sf = shortfallPlan(activeProfile, sc);
+    const ser = sc.planNet || sc.netUse;
     const dp = appState.settings.debtPlan;
     const goalsPlan = n(sc.m.goals.monthlyPlanActive);
     if (sf.positiveFrom === 0) {
-        const now0 = sc.netUse[0];
+        const now0 = ser[0];
         const tight = now0 < goalsPlan;
         $('sf-body').innerHTML = `<p class="t-sage font-semibold">Tiada jurang bulan ni: lepas ansuran hutang, pendapatan cukup untuk belanja lain. Cashflow ${formatRM(sc.netNow)}/bln. Tak perlu tarik aset.</p>` +
             (tight ? `<p class="t-gold">Cashflow ${formatRM(now0)} kurang daripada caruman matlamat ${formatRM(goalsPlan)}/bln, jadi matlamat tak penuh dibiaya. Itu bukan defisit, tapi semak keutamaan.</p>` : '');
@@ -4814,13 +4817,14 @@ function renderShortfall(sc) {
     }
     const never = sf.positiveFrom == null;
     const kw0 = sc.kw.on ? sc.kw.w : 0;
-    const afterDebt = sc.m.netIncome - sc.debtNow + kw0;
+    const bonus0 = ser[0] - sc.netUse[0];
+    const afterDebt = sc.m.netIncome - sc.debtNow + kw0 + bonus0;
     const brk = `<div class="border bd rounded-lg p-3 space-y-1"><div class="flex justify-between"><span class="t-muted">Pendapatan bersih</span><span class="num pv font-semibold">${formatRM(sc.m.netIncome)}</span></div>
         <div class="flex justify-between"><span class="t-muted">− Ansuran hutang (wajib, dibayar penuh)</span><span class="num pv">${formatRM(sc.debtNow)}</span></div>
-        ${kw0 ? `<div class="flex justify-between"><span class="t-muted">+ Pengeluaran KWSP untuk ansuran rumah</span><span class="num pv">${formatRM(kw0)}</span></div>` : ''}<div class="flex justify-between border-t bd pt-1"><span class="t-muted">= Baki untuk belanja lain</span><span class="num pv font-semibold">${formatRM(afterDebt)}</span></div>
+        ${kw0 ? `<div class="flex justify-between"><span class="t-muted">+ Pengeluaran KWSP untuk ansuran rumah</span><span class="num pv">${formatRM(kw0)}</span></div>` : ''}${bonus0 ? `<div class="flex justify-between"><span class="t-muted">+ Anggaran bonus minimum (dirata sebulan)</span><span class="num pv">${formatRM(bonus0)}</span></div>` : ''}<div class="flex justify-between border-t bd pt-1"><span class="t-muted">= Baki untuk belanja lain</span><span class="num pv font-semibold">${formatRM(afterDebt)}</span></div>
         <div class="flex justify-between"><span class="t-muted">− Belanja bulanan lain (bukan hutang)</span><span class="num pv">${formatRM(sc.otherExp)}</span></div>
-        <div class="flex justify-between border-t bd pt-1"><span class="font-semibold">Jurang belanja bulanan</span><span class="num pv font-bold t-rose">${formatRM(sc.netUse[0])}</span></div></div>`;
-    const head = brk + `<p class="t-rose font-semibold">Belanja bulanan lain kurang ditampung ${formatRM(-sc.netUse[0])}/bln. ${never ? 'Kekal negatif walaupun semua hutang dalam pelan tamat.' : `Jurang kekal sehingga ${esc(monthLabel(sf.positiveFrom))} (${sf.deficitMonths} bulan), bila ansuran hutang mula tamat atau pengeluaran KWSP berubah.`} Jumlah ditampung dari aset: ${formatRM(sf.total + sf.unfunded)}.</p>`;
+        <div class="flex justify-between border-t bd pt-1"><span class="font-semibold">Jurang belanja bulanan</span><span class="num pv font-bold t-rose">${formatRM(ser[0])}</span></div></div>`;
+    const head = brk + `<p class="t-rose font-semibold">Belanja bulanan lain kurang ditampung ${formatRM(-ser[0])}/bln. ${never ? 'Kekal negatif walaupun semua hutang dalam pelan tamat.' : `Jurang kekal sehingga ${esc(monthLabel(sf.positiveFrom))} (${sf.deficitMonths} bulan), bila ansuran hutang mula tamat, pengeluaran KWSP berubah atau gaji naik.`} Jumlah ditampung dari aset: ${formatRM(sf.total + sf.unfunded)}.</p>`;
     const warn = [];
     if (sf.unfunded > 0.5) warn.push(`<span class="t-rose font-semibold">Aset liquid yang selamat ditarik tak cukup: habis pada ${esc(monthLabel(sf.firstShort))}, kekurangan ${formatRM(sf.unfunded)} lagi.</span> Pilihan: kurangkan belanja, rundingkan ansuran atau tempoh dengan bank, atau tambah pendapatan. Aset terkunci (KWSP, Tabung Haji) jalan terakhir sahaja.`);
     if (sf.cashDrawn > 0 && sf.runwayAfter < sf.emergencyMin) warn.push(`<span class="t-gold font-semibold">Dana kecemasan jatuh ke ${sf.runwayAfter.toFixed(1)} bulan, bawah minimum ${sf.emergencyMin} bulan.</span> Tarik dari aset lain dulu kalau boleh, atau kurangkan belanja.`);
@@ -4831,7 +4835,7 @@ function renderShortfall(sc) {
         <td class="num font-semibold">${esc(monthLabel(r.t))}</td><td class="text-right num pv t-rose">${formatRM(r.net)}</td>
         <td>${r.draws.map((d) => `${esc(d.name)} <span class="num pv">${formatRM(d.amount)}</span>`).join(' · ') || '<span class="t-faint">—</span>'}${r.short ? ` <span class="t-rose">kurang ${formatRM(r.short)}</span>` : ''}</td>
         <td class="text-right num pv">${formatRM(r.liquidLeft)}</td></tr>`).join('')}</tbody></table></div>${sf.deficitMonths > sf.rows.length ? `<p class="t-faint">+${sf.deficitMonths - sf.rows.length} bulan lagi (jadual dipotong pada 60 bulan).</p>` : ''}`;
-    $('sf-body').innerHTML = head +
+    $('sf-body').innerHTML = (sc.planLabel ? `<p class="t-muted">Anggaran pelan ni sudah masukkan ${esc(sc.planLabel)} daripada senario pendapatan.</p>` : '') + head +
         `<p class="t-muted">Aset liquid selamat tersedia: ${formatRM(sf.startLiquid)}${sf.pool.length ? '' : ' (tiada)'}.</p>` +
         (byAsset ? `<div>${byAsset}</div>` : '') + table +
         (warn.length ? `<div class="space-y-1">${warn.map((w2) => `<p>• ${w2}</p>`).join('')}</div>` : '') +
@@ -4872,7 +4876,7 @@ function reportSections(ym, mask) {
     people.forEach(({ p, pd }) => { if (pd.dsr > st.dsrMax) flags.push(`DSR ${who(p)} ${pct(pd.dsr)} melebihi had ${st.dsrMax}%.`); });
 
     // 3. Cashflow scenario + shortfall
-    const sc = cashflowScenario('combined'), sf = shortfallPlan('combined', sc);
+    const sc = attachPlan(cashflowScenario('combined'), 'combined'), sf = shortfallPlan('combined', sc);
     add('Cashflow dan tempoh hutang', { kv: [
         ['Cashflow bersih sekarang', formatRM(sc.netNow)],
         ['Cashflow selepas hutang dalam pelan tamat', `${formatRM(sc.netAfter)}${sc.milestones.length ? ` (bermula ${sc.milestones[sc.milestones.length - 1].label})` : ''}`],
@@ -5047,14 +5051,43 @@ function growthScenario(profile, sc) {
         const bMin = mo === g.bonusMonth ? basicK * g.bonusMin * keep : 0;
         const bHope = mo === g.bonusMonth ? basicK * g.bonusHope * keep : 0;
         const haji = g.haji.reduce((s2, h) => s2 + (h.month === mo ? h.days * h.rate * hkeep : 0), 0);
-        months.push({ t, mo, base, raise, bMin, bHope, haji, min: base + raise + bMin + haji, hope: base + raise + bHope + haji });
+        months.push({ t, mo, basic: basicK, base, raise, bMin, bHope, haji, noBonus: base + raise + haji, min: base + raise + bMin + haji, hope: base + raise + bHope + haji });
     }
     const years = [0, 1, 2, 3, 4].map((y) => {
         const ms = months.slice(y * 12, y * 12 + 12);
         const tot = (k) => ms.reduce((s2, m) => s2 + m[k], 0);
         return { y, from: monthLabel(y * 12), to: monthLabel(y * 12 + 11), base: tot('base'), raise: tot('raise'), bMin: tot('bMin'), bHope: tot('bHope'), haji: tot('haji'), min: tot('min'), hope: tot('hope') };
     });
-    return { g, b0, months, years, extraMin5: years.reduce((s2, y) => s2 + y.min - y.base, 0), extraHope5: years.reduce((s2, y) => s2 + y.hope - y.base, 0) };
+    const keepG = keep;
+    const raiseYears = years.map((y) => { const bs = months[y.y * 12 + 11].basic; return { y: y.y, from: y.from, to: y.to, basic: bs, grossUp: bs - b0, netUp: (bs - b0) * keepG, yearNet: y.raise }; });
+    return { g, b0, months, years, raiseYears, extraMin5: years.reduce((s2, y) => s2 + y.min - y.base, 0), extraHope5: years.reduce((s2, y) => s2 + y.hope - y.base, 0) };
+}
+
+// Which cashflow series the deficit plan uses: base only, base + raise, or base + raise + minimum bonus spread evenly (a lump can't be a monthly rule).
+function attachPlan(sc, profile) {
+    const g = appState.settings.growth;
+    sc.planNet = null; sc.planLabel = '';
+    if (!g.on || g.plan === 'none') return sc;
+    const gs = growthScenario(profile, sc);
+    if (!gs) return sc;
+    sc.planNet = sc.netUse.map((v, t) => {
+        const m = gs.months[Math.min(t, 59)];
+        const bonus = g.plan === 'bonus' ? gs.years[Math.min(Math.floor(t / 12), 4)].bMin / 12 : 0;
+        return v + m.raise + bonus;
+    });
+    sc.planLabel = g.plan === 'bonus' ? 'naik gaji dan bonus minimum (dirata sebulan)' : 'naik gaji';
+    return sc;
+}
+
+function growthSummary(gs) {
+    const y1 = gs.years[0], g = gs.g;
+    const f = (v) => `${v < 0 ? 'kurang' : 'lebih'} ${formatRM(Math.abs(v))}`;
+    const parts = [];
+    parts.push(`Tanpa bonus dan elaun haji, tahun pertama kau ${f((y1.base + y1.raise) / 12)} sebulan (purata).`);
+    const firstPos = gs.years.find((y) => y.base + y.raise >= 0);
+    parts.push(firstPos ? (firstPos.y === 0 ? 'Cashflow dah positif tanpa bonus dan elaun haji.' : `Tanpa bonus dan elaun haji, cashflow setahun mula positif pada tahun ke-${firstPos.y + 1} (${firstPos.from}), hasil kenaikan gaji.`) : 'Tanpa bonus dan elaun haji, cashflow setahun kekal negatif sepanjang 5 tahun.');
+    parts.push(`Bonus ${g.bonusMin} bulan menambah ${formatRM(y1.bMin)} dalam tahun pertama${y1.haji ? ` dan elaun haji ${formatRM(y1.haji)}` : ''}, jadi purata jadi ${f(y1.min / 12)} sebulan.`);
+    return parts.join(' ');
 }
 
 function renderGrowth(sc) {
@@ -5062,7 +5095,7 @@ function renderGrowth(sc) {
     $('gr-on').checked = g.on; $('gr-fields').classList.toggle('hidden', !g.on);
     document.querySelectorAll('.gr-month').forEach((el) => { if (!el.options.length) el.innerHTML = MONTHS_MS.map((m, i) => `<option value="${i + 1}">${esc(m)}</option>`).join(''); });
     const setv = (id, v) => { const el = $(id); if (document.activeElement !== el) el.value = v; };
-    $('gr-owner').value = g.owner; setv('gr-basic', g.basic || ''); setv('gr-pct', g.raisePct); $('gr-rmonth').value = g.raiseMonth; $('gr-bmonth').value = g.bonusMonth;
+    $('gr-owner').value = g.owner; $('gr-plan').value = g.plan; setv('gr-basic', g.basic || ''); setv('gr-pct', g.raisePct); $('gr-rmonth').value = g.raiseMonth; $('gr-bmonth').value = g.bonusMonth;
     setv('gr-bmin', g.bonusMin); setv('gr-bhope', g.bonusHope); setv('gr-ded', g.ded); setv('gr-hded', g.hajiDed);
     if (!$('gr-haji').children.length || $('gr-haji').dataset.rendered !== '1') {
         $('gr-haji').innerHTML = g.haji.map((h, i) => `<div class="border bd rounded-lg p-3 space-y-2"><p class="text-xs font-semibold">${esc(h.label)}</p>
@@ -5085,18 +5118,32 @@ function renderGrowth(sc) {
     notes.push(`Gaji pokok dianggar ${formatRM(gs.b0)}${g.basic > 0 ? ' (diisi sendiri)' : ' (dari slip terkini atau gaji kasar dalam Pendapatan)'}. Naik ${g.raisePct}% tiap ${MONTHS_MS[g.raiseMonth - 1]} bermula ${MONTHS_MS[g.raiseMonth - 1]} akan datang, dan bonus ikut gaji pokok semasa.`);
     notes.push(`Potongan ${g.ded}% atas kenaikan dan bonus (anggaran KWSP; cukai tak dikira kecuali kau naikkan peratus). Elaun haji potongan ${g.hajiDed}%, dianggap masuk penuh pada bulan dibayar.`);
     if (!g.haji.some((h) => h.days > 0)) notes.push('Elaun haji belum dikira: isi bilangan hari.');
-    notes.push('Cashflow bulan bonus dan haji melonjak sekali gus; jangan jadikan ia belanja tetap. Pelan tampung jurang kekal guna angka asas tanpa bonus atau kenaikan (lebih berjaga-jaga).');
+    notes.push(`Cashflow bulan bonus dan haji melonjak sekali gus; jangan jadikan ia belanja tetap. Pelan Tampung Jurang di bawah guna: ${g.plan === 'none' ? 'angka asas sahaja' : g.plan === 'raise' ? 'angka asas + naik gaji' : 'angka asas + naik gaji + bonus minimum dirata sebulan'} (tukar di "Pelan tampung jurang guna").`);
     out.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         ${card('Tahun 1, purata/bln', formatRM(y1.min / 12), `harapan ${formatRM(y1.hope / 12)}`, y1.min < 0 ? 't-rose' : 't-sage')}
         ${card('Tahun 5, purata/bln', formatRM(y5.min / 12), `harapan ${formatRM(y5.hope / 12)}`, y5.min < 0 ? 't-rose' : 't-sage')}
         ${card('Tambahan 5 thn (min)', `+${formatRM(gs.extraMin5)}`, 'naik gaji + bonus 1× + haji')}
         ${card('Tambahan 5 thn (harap)', `+${formatRM(gs.extraHope5)}`, `bonus ${g.bonusHope} bulan`)}</div>
-        <div class="scroll-x"><table class="tbl"><thead><tr><th>Tahun</th><th class="text-right">Asas</th><th class="text-right">+ Naik gaji</th><th class="text-right">+ Bonus min</th><th class="text-right">+ Bonus harap</th><th class="text-right">+ Elaun haji</th><th class="text-right">Jumlah min</th><th class="text-right">Jumlah harap</th></tr></thead><tbody>
+        <div class="space-y-2">
+            <h4 class="text-sm font-bold">12 bulan akan datang, bulan demi bulan</h4>
+            <p class="text-xs t-muted">Baca dari kiri ke kanan: cashflow asas, tambah kenaikan gaji, jadi cashflow tanpa bonus. Lepas tu tambah bonus minimum dan elaun haji (kalau ada) untuk dapat jumlah bulan tu.</p>
+            <div class="scroll-x"><table class="tbl"><thead><tr><th>Bulan</th><th class="text-right">Cashflow asas</th><th class="text-right">+ Naik gaji</th><th class="text-right">= Tanpa bonus</th><th class="text-right">+ Bonus min</th><th class="text-right">+ Elaun haji</th><th class="text-right">= Jumlah bulan tu</th></tr></thead><tbody>
+            ${gs.months.slice(0, 12).map((m) => `<tr><td class="num font-semibold">${esc(monthLabel(m.t))}</td><td class="text-right num pv ${m.base < 0 ? 't-rose' : ''}">${formatRM(m.base)}</td><td class="text-right num pv ${m.raise ? 't-sage' : 't-faint'}">${m.raise ? '+' + formatRM(m.raise) : '—'}</td><td class="text-right num pv font-semibold ${m.noBonus - m.haji < 0 ? 't-rose' : 't-sage'}">${formatRM(m.base + m.raise)}</td><td class="text-right num pv ${m.bMin ? 't-sage' : 't-faint'}">${m.bMin ? '+' + formatRM(m.bMin) : '—'}</td><td class="text-right num pv ${m.haji ? 't-sage' : 't-faint'}">${m.haji ? '+' + formatRM(m.haji) : '—'}</td><td class="text-right num pv font-bold ${m.min < 0 ? 't-rose' : 't-sage'}">${formatRM(m.min)}</td></tr>`).join('')}
+            </tbody></table></div>
+            <p class="text-xs font-semibold">${esc(growthSummary(gs))}</p>
+        </div>
+        <div class="space-y-2">
+            <h4 class="text-sm font-bold">Kenaikan gaji 5 tahun akan datang</h4>
+            <p class="text-xs t-muted">Naik ${g.raisePct}% tiap ${MONTHS_MS[g.raiseMonth - 1]} atas gaji pokok. "Bersih" ialah selepas potongan ${g.ded}%.</p>
+            <div class="scroll-x"><table class="tbl"><thead><tr><th>Tahun</th><th class="text-right">Gaji pokok baru</th><th class="text-right">Naik / bln (kasar)</th><th class="text-right">Naik / bln (bersih)</th><th class="text-right">Tambahan setahun (bersih)</th></tr></thead><tbody>
+            <tr><td class="num font-semibold">Sekarang</td><td class="text-right num pv">${formatRM(gs.b0)}</td><td class="text-right t-faint">—</td><td class="text-right t-faint">—</td><td class="text-right t-faint">—</td></tr>
+            ${gs.raiseYears.map((r) => `<tr><td class="num font-semibold">${esc(r.from)} – ${esc(r.to)}</td><td class="text-right num pv">${formatRM(r.basic)}</td><td class="text-right num pv t-sage">+${formatRM(r.grossUp)}</td><td class="text-right num pv t-sage">+${formatRM(r.netUp)}</td><td class="text-right num pv font-semibold">+${formatRM(r.yearNet)}</td></tr>`).join('')}
+            </tbody></table></div>
+            <p class="text-[11px] t-faint">Tahun pertama tambahan setahun kecil sebab kenaikan baru bermula ${MONTHS_MS[g.raiseMonth - 1]}. Dari tahun kedua ia dikira 12 bulan penuh.</p>
+        </div>
+        <details class="text-xs"><summary class="cursor-pointer font-semibold">Jadual 5 tahun (jumlah setahun)</summary><div class="scroll-x mt-2"><table class="tbl"><thead><tr><th>Tahun</th><th class="text-right">Asas</th><th class="text-right">+ Naik gaji</th><th class="text-right">+ Bonus min</th><th class="text-right">+ Bonus harap</th><th class="text-right">+ Elaun haji</th><th class="text-right">Jumlah min</th><th class="text-right">Jumlah harap</th></tr></thead><tbody>
         ${gs.years.map((y) => `<tr><td class="num font-semibold">${esc(y.from)} – ${esc(y.to)}</td><td class="text-right num pv">${formatRM(y.base)}</td><td class="text-right num pv t-sage">+${formatRM(y.raise)}</td><td class="text-right num pv t-sage">+${formatRM(y.bMin)}</td><td class="text-right num pv t-sage">+${formatRM(y.bHope)}</td><td class="text-right num pv t-sage">+${formatRM(y.haji)}</td><td class="text-right num pv font-semibold ${y.min < 0 ? 't-rose' : ''}">${formatRM(y.min)}</td><td class="text-right num pv font-semibold ${y.hope < 0 ? 't-rose' : ''}">${formatRM(y.hope)}</td></tr>`).join('')}
-        </tbody></table></div>
-        <details class="text-xs"><summary class="cursor-pointer font-semibold">12 bulan akan datang (bulan demi bulan)</summary><div class="scroll-x mt-2"><table class="tbl"><thead><tr><th>Bulan</th><th class="text-right">Asas</th><th class="text-right">Naik gaji</th><th class="text-right">Bonus min</th><th class="text-right">Elaun haji</th><th class="text-right">Jumlah min</th></tr></thead><tbody>
-        ${gs.months.slice(0, 12).map((m) => `<tr><td class="num font-semibold">${esc(monthLabel(m.t))}</td><td class="text-right num pv">${formatRM(m.base)}</td><td class="text-right num pv">${m.raise ? '+' + formatRM(m.raise) : '—'}</td><td class="text-right num pv">${m.bMin ? '+' + formatRM(m.bMin) : '—'}</td><td class="text-right num pv">${m.haji ? '+' + formatRM(m.haji) : '—'}</td><td class="text-right num pv font-semibold ${m.min < 0 ? 't-rose' : ''}">${formatRM(m.min)}</td></tr>`).join('')}
-        </tbody></table></div></details>
+        </tbody></table></div><p class="text-[11px] t-faint mt-1">Semua angka dalam jadual ni ialah jumlah RM untuk setahun penuh, bukan sebulan.</p></details>
         <div class="relative h-56 pv"><canvas id="chart-gr"></canvas></div>
         <div class="text-[11px] t-faint space-y-1">${notes.map((x) => `<p>• ${esc(x)}</p>`).join('')}</div>`;
     if (typeof Chart !== 'undefined') {
@@ -5748,6 +5795,7 @@ document.addEventListener('change', (e) => {
     if (el.dataset.gr != null) {
         const g = appState.settings.growth, k = el.dataset.gr;
         if (k === 'on') g.on = el.checked; else if (k === 'owner') g.owner = el.value === 'wife' ? 'wife' : 'husband';
+        else if (k === 'plan') g.plan = ['none', 'raise', 'bonus'].includes(el.value) ? el.value : 'raise';
         else if (k === 'basic') g.basic = rng(el.value, 0, 1e6, 0); else if (k === 'raisePct') g.raisePct = rng(el.value, 0, 50, 3);
         else if (k === 'raiseMonth' || k === 'bonusMonth') g[k] = Math.round(rng(el.value, 1, 12, k === 'raiseMonth' ? 4 : 3));
         else if (k === 'bonusMin' || k === 'bonusHope') g[k] = rng(el.value, 0, 24, k === 'bonusMin' ? 1 : 2);

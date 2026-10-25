@@ -66,7 +66,7 @@
         .bd { border-color: var(--border); }
         .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
 
-        .badge { display: inline-flex; align-items: center; gap: .3rem; font-size: 10px; font-weight: 700; padding: .15rem .5rem; border-radius: .375rem; border: 1px solid var(--border); white-space: nowrap; }
+        .badge { display: inline-flex; align-items: center; gap: .3rem; font-size: 0.625rem; font-weight: 700; padding: .15rem .5rem; border-radius: .375rem; border: 1px solid var(--border); white-space: nowrap; }
         .b-sage { color: var(--sage); background: var(--sage-bg); border-color: transparent; }
         .b-gold { color: var(--gold); background: rgba(212,163,115,.14); border-color: transparent; }
         .b-rose { color: var(--rose); background: rgba(209,73,91,.12); border-color: transparent; }
@@ -75,34 +75,39 @@
         html.dark .b-pink { color: #f29ac2; }
         .b-mute { color: var(--faint); background: transparent; }
 
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font-size: 12px; font-weight: 600; border-radius: .6rem; padding: .55rem .9rem; border: 1px solid var(--border); background: var(--card); color: var(--text); min-height: 38px; transition: background .15s; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font-size: 0.75rem; font-weight: 600; border-radius: .6rem; padding: .55rem .9rem; border: 1px solid var(--border); background: var(--card); color: var(--text); min-height: 38px; transition: background .15s; }
         .btn:hover { background: var(--sub); }
         .btn-primary { background: #40916c; color: #fff; border-color: #40916c; }
         .btn-primary:hover { background: #2d6a4f; }
-        .btn-icon { width: 38px; padding: 0; }
+        .btn-icon { width: 2.375rem; padding: 0; }
         .btn-danger { color: var(--rose); }
 
-        .field { width: 100%; background: var(--input); border: 1px solid var(--border-strong); color: var(--text); border-radius: .6rem; padding: .55rem .75rem; font-size: 13px; }
+        .field { width: 100%; background: var(--input); border: 1px solid var(--border-strong); color: var(--text); border-radius: .6rem; padding: .55rem .75rem; font-size: 0.8125rem; }
         .field:focus { outline: 2px solid rgba(64,145,108,.45); outline-offset: 0; }
         .field.invalid { border-color: var(--rose); }
-        label.lbl { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .3rem; }
+        label.lbl { display: block; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .3rem; }
 
-        table.tbl { width: 100%; font-size: 12px; border-collapse: collapse; }
-        table.tbl thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; color: var(--muted); text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); background: var(--sub); white-space: nowrap; }
+        table.tbl { width: 100%; font-size: 0.75rem; border-collapse: collapse; }
+        table.tbl thead th { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; color: var(--muted); text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); background: var(--sub); white-space: nowrap; }
         table.tbl tbody td { padding: .6rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
         table.tbl tbody tr:hover { background: var(--sub); }
 
         .bar { height: 6px; border-radius: 99px; background: var(--track); overflow: hidden; }
         .bar > div { height: 100%; border-radius: 99px; transition: width .5s ease; }
 
-        .tab-btn { font-size: 12px; font-weight: 600; padding: .5rem .85rem; border-radius: .6rem; color: var(--muted); white-space: nowrap; display: inline-flex; gap: .4rem; align-items: center; }
+        .tab-btn { font-size: 0.75rem; font-weight: 600; padding: .5rem .85rem; border-radius: .6rem; color: var(--muted); white-space: nowrap; display: inline-flex; gap: .4rem; align-items: center; }
         .tab-btn.active { background: #40916c; color: #fff; }
-        .seg-btn { font-size: 12px; font-weight: 600; padding: .4rem .8rem; border-radius: .5rem; color: var(--muted); display: inline-flex; gap: .35rem; align-items: center; }
+        .seg-btn { font-size: 0.75rem; font-weight: 600; padding: .4rem .8rem; border-radius: .5rem; color: var(--muted); display: inline-flex; gap: .35rem; align-items: center; }
         .seg-btn.active { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 
         /* Lucide icons: saiz ikut font-size parent (macam FontAwesome dulu) */
+        /* Saiz paparan: semua saiz ikut rem, jadi satu pembolehubah skala besarkan font + jarak + lebar kandungan */
+        html { font-size: calc(16px * var(--ui-scale, 1)); }
+        .text-\[10px\] { font-size: .625rem; line-height: 1rem; } .text-\[11px\] { font-size: .6875rem; line-height: 1rem; } .text-\[12px\] { font-size: .75rem; line-height: 1rem; }
+        /* Angka RM jangan terputus antara "RM" dan nilai bila skrin sempit */
+        #fi-target, #fi-gap, #fi-passive, .kpi .num { white-space: nowrap; }
         svg.lucide { width: 1em; height: 1em; stroke-width: 2.2; flex-shrink: 0; display: inline-block; vertical-align: -0.125em; }
-        .btn svg.lucide { width: 15px; height: 15px; }
+        .btn svg.lucide { width: .9375rem; height: .9375rem; }
         /* Toggle icons: dua-dua dirender, CSS pilih yang nampak */
         html.dark .ico-sun, html:not(.dark) .ico-moon { display: none; }
         body.privacy-active .ico-eye, body:not(.privacy-active) .ico-eye-off { display: none; }
@@ -115,6 +120,7 @@
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
         @media print {
+            html { font-size: 16px !important; }
             header, nav, .no-print, button { display: none !important; }
             body { background: #fff !important; color: #000 !important; }
             .card, .card-sub { box-shadow: none !important; border: 1px solid #ccc !important; background: #fff !important; }
@@ -126,7 +132,7 @@
             body.print-report .view-tab-content:not(#tab-report) { display: none !important; }
             body.print-report #tab-report { display: block !important; }
             body.print-report main > *:not(:has(#tab-report)) { display: none !important; }
-            body.print-report #report-body table { font-size: 10px; }
+            body.print-report #report-body table { font-size: 0.625rem; }
             body.print-report .report-sec { break-inside: avoid; }
         }
     </style>
@@ -165,6 +171,11 @@
             <button class="btn btn-icon" data-action="theme" title="Tukar Tema"><i data-lucide="moon" class="ico-moon t-gold"></i><i data-lucide="sun" class="ico-sun t-gold"></i></button>
             <button class="btn btn-icon" data-action="open-settings" title="Tetapan & Backup"><i data-lucide="settings"></i></button>
             <button class="btn btn-icon" data-action="print" title="Cetak / PDF"><i data-lucide="printer"></i></button>
+            <div class="flex items-center gap-1" role="group" aria-label="Saiz paparan">
+                <button class="btn btn-icon" data-action="ui-smaller" title="Kecilkan saiz paparan" aria-label="Kecilkan saiz paparan"><span class="text-xs font-bold">A−</span></button>
+                <button class="btn" data-action="ui-reset" id="ui-scale-label" title="Klik untuk auto ikut skrin" style="min-width:4.5rem">Auto</button>
+                <button class="btn btn-icon" data-action="ui-bigger" title="Besarkan saiz paparan" aria-label="Besarkan saiz paparan"><span class="text-base font-bold">A+</span></button>
+            </div>
             <button class="btn btn-primary" data-action="add" data-type="asset"><i data-lucide="plus"></i>Tambah Rekod</button>
         </div>
     </div>
@@ -780,9 +791,9 @@
                     <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="receipt" class="t-blue"></i>Penjejak Pelepasan Cukai LHDN</h3>
                     <div class="flex items-center gap-2">
                         <label class="text-[11px] t-muted" for="tax-year">Tahun taksiran</label>
-                        <input id="tax-year" type="number" min="2020" max="2100" class="field num" style="width:90px;padding:.3rem .5rem;font-size:12px">
-                        <button class="btn no-print" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="tax-from-payslips" title="Isi KWSP pekerja dari slip gaji tahun taksiran"><i data-lucide="receipt-text"></i>KWSP dari slip</button>
-                        <button class="btn no-print" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="tax-edit-limits"><i data-lucide="pencil"></i><span id="tax-edit-label">Edit had</span></button>
+                        <input id="tax-year" type="number" min="2020" max="2100" class="field num" style="width:90px;padding:.3rem .5rem;font-size:0.75rem">
+                        <button class="btn no-print" style="min-height:30px;padding:.3rem .6rem;font-size:0.6875rem" data-action="tax-from-payslips" title="Isi KWSP pekerja dari slip gaji tahun taksiran"><i data-lucide="receipt-text"></i>KWSP dari slip</button>
+                        <button class="btn no-print" style="min-height:30px;padding:.3rem .6rem;font-size:0.6875rem" data-action="tax-edit-limits"><i data-lucide="pencil"></i><span id="tax-edit-label">Edit had</span></button>
                     </div>
                 </div>
                 <p class="text-xs t-muted">Isi jumlah yang dah dibelanjakan/dicarum tahun ni. Bar tunjuk baki ruang pelepasan. Pelepasan kurangkan pendapatan bercukai, bukan potong cukai terus.</p>
@@ -2632,7 +2643,7 @@ function renderTax() {
         const pr = Math.min(100, v / r.limit * 100);
         const over = v > r.limit;
         return `<td><div class="space-y-1">
-            <input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="padding:.35rem .5rem;font-size:12px" data-tax-person="${p}" data-tax-key="${r.key}" value="${v || ''}" placeholder="0">
+            <input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="padding:.35rem .5rem;font-size:0.75rem" data-tax-person="${p}" data-tax-key="${r.key}" value="${v || ''}" placeholder="0">
             <div class="bar"><div style="width:${pr}%;background:${over ? 'var(--rose)' : pr >= 100 ? 'var(--sage)' : 'var(--blue)'}"></div></div>
             <p class="text-[10px] ${over ? 't-rose' : 't-faint'} num">${over ? `Lebih had ${formatRM(v - r.limit)} (tak boleh tuntut)` : `Baki ruang ${formatRM(r.limit - v)}`}</p>
         </div></td>`;
@@ -2641,7 +2652,7 @@ function renderTax() {
     $('tbody-tax').innerHTML = TAX_RELIEFS.map((r) => `
         <tr><td class="font-semibold">${esc(r.label)}${taxLimit(r) !== r.limit ? ` <span class="badge b-gold">diubah</span>` : ''}</td>
         <td class="text-right num">${taxEditing
-            ? `<input type="number" min="0" step="50" class="field num" style="padding:.3rem .5rem;font-size:12px;width:100px" data-tax-limit="${r.key}" value="${taxLimit(r)}">`
+            ? `<input type="number" min="0" step="50" class="field num" style="padding:.3rem .5rem;font-size:0.75rem;width:100px" data-tax-limit="${r.key}" value="${taxLimit(r)}">`
             : formatRM(taxLimit(r))}</td>${cell('husband', r)}${cell('wife', r)}</tr>`).join('') +
         `<tr><td class="font-bold">Jumlah boleh dituntut</td><td></td><td class="num font-bold t-sage pv">${formatRM(total('husband'))}</td><td class="num font-bold t-sage pv">${formatRM(total('wife'))}</td></tr>`;
 }
@@ -2693,7 +2704,7 @@ function renderHistory() {
         <td class="text-right num pv">${formatRM(s.income)}</td>
         <td class="text-right num t-rose pv">${formatRM(s.expenses)}</td>
         <td class="text-right num font-bold ${s.savings < 0 ? 't-rose' : 't-gold'} pv">${formatRM(s.savings)}</td>
-        <td><input type="text" maxlength="120" class="field" style="padding:.3rem .5rem;font-size:11px" data-snap-note="${esc(s.id)}" value="${esc(s.note || '')}" placeholder="—"></td>
+        <td><input type="text" maxlength="120" class="field" style="padding:.3rem .5rem;font-size:0.6875rem" data-snap-note="${esc(s.id)}" value="${esc(s.note || '')}" placeholder="—"></td>
         <td class="text-right no-print"><button class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="delete-snap" data-id="${esc(s.id)}" aria-label="Padam"><i data-lucide="trash-2" class="text-[11px]"></i></button></td></tr>`).join('')
         : emptyRow(8, 'Belum ada snapshot. Tekan "Snapshot".');
 }
@@ -2957,7 +2968,7 @@ function renderAllocation(m) {
             <td><span class="inline-flex items-center gap-1.5 font-semibold"><span class="w-2.5 h-2.5 rounded-full" style="background:${ASSET_CLASSES[r.k].color}"></span>${esc(ASSET_CLASSES[r.k].label)}</span></td>
             <td class="text-right num pv">${formatRM(r.value)}</td>
             <td class="text-right num font-semibold">${pct(r.actualPct)}</td>
-            <td><input type="number" min="0" max="100" step="5" class="field num" style="padding:.3rem .5rem;font-size:12px;width:80px" data-alloc="${r.k}" value="${r.target}"></td>
+            <td><input type="number" min="0" max="100" step="5" class="field num" style="padding:.3rem .5rem;font-size:0.75rem;width:80px" data-alloc="${r.k}" value="${r.target}"></td>
             <td class="text-right num ${off ? (r.diffPct > 0 ? 't-gold' : 't-blue') : 't-faint'} font-semibold">${r.diffPct > 0 ? '+' : ''}${r.diffPct.toFixed(1)} pp</td>
             <td class="text-right text-[11px] num pv">${!off || !sumOk ? '<span class="t-faint">dalam julat</span>' : r.moveRM > 0 ? `<span class="t-blue">Tambah ${formatRM(r.moveRM)}</span>` : `<span class="t-gold">Kurang ${formatRM(-r.moveRM)}</span>`}</td>
         </tr>`;
@@ -3494,9 +3505,9 @@ function sinkRow(r) {
             <div class="flex justify-between text-[11px] t-faint num pv"><span>Ada ${formatRM(r.funded)} / ${formatRM(amt)}</span><span>${r.gap > 1 ? `simpan ${formatRM(r.needMonthly)}/bln · ${r.monthsLeft} bln` : 'siap sedia'}</span></div>
         </div>` : ''}
         <div class="flex flex-wrap gap-1.5 mt-2 no-print">
-            ${!e.paused && !e.done ? `<button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="sink-paid" data-id="${esc(e.id)}"><i data-lucide="check"></i>Dah bayar</button>` : ''}
-            ${e.odo && !e.done ? `<button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="sink-odo" data-id="${esc(e.id)}"><i data-lucide="gauge"></i>Kemaskini km</button>` : ''}
-            <button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:11px" data-action="edit-event" data-id="${esc(e.id)}"><i data-lucide="pencil"></i>Edit</button>
+            ${!e.paused && !e.done ? `<button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:0.6875rem" data-action="sink-paid" data-id="${esc(e.id)}"><i data-lucide="check"></i>Dah bayar</button>` : ''}
+            ${e.odo && !e.done ? `<button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:0.6875rem" data-action="sink-odo" data-id="${esc(e.id)}"><i data-lucide="gauge"></i>Kemaskini km</button>` : ''}
+            <button class="btn" style="min-height:30px;padding:.3rem .6rem;font-size:0.6875rem" data-action="edit-event" data-id="${esc(e.id)}"><i data-lucide="pencil"></i>Edit</button>
         </div>
     </div>`;
 }
@@ -3642,7 +3653,7 @@ function renderPaidChecklist(ym) {
                 <input type="checkbox" class="w-4 h-4 accent-emerald-600 shrink-0" data-paid-id="${esc(it.id)}" ${on ? 'checked' : ''} aria-label="Dah bayar: ${esc(it.name)}">
                 <div class="min-w-0 flex-1"><p class="font-semibold truncate ${on ? 'line-through' : ''}">${esc(it.name)}${it.debt ? ' <span class="badge b-blue">hutang</span>' : ''}</p><p class="t-faint truncate">${esc(it.category)}</p></div>
                 <span class="num t-muted pv shrink-0">${formatRM(it.amount)}</span>
-                ${on ? `<input type="number" min="0" step="0.01" inputmode="decimal" class="field num pv shrink-0" style="width:6.5rem;padding:.3rem .45rem;font-size:12px" data-paid-amt="${esc(it.id)}" value="${row[it.id]}" aria-label="Jumlah sebenar dibayar: ${esc(it.name)}">` : '<span class="shrink-0" style="width:6.5rem"></span>'}
+                ${on ? `<input type="number" min="0" step="0.01" inputmode="decimal" class="field num pv shrink-0" style="width:6.5rem;padding:.3rem .45rem;font-size:0.75rem" data-paid-amt="${esc(it.id)}" value="${row[it.id]}" aria-label="Jumlah sebenar dibayar: ${esc(it.name)}">` : '<span class="shrink-0" style="width:6.5rem"></span>'}
             </div>`;
         }).join('')}</div>
         <p class="text-[11px] t-faint">Jumlah ${formatRM(planned)} ikut bajet. Tick akan guna jumlah bajet; tukar angka di sebelah kalau bil sebenar berbeza (contoh bil elektrik).</p>`;
@@ -3660,7 +3671,7 @@ function renderBudget() {
         const used = r.has && r.budget > 0 ? r.actual / r.budget * 100 : r.has && r.actual > 0 ? 999 : 0;
         return `<tr><td class="font-semibold">${esc(r.cat)}${r.src === 'tick' ? ' <span class="badge b-sage">dari tick</span>' : ''}</td>
             <td class="text-right num pv">${formatRM(r.budget)}</td>
-            <td><input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="padding:.35rem .5rem;font-size:12px" data-actual-cat="${esc(r.cat)}" value="${r.src === 'manual' ? r.actual : ''}" placeholder="${r.src === 'tick' ? formatRM(r.actual) : '—'}"></td>
+            <td><input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="padding:.35rem .5rem;font-size:0.75rem" data-actual-cat="${esc(r.cat)}" value="${r.src === 'manual' ? r.actual : ''}" placeholder="${r.src === 'tick' ? formatRM(r.actual) : '—'}"></td>
             <td class="text-right num font-semibold pv ${diff == null ? 't-faint' : diff < 0 ? 't-rose' : 't-sage'}">${diff == null ? '—' : (diff < 0 ? 'Lebih ' : 'Baki ') + formatRM(Math.abs(diff))}</td>
             <td><div class="bar"><div style="width:${Math.min(100, used)}%;background:${used > 100 ? 'var(--rose)' : used > 90 ? 'var(--gold)' : 'var(--sage)'}"></div></div></td></tr>`;
     }).join('') + `<tr><td class="font-bold">Jumlah</td><td class="text-right num font-bold pv">${formatRM(tb)}</td><td class="num font-bold pv">${anyActual ? formatRM(ta) : '—'}</td>
@@ -3740,7 +3751,7 @@ function renderCharts(m) {
     if (typeof Chart === 'undefined') return;   // CDN blocked: rest of app still works
     const th = chartTheme();
     Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
-    Chart.defaults.font.size = 11;
+    Chart.defaults.font.size = Math.round(11 * uiScaleNow());
     Chart.defaults.color = th.text;
     const axes = { x: { grid: { color: th.grid }, ticks: { color: th.text } }, y: { grid: { color: th.grid }, ticks: { color: th.text, callback: rmTick } } };
     const tip = { callbacks: { label: (c) => `${c.dataset.label || c.label}: ${formatRM(c.raw)}` } };
@@ -4601,7 +4612,7 @@ function renderSavings() {
         const tgt = n(a.saveTarget);
         const status = tgt > 0 ? (month >= tgt ? '<span class="badge b-sage">Cukup</span>' : `<span class="badge b-gold pv">Kurang ${formatRM(tgt - Math.max(0, month))}</span>`) : '<span class="t-faint">—</span>';
         return `<tr><td class="font-semibold">${esc(a.name)} <span class="t-faint text-[11px]">${esc(ownerLabel(a.owner))}</span></td>
-            <td class="text-right"><input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="width:90px;padding:.3rem .5rem;font-size:12px;text-align:right" data-sv-target="${esc(a.id)}" value="${tgt || ''}" placeholder="0" aria-label="Sasaran bulanan ${esc(a.name)}"></td>
+            <td class="text-right"><input type="number" min="0" step="1" inputmode="decimal" class="field num pv" style="width:90px;padding:.3rem .5rem;font-size:0.75rem;text-align:right" data-sv-target="${esc(a.id)}" value="${tgt || ''}" placeholder="0" aria-label="Sasaran bulanan ${esc(a.name)}"></td>
             <td class="text-right num pv ${month ? '' : 't-faint'}">${month ? formatRM2(month) : '—'}</td>
             <td class="text-right num pv">${formatRM2(a.amount)}</td>
             <td class="text-right num pv ${tracked ? '' : 't-faint'}">${tracked ? formatRM2(a.track.startBalance + net) : '—'}</td>
@@ -5324,8 +5335,8 @@ function renderCycleRows() {
     $('cycle-rows').innerHTML = cycleDraft.map((x, i) => `
         <div class="flex items-center gap-2" data-cyc="${i}">
             <input type="radio" name="cyc-cur" class="cyc-cur w-4 h-4 accent-emerald-600" ${i === cycleCur ? 'checked' : ''} aria-label="Servis seterusnya">
-            <input type="text" maxlength="30" class="field cyc-label" style="padding:.4rem .6rem;font-size:12px" value="${esc(x.label)}" placeholder="Contoh: Minor">
-            <input type="number" min="0" step="1" inputmode="decimal" class="field num cyc-amt" style="padding:.4rem .6rem;font-size:12px;max-width:110px" value="${x.amount === '' || x.amount == null ? '' : esc(x.amount)}" placeholder="RM">
+            <input type="text" maxlength="30" class="field cyc-label" style="padding:.4rem .6rem;font-size:0.75rem" value="${esc(x.label)}" placeholder="Contoh: Minor">
+            <input type="number" min="0" step="1" inputmode="decimal" class="field num cyc-amt" style="padding:.4rem .6rem;font-size:0.75rem;max-width:110px" value="${x.amount === '' || x.amount == null ? '' : esc(x.amount)}" placeholder="RM">
             <button type="button" class="btn btn-icon btn-danger" style="min-height:32px;width:32px" data-action="cycle-del" data-idx="${i}" aria-label="Buang"><i data-lucide="x"></i></button>
         </div>`).join('');
     refreshIcons();
@@ -5620,8 +5631,30 @@ function switchProfile(p) {
     document.querySelectorAll('.profile-tab').forEach((b) => b.classList.toggle('active', b.dataset.profile === p));
     renderAll();
 }
+// ---- Saiz paparan (per peranti, simpan dalam LocalStorage berasingan, bukan dalam data kewangan) ----
+const UI_STEPS = [0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6];
+const UI_KEY = 'fire_hub_ui_scale';
+function uiAuto() { const w = window.innerWidth; return w >= 2200 ? 1.4 : w >= 1800 ? 1.3 : w >= 1500 ? 1.2 : w >= 1200 ? 1.1 : 1; }
+function uiManual() { try { const v = Number(localStorage.getItem(UI_KEY)); return UI_STEPS.includes(v) ? v : null; } catch { return null; } }
+function uiScaleNow() { return uiManual() ?? uiAuto(); }
+function applyUiScale() {
+    const sc = uiScaleNow();
+    document.documentElement.style.setProperty('--ui-scale', String(sc));
+    const lab = $('ui-scale-label');
+    if (lab) lab.textContent = `${uiManual() == null ? 'Auto ' : ''}${Math.round(sc * 100)}%`;
+    setHdrH();
+}
+function stepUiScale(dir) {
+    const cur = uiScaleNow();
+    const i = UI_STEPS.reduce((best, v, k) => (Math.abs(v - cur) < Math.abs(UI_STEPS[best] - cur) ? k : best), 0);
+    const next = UI_STEPS[Math.max(0, Math.min(UI_STEPS.length - 1, i + dir))];
+    try { localStorage.setItem(UI_KEY, String(next)); } catch {}
+    applyUiScale(); renderAll(); refreshIcons();
+}
+function resetUiScale() { try { localStorage.removeItem(UI_KEY); } catch {} applyUiScale(); renderAll(); refreshIcons(); }
+window.addEventListener('resize', () => { if (uiManual() == null) applyUiScale(); });
 function setHdrH() { const h = document.querySelector('header'); if (h) document.documentElement.style.setProperty('--hdr-h', `${Math.round(h.getBoundingClientRect().height)}px`); }
-window.addEventListener('resize', setHdrH);
+window.addEventListener('resize', () => setHdrH());
 function switchTab(tab) {
     activeTab = tab;
     setHdrH();
@@ -5724,6 +5757,9 @@ document.addEventListener('click', (e) => {
         'delete-event': () => { const id = editingEventId; confirmDialog('Padam tarikh?', 'Tarikh ni akan dibuang dari kalendar.', () => {
             appState.events = appState.events.filter((x) => x.id !== id); saveState(); closeModal('modal-event'); renderAll(); showToast('Tarikh dipadam.', 'warning'); }, 'Padam'); },
         'ics-all': downloadAllIcs,
+        'ui-bigger': () => stepUiScale(1),
+        'ui-smaller': () => stepUiScale(-1),
+        'ui-reset': resetUiScale,
         'budget-prev': () => shiftBudgetMonth(-1),
         'paid-all': () => { const ym = budgetMonth(); const row = appState.paid[ym] || (appState.paid[ym] = {}); paidItems().forEach((it) => { if (row[it.id] == null) row[it.id] = round2(it.amount); }); saveState(); renderBudget(); refreshIcons(); },
         'paid-none': () => confirmDialog('Kosongkan tanda bayar?', `Semua tanda dah bayar untuk ${ymLabel(budgetMonth())} akan dibuang. Angka sebenar yang kau taip sendiri tak terjejas.`, () => { delete appState.paid[budgetMonth()]; saveState(); renderBudget(); refreshIcons(); }, 'Kosongkan'),
@@ -5915,6 +5951,7 @@ window.__hub = Object.freeze({
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    applyUiScale();
     const boot = loadState();
     appState = boot.state;
     applyTheme();

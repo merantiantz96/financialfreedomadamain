@@ -205,6 +205,26 @@
         </div>
     </section>
 
+    <!-- Rutin hari gaji -->
+    <section id="routine-card" class="card p-4 md:p-5 space-y-3">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <button class="flex items-center gap-3 text-left" data-action="rt-toggle" aria-controls="rt-body">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: var(--sage-bg)"><i data-lucide="calendar-check" class="t-sage"></i></div>
+                <div>
+                    <h3 class="text-sm font-bold">Rutin Hari Gaji <span id="rt-month-label" class="t-muted font-semibold"></span></h3>
+                    <p id="rt-progress-text" class="text-xs t-muted"></p>
+                </div>
+            </button>
+            <div class="flex items-center gap-2 no-print">
+                <div class="bar w-32 hidden sm:block"><div id="rt-bar" style="width:0;background:var(--sage)"></div></div>
+                <button class="btn btn-icon" data-action="rt-prev" aria-label="Bulan sebelum"><i data-lucide="chevron-left"></i></button>
+                <button class="btn btn-icon" data-action="rt-next" aria-label="Bulan seterusnya"><i data-lucide="chevron-right"></i></button>
+                <button class="btn" data-action="rt-toggle" id="rt-toggle-btn">Buka</button>
+            </div>
+        </div>
+        <div id="rt-body" class="hidden space-y-4"></div>
+    </section>
+
     <!-- FIRE hero -->
     <section class="card p-5 md:p-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -1527,6 +1547,7 @@ const DEFAULT_SETTINGS = {
     nisab: 33996, zakatMethod: 'tolakan', hadKifayah: { husband: 0, wife: 0 },
     epfTarget: 390000, mcYears: 20, mcVolatility: 10,
     lastBackupAt: null,
+    payday: 25,
     sinking: { balance: 0, updatedAt: '' },
     drawdownYears: 20, medicalInflation: 10, medicalShare: 10,
     emergencyMin: 3, emergencyIdeal: 6, dsrTarget: 40, dsrMax: 60,
@@ -1579,6 +1600,7 @@ const SAMPLE_DATA = {
     ],
     actuals: {},
     paid: {},
+    routine: {},
     checklist: { husband: {}, wife: {} },
     deposits: [
         { id: 'dp1', assetId: 'a2', assetName: 'ASB Suami', date: '2026-09-25', amount: 500, kind: 'masuk', src: '', note: 'Auto-debit bulanan' },
@@ -1755,6 +1777,7 @@ function normaliseState(raw) {
         mcYears: Math.min(50, Math.max(1, n(s.mcYears) || 20)),
         mcVolatility: Math.min(40, Math.max(1, n(s.mcVolatility) || 10)),
         lastBackupAt: typeof s.lastBackupAt === 'string' ? s.lastBackupAt : null,
+        payday: Math.round(rng(s.payday, 1, 31, 25)),
         splitMode: ['income', 'nafkah', 'equal', 'manual'].includes(s.splitMode) ? s.splitMode : 'income',
         epfDividend: s.epfDividend != null ? n(s.epfDividend) : 5.5,
         people: normalisePeople(s.people),
@@ -1889,6 +1912,15 @@ function normaliseState(raw) {
         Object.entries(v).forEach(([id, amt]) => { const a = round2(Math.max(0, n(amt))); if (okIds.has(id) && amt !== '' && amt != null && Number.isFinite(a)) row[id] = a; });
         if (Object.keys(row).length) paid[k] = row;
     });
+    // routine: { 'YYYY-MM': { stepKey: 'YYYY-MM-DD' } } manual ticks of the payday routine
+    const routine = {};
+    const rKeys = new Set(ROUTINE.map((r) => r.key));
+    Object.entries(raw.routine && typeof raw.routine === 'object' ? raw.routine : {}).forEach(([k, v]) => {
+        if (!monthRe.test(k) || !v || typeof v !== 'object') return;
+        const row = Object.create(null);
+        Object.entries(v).forEach(([key, d]) => { if (rKeys.has(key) && typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) row[key] = d; });
+        if (Object.keys(row).length) routine[k] = row;
+    });
     const cl = raw.checklist || {};
     const cleanCl = (o) => Object.fromEntries(CHECKLIST.map((c) => [c.key, typeof o?.[c.key] === 'string' && dateRe.test(o[c.key]) ? o[c.key] : '']));
     const checklist = { husband: cleanCl(cl.husband), wife: cleanCl(cl.wife) };
@@ -1914,7 +1946,7 @@ function normaliseState(raw) {
         date: d.date, amount: r2(rng(d.amount, 0, 1e9, 0)), kind: d.kind === 'keluar' ? 'keluar' : 'masuk',
         src: d.src === 'slip' ? 'slip' : '', note: cleanText(d.note, 80)
     })).filter((d) => d.amount > 0);       // Infinity / NaN clamp to 0 above, drop those too
-    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, paid, checklist, dividends, payslips, deposits };
+    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, paid, routine, checklist, dividends, payslips, deposits };
     syncLinkedExpenses(state);
     return state;
 }
@@ -2318,6 +2350,7 @@ function renderAll() {
     renderPayslips();
     renderSavings();
     renderCashflowScenario();
+    renderRoutine();
     if (activeTab === 'report') renderReport();
     renderNafkah();
     renderRetirement();
@@ -5171,6 +5204,136 @@ function renderGrowth(sc) {
     }
 }
 
+/* =====================================================================
+   RUTIN HARI GAJI: apa nak buat & apa nak tengok setiap kali gaji masuk
+   ===================================================================== */
+// Order matters: record -> distribute -> update & check -> close the month.
+const ROUTINE = [
+    { key: 'slip', grp: 0, title: 'Rekod slip gaji suami dan isteri', why: 'Supaya elaun, potongan dan KWSP bulan ni dijejak.', tab: 'payslip', target: 'tab-payslip' },
+    { key: 'income', grp: 0, title: 'Pastikan gaji dalam Pendapatan sama dengan slip', why: 'Semua kiraan (kadar simpanan, DSR, cashflow) guna angka Pendapatan. Guna butang "Guna sebagai gaji semasa" kalau gaji berubah.', tab: 'payslip', target: 'tab-payslip' },
+    { key: 'paid', grp: 1, title: 'Bayar komitmen tetap dan tick "dah bayar"', why: 'Ansuran, sewa, utiliti, takaful. Tick di senarai Tanda dah bayar supaya Sebenar vs Bajet terisi.', tab: 'cashflow', target: 'budget-paid' },
+    { key: 'sinking', grp: 1, title: 'Pindah ke akaun sinking fund', why: 'Untuk bayaran tahunan (roadtax, insurans, yuran) supaya tak terkejut nanti. Kemas kini baki sinking selepas pindah.', tab: 'calendar', target: 'sinking-summary' },
+    { key: 'save', grp: 1, title: 'Pindah simpanan dan rekod ke aset', why: 'ASB, Versa, Wahed, TH dan lain-lain. Rekod di Rekod Simpanan supaya baki aset naik automatik.', tab: 'assets', target: 'form-sv' },
+    { key: 'goals', grp: 1, title: 'Caruman matlamat', why: 'Asingkan duit untuk matlamat (rumah, kecemasan, haji) ikut pelan bulanan.', tab: 'goals', target: 'tab-goals' },
+    { key: 'nafkah', grp: 1, title: 'Pindah nafkah isteri', why: 'Nafkah wajib dan elaun ikut kalkulator nafkah.', tab: 'cashflow', target: 'nf-result', when: () => n(appState.settings.nafkah.wajib) + n(appState.settings.nafkah.elaun) > 0 },
+    { key: 'balances', grp: 2, title: 'Kemas kini baki aset dan hutang', why: 'Ikut penyata bank, ASB, KWSP dan baki pinjaman. Angka lama buat semua analisa tersasar.', tab: 'assets', target: 'tab-assets' },
+    { key: 'kpi', grp: 2, title: 'Tengok angka utama', why: 'Kadar simpanan, DSR dan dana kecemasan berbanding sasaran.', tab: 'dashboard', target: 'k-srate' },
+    { key: 'cash', grp: 2, title: 'Tengok cashflow dan pelan tampung jurang', why: 'Kalau cashflow negatif, ikut cadangan aset mana nak tarik dulu, dan jeda bayaran tambahan.', tab: 'liabilities', target: 'cs-kpis' },
+    { key: 'budget', grp: 2, title: 'Semak bajet vs sebenar bulan lepas', why: 'Kategori mana terlebih belanja, dan perlu ubah bajet atau tabiat?', tab: 'cashflow', target: 'tbody-budget' },
+    { key: 'snapshot', grp: 3, title: 'Simpan snapshot bulan ni', why: 'Untuk carta trend dan perbandingan dalam laporan bulan depan.', tab: 'trend', target: 'tab-trend' },
+    { key: 'backup', grp: 3, title: 'Backup JSON', why: 'Data hanya dalam browser ni. Simpan fail backup di tempat private.', tab: 'dashboard', target: 'routine-card' },
+    { key: 'report', grp: 3, title: 'Laporan bulanan (pilihan)', why: 'Cetak atau salin untuk dianalisa bersama pasangan atau di Claude.', tab: 'report', target: 'tab-report' }
+];
+const ROUTINE_GROUPS = ['1. Gaji masuk: rekod dulu', '2. Agih duit', '3. Kemas kini dan semak', '4. Tutup bulan'];
+let rtMonth = null, rtOpen = null;
+
+// Cycle month = month whose payday has started. Before (payday - 3) we're still finishing last month's cycle.
+function rtDefaultMonth() {
+    const d = new Date(), pd = appState.settings.payday;
+    const ym = currentYM();
+    return d.getDate() >= Math.max(1, pd - 3) ? ym : psAddMonths(ym, -1);
+}
+function rtNearPayday() {
+    const d = new Date().getDate(), pd = appState.settings.payday;
+    return d >= pd - 3 || d <= 7;
+}
+// Auto status per step: { done, auto, info, tone }. auto=true means the dashboard detected it from your data.
+function routineStatus(ym) {
+    const out = {};
+    const st = appState.settings;
+    const owners = ['husband', 'wife'].filter((p) => psIncomeGaji(p).length || appState.payslips.some((x) => x.owner === p));
+    const slips = owners.map((p) => ({ p, sl: psSorted(p).find((x) => x.month === ym) }));
+    const have = slips.filter((x) => x.sl);
+    out.slip = { done: owners.length > 0 && have.length === owners.length, auto: true,
+        info: owners.length ? slips.map((x) => `${ownerLabel(x.p)} ${x.sl ? '✓' : 'belum'}`).join(' · ') : 'Tiada gaji direkod dalam Pendapatan.' };
+    const diffs = have.map((x) => ({ p: x.p, inc: sum(psIncomeGaji(x.p)), net: psTotals(x.sl).net })).filter((x) => x.inc > 0 && Math.abs(x.inc - x.net) >= 1);
+    out.income = have.length ? { done: diffs.length === 0, auto: true, tone: diffs.length ? 'gold' : '',
+        info: diffs.length ? diffs.map((x) => `${ownerLabel(x.p)}: Pendapatan ${formatRM(x.inc)} vs slip ${formatRM2(x.net)}`).join(' · ') : 'Sama dengan slip.' }
+        : { done: false, auto: true, info: 'Rekod slip dulu.' };
+    const items = paidItems(), prow = appState.paid[ym] || {};
+    const paidN = items.filter((it) => prow[it.id] != null).length;
+    const left = items.filter((it) => prow[it.id] == null).reduce((a, it) => a + it.amount, 0);
+    out.paid = { done: items.length > 0 && paidN === items.length, auto: true, info: `${paidN}/${items.length} dibayar${left > 0 ? ` · baki ${formatRM(left)} belum` : ''}` };
+    const sink = sinkingPlan('combined').steady;
+    out.sinking = { info: sink > 0 ? `Disyorkan ${formatRM(sink)} bulan ni` : 'Tiada item sinking fund.' };
+    const deps = appState.deposits.filter((d) => d.date.startsWith(ym));
+    const rec = svNet(deps), target = appState.assets.reduce((a, x) => a + n(x.saveTarget), 0);
+    out.save = { done: target > 0 && rec >= target - 0.5, auto: target > 0, info: target > 0 ? `Direkod ${formatRM(rec)} / sasaran ${formatRM(target)}` : `Direkod ${formatRM(rec)} (tiada sasaran aset ditetapkan)` };
+    const gp = computeGoals('combined').monthlyPlanActive;
+    out.goals = { info: gp > 0 ? `Pelan ${formatRM(gp)}/bln` : 'Tiada matlamat aktif.' };
+    out.nafkah = { info: `Wajib ${formatRM(st.nafkah.wajib)} + elaun ${formatRM(st.nafkah.elaun)}` };
+    out.balances = { info: 'Kemas kini bila statement keluar.' };
+    const M = computeMetrics('combined');
+    const pill = (label, ok) => ({ label, ok });
+    out.kpi = { pills: [pill(`Simpanan ${pct(M.savingsRate)}`, M.savingsRate >= 20), pill(`DSR ${pct(M.dsr)}`, M.dsr <= st.dsrTarget), pill(`Kecemasan ${M.runway.toFixed(1)} bln`, M.runway >= st.emergencyMin)] };
+    const sc = attachPlan(cashflowScenario('combined'), 'combined');
+    const now0 = (sc.planNet || sc.netUse)[0];
+    out.cash = { info: now0 >= 0 ? `Cashflow ${formatRM(now0)}/bln` : `Jurang ${formatRM(-now0)}/bln: ikut Pelan Tampung Jurang`, tone: now0 < 0 ? 'rose' : '' };
+    const prev = psAddMonths(ym, -1), br = budgetRows(prev).filter((r) => r.has);
+    const over = br.filter((r) => r.budget > 0 && r.actual > r.budget * 1.05);
+    out.budget = { info: br.length ? (over.length ? `${ymLabel(prev)}: ${over.length} kategori terlebih (${over.slice(0, 3).map((r) => r.cat).join(', ')})` : `${ymLabel(prev)}: tiada kategori terlebih`) : `${ymLabel(prev)}: belum ada angka sebenar`, tone: over.length ? 'gold' : '' };
+    out.snapshot = { done: appState.historySnapshots.some((h) => h.key === ym), auto: true, info: appState.historySnapshots.some((h) => h.key === ym) ? 'Dah disimpan.' : 'Belum.' };
+    const [y, mo] = ym.split('-').map(Number);
+    const cycleStart = new Date(y, mo - 1, Math.min(st.payday, 28));
+    const lb = st.lastBackupAt ? new Date(st.lastBackupAt) : null;
+    out.backup = { done: !!lb && lb >= cycleStart, auto: true, info: lb ? `Terakhir ${lb.toLocaleDateString('ms-MY')}` : 'Belum pernah.' };
+    out.report = { info: 'Tab Laporan → Cetak atau Salin untuk Claude.' };
+    return out;
+}
+function routineSteps() { return ROUTINE.filter((r) => !r.when || r.when()); }
+function routineDone(ym, stat) {
+    const man = appState.routine[ym] || {};
+    return routineSteps().map((r) => ({ r, st: stat[r.key] || {}, done: !!(stat[r.key]?.done) || !!man[r.key], manual: !!man[r.key] }));
+}
+function renderRoutine() {
+    if (!rtMonth) rtMonth = rtDefaultMonth();
+    if (rtOpen == null) rtOpen = rtNearPayday();
+    const ym = rtMonth, stat = routineStatus(ym), rows = routineDone(ym, stat);
+    const done = rows.filter((x) => x.done).length;
+    $('rt-month-label').textContent = `· ${ymLabel(ym)}`;
+    $('rt-progress-text').textContent = `${done}/${rows.length} langkah siap · gaji ${appState.settings.payday}hb${done === rows.length ? ' · semua beres ✓' : ''}`;
+    $('rt-bar').style.width = `${rows.length ? done / rows.length * 100 : 0}%`;
+    $('rt-body').classList.toggle('hidden', !rtOpen);
+    $('rt-toggle-btn').textContent = rtOpen ? 'Tutup' : 'Buka';
+    if (!rtOpen) return;
+    const tone = (t) => (t === 'rose' ? 't-rose' : t === 'gold' ? 't-gold' : 't-muted');
+    const groups = ROUTINE_GROUPS.map((g, gi) => {
+        const list = rows.filter((x) => x.r.grp === gi);
+        if (!list.length) return '';
+        return `<div class="space-y-2"><h4 class="text-xs font-bold uppercase tracking-wider t-muted">${esc(g)}</h4>${list.map(({ r, st, done, manual }) => {
+            const autoDone = !!st.done && st.auto;
+            const status = st.pills ? `<div class="flex flex-wrap gap-1.5 mt-1">${st.pills.map((p) => `<span class="badge ${p.ok ? 'b-sage' : 'b-rose'}">${esc(p.label)}</span>`).join('')}</div>`
+                : st.info ? `<p class="text-xs mt-0.5 ${tone(st.tone)}">${esc(st.info)}</p>` : '';
+            return `<div class="card-sub p-3 flex items-start gap-3 ${done ? 'opacity-75' : ''}">
+                <input type="checkbox" class="w-5 h-5 mt-0.5 accent-emerald-600 shrink-0" data-rt="${esc(r.key)}" ${done ? 'checked' : ''} ${autoDone ? 'disabled title="Dikesan automatik daripada data kau"' : ''} aria-label="${esc(r.title)}">
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold ${done ? 'line-through' : ''}">${esc(r.title)}${autoDone ? ' <span class="badge b-sage">auto</span>' : ''}</p>
+                    <p class="text-xs t-faint">${esc(r.why)}</p>
+                    ${status}
+                </div>
+                ${r.key === 'backup' ? '<button class="btn shrink-0 no-print" data-action="download-json"><i data-lucide="download"></i>Backup</button>'
+                    : r.key === 'snapshot' && !done ? '<button class="btn shrink-0 no-print" data-action="snapshot"><i data-lucide="camera"></i>Simpan</button>'
+                    : `<button class="btn shrink-0 no-print" data-action="rt-go" data-go-tab="${esc(r.tab)}" data-go-target="${esc(r.target)}">Pergi<i data-lucide="arrow-right"></i></button>`}
+            </div>`;
+        }).join('')}</div>`;
+    }).join('');
+    $('rt-body').innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <p class="t-muted">Langkah bertanda <span class="badge b-sage">auto</span> ditick sendiri bila data kau lengkap. Yang lain, tick bila dah buat.</p>
+            <label class="flex items-center gap-2 no-print"><span class="t-muted">Tarikh gaji</span><input id="rt-payday" type="number" min="1" max="31" step="1" class="field num" style="width:4.5rem" value="${appState.settings.payday}"></label>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">${groups}</div>`;
+}
+function routineGo(tab, target) {
+    switchTab(tab);
+    renderAll(); refreshIcons();
+    const el = $(target);
+    if (!el) return;
+    const hdr = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hdr-h')) || 0;
+    const bar = $('tabbar') ? $('tabbar').getBoundingClientRect().height : 0;
+    const y = el.getBoundingClientRect().top + window.scrollY - hdr - (target.startsWith('tab-') || target === 'routine-card' || target === 'k-srate' ? 0 : bar) - 12;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+}
+
 /* ---------- Kalkulator nafkah ---------- */
 // Always from the husband's side. Pure check: does his income cover debts + nafkah (+ his other spending)?
 // Tiers = how much nafkah leaves a given savings rate. They are affordability ceilings, not an entitlement amount.
@@ -5601,7 +5764,7 @@ function downloadIcs() {
         'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Hub Kewangan Keluarga//MS', 'CALSCALE:GREGORIAN',
         'BEGIN:VEVENT', `UID:fire-25hb-${stamp}@hub-kewangan.local`, `DTSTAMP:${stamp}`,
         `DTSTART:${start}`, `DTEND:${end}`, 'RRULE:FREQ=MONTHLY;BYMONTHDAY=25',
-        'SUMMARY:Kemaskini Dashboard Kewangan', 'DESCRIPTION:Kemaskini baki aset & hutang\\, simpan snapshot\\, backup JSON.',
+        'SUMMARY:Kemaskini Dashboard Kewangan', 'DESCRIPTION:Hari gaji: buka Rutin Hari Gaji dalam dashboard (slip\\, bayar komitmen\\, simpanan\\, semak\\, snapshot\\, backup).',
         'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Kemaskini Dashboard Kewangan', 'END:VALARM',
         'END:VEVENT', 'END:VCALENDAR'
     ].join('\r\n');
@@ -5757,6 +5920,10 @@ document.addEventListener('click', (e) => {
         'delete-event': () => { const id = editingEventId; confirmDialog('Padam tarikh?', 'Tarikh ni akan dibuang dari kalendar.', () => {
             appState.events = appState.events.filter((x) => x.id !== id); saveState(); closeModal('modal-event'); renderAll(); showToast('Tarikh dipadam.', 'warning'); }, 'Padam'); },
         'ics-all': downloadAllIcs,
+        'rt-toggle': () => { rtOpen = !rtOpen; renderRoutine(); refreshIcons(); },
+        'rt-prev': () => { rtMonth = psAddMonths(rtMonth || rtDefaultMonth(), -1); rtOpen = true; renderRoutine(); refreshIcons(); },
+        'rt-next': () => { rtMonth = psAddMonths(rtMonth || rtDefaultMonth(), 1); rtOpen = true; renderRoutine(); refreshIcons(); },
+        'rt-go': () => routineGo(t.dataset.goTab, t.dataset.goTarget),
         'ui-bigger': () => stepUiScale(1),
         'ui-smaller': () => stepUiScale(-1),
         'ui-reset': resetUiScale,
@@ -5827,6 +5994,17 @@ document.addEventListener('change', (e) => {
         const a = appState.assets.find((x) => x.id === el.dataset.svTarget);
         if (a) { a.saveTarget = rng(el.value, 0, 1e7, 0); saveState(); renderSavings(); refreshIcons(); }
         return;
+    }
+    if (el.dataset.rt != null) {
+        const ym = rtMonth || rtDefaultMonth();
+        const row = appState.routine[ym] || (appState.routine[ym] = {});
+        if (el.checked) row[el.dataset.rt] = todayISO(); else delete row[el.dataset.rt];
+        if (!Object.keys(row).length) delete appState.routine[ym];
+        saveState(); renderRoutine(); refreshIcons(); return;
+    }
+    if (el.id === 'rt-payday') {
+        appState.settings.payday = Math.round(rng(el.value, 1, 31, 25));
+        rtMonth = null; saveState(); renderRoutine(); refreshIcons(); return;
     }
     if (el.dataset.gr != null) {
         const g = appState.settings.growth, k = el.dataset.gr;

@@ -825,6 +825,23 @@
                 </div>
                 <p class="text-[11px] t-faint">Had default ikut ringkasan pelepasan YA 2026; tekan "Edit had" bila LHDN umum perubahan Belanjawan. Tukar tahun taksiran = mula rekod baru (rekod lama dibuang, backup dulu) (KWSP RM4k + insurans hayat RM3k = had gabungan RM7k; SSPN dijadual tamat YA 2027). Semak hasil.gov.my sebelum e-Filing.</p>
             </div>
+            <!-- Kalkulator PCB & zakat gaji -->
+            <div class="card-sub p-4 space-y-4">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="calculator" class="t-sage"></i>Kalkulator PCB & Zakat Gaji</h3>
+                    <p class="text-xs t-muted">Anggaran cukai setahun, PCB sebulan dan zakat pendapatan wajib untuk suami dan isteri, serta perbandingan tiga pilihan potongan gaji. Guna pelepasan dalam jadual di atas. Ini anggaran, bukan pengiraan rasmi LHDN atau PPZ.</p>
+                </div>
+                <div class="flex flex-wrap items-end gap-3">
+                    <div><label class="lbl" for="pz-indiv">Pelepasan individu (RM)</label><input id="pz-indiv" data-pz="indiv" type="number" min="0" step="500" class="field num" style="width:8rem"></div>
+                    <p class="text-[11px] t-faint max-w-md">Default RM 9,000. Belanjawan 2027 umum kenaikan kepada RM 12,000; tukar bila ia terpakai pada tahun taksiran kau.</p>
+                </div>
+                <div id="pz-body" class="grid grid-cols-1 gap-4"></div>
+                <div class="text-[11px] t-faint space-y-1">
+                    <p>• Cara zakat potong gaji: zakat bulan tu ditolak terus daripada PCB (ringgit untuk ringgit). Kalau zakat ≥ PCB, PCB jadi RM 0.</p>
+                    <p>• Hujung tahun, zakat jadi rebat cukai tapi terhad kepada jumlah cukai. Zakat yang lebih daripada cukai tak dipulangkan; PCB yang terlebih boleh dapat refund semasa e-Filing.</p>
+                    <p>• PCB sebenar ikut formula berkomputer LHDN (bonus, pelepasan bulanan yang dilapor kepada majikan), jadi slip boleh beza. Label pilihan dalam sistem gaji majikan mungkin beza maksud: sahkan dengan unit gaji.</p>
+                </div>
+            </div>
         </div>
 
         <!-- TAB: Simulator -->
@@ -1548,6 +1565,7 @@ const DEFAULT_SETTINGS = {
     epfTarget: 390000, mcYears: 20, mcVolatility: 10,
     lastBackupAt: null,
     payday: 25,
+    pcbz: { indiv: 9000, husband: { bonus: 0, kids: 0, spouse: false, fixed: 0, cur: 2 }, wife: { bonus: 0, kids: 0, spouse: false, fixed: 0, cur: 2 } },
     sinking: { balance: 0, updatedAt: '' },
     drawdownYears: 20, medicalInflation: 10, medicalShare: 10,
     emergencyMin: 3, emergencyIdeal: 6, dsrTarget: 40, dsrMax: 60,
@@ -1778,6 +1796,8 @@ function normaliseState(raw) {
         mcVolatility: Math.min(40, Math.max(1, n(s.mcVolatility) || 10)),
         lastBackupAt: typeof s.lastBackupAt === 'string' ? s.lastBackupAt : null,
         payday: Math.round(rng(s.payday, 1, 31, 25)),
+        pcbz: (() => { const z = s.pcbz || {}; const one = (o) => ({ bonus: rng(o?.bonus, 0, 1e7, 0), kids: Math.round(rng(o?.kids, 0, 20, 0)), spouse: o?.spouse === true, fixed: rng(o?.fixed, 0, 1e5, 0), cur: [1, 2, 3].includes(o?.cur) ? o.cur : 2 });
+            return { indiv: rng(z.indiv, 0, 1e5, 9000), husband: one(z.husband), wife: one(z.wife) }; })(),
         splitMode: ['income', 'nafkah', 'equal', 'manual'].includes(s.splitMode) ? s.splitMode : 'income',
         epfDividend: s.epfDividend != null ? n(s.epfDividend) : 5.5,
         people: normalisePeople(s.people),
@@ -2688,6 +2708,7 @@ function renderTax() {
             ? `<input type="number" min="0" step="50" class="field num" style="padding:.3rem .5rem;font-size:0.75rem;width:100px" data-tax-limit="${r.key}" value="${taxLimit(r)}">`
             : formatRM(taxLimit(r))}</td>${cell('husband', r)}${cell('wife', r)}</tr>`).join('') +
         `<tr><td class="font-bold">Jumlah boleh dituntut</td><td></td><td class="num font-bold t-sage pv">${formatRM(total('husband'))}</td><td class="num font-bold t-sage pv">${formatRM(total('wife'))}</td></tr>`;
+    renderPcbz();
 }
 
 function renderSimulator(m) {
@@ -4935,6 +4956,11 @@ function reportSections(ym, mask) {
         rows: gsr.years.map((y) => [`${y.from} – ${y.to}`, formatRM(y.base), formatRM(y.raise), formatRM(y.bMin), formatRM(y.bHope), formatRM(y.haji), formatRM(y.min), formatRM(y.hope)]) },
         note: `Andaian: gaji pokok ${formatRM(gsr.b0)}, naik ${gsr.g.raisePct}% tiap ${MONTHS_MS[gsr.g.raiseMonth - 1]}, bonus ${gsr.g.bonusMin}-${gsr.g.bonusHope} bulan masuk ${MONTHS_MS[gsr.g.bonusMonth - 1]}, potongan ${gsr.g.ded}%.` });
 
+    const pzRows = ['husband', 'wife'].map((p) => pcbzCalc(p)).filter((c) => c.gross > 0);
+    if (pzRows.length) add('Anggaran cukai, PCB dan zakat gaji', { table: { head: ['', 'Kasar setahun', 'Bercukai', 'Cukai setahun', 'PCB/bln', 'Zakat wajib/bln', 'Slip: PCB + zakat'],
+        rows: pzRows.map((c) => [who(c.person), formatRM(c.gross), formatRM(c.ci), formatRM2(c.tax), formatRM2(c.pcb), formatRM2(c.zw), c.slip ? `${formatRM2(c.slipPcb)} + ${formatRM2(c.slipZak)}` : '—']) },
+        note: 'Anggaran ikut kadar pemastautin dan pelepasan yang direkod; bukan pengiraan rasmi LHDN/PPZ.' });
+
     // 4. Liabilities
     const base = simulateDebts(debtsFor('combined', true), { rollover: false });
     add('Liabiliti', { table: { head: ['Hutang', 'Pemilik', 'Baki', 'Bayaran / bln', 'Kadar', 'Cara bayar', 'Tamat'],
@@ -5332,6 +5358,103 @@ function routineGo(tab, target) {
     const bar = $('tabbar') ? $('tabbar').getBoundingClientRect().height : 0;
     const y = el.getBoundingClientRect().top + window.scrollY - hdr - (target.startsWith('tab-') || target === 'routine-card' || target === 'k-srate' ? 0 : bar) - 12;
     window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+}
+
+/* ---------- Kalkulator PCB & zakat gaji ---------- */
+// Resident individual rates (YA 2023 onwards, hasil.gov.my). [upper bound of band, rate]
+const TAX_BANDS = [[5000, 0], [20000, 1], [35000, 3], [50000, 6], [70000, 11], [100000, 19], [400000, 25], [600000, 26], [2000000, 28], [Infinity, 30]];
+function taxOnChargeable(ci) {
+    let tax = 0, lo = 0;
+    for (const [hi, r] of TAX_BANDS) { if (ci > lo) tax += (Math.min(ci, hi) - lo) * r / 100; lo = hi; if (ci <= hi) break; }
+    return round2(tax);
+}
+function pcbzCalc(person) {
+    const z = appState.settings.pcbz, o = z[person], st = appState.settings;
+    const grossM = sum(appState.income.filter((i) => i.owner === person && !i.isPassive), 'grossAmount');
+    const gross = grossM * 12 + o.bonus;
+    const tr = appState.taxRelief[person];
+    // KWSP relief: use what you entered, or estimate 11% of gross (capped) if still empty
+    const epfLimit = taxLimit(TAX_RELIEFS.find((r) => r.key === 'epf'));
+    const epfEst = Math.min(epfLimit, gross * 0.11);
+    const reliefs = TAX_RELIEFS.reduce((a, r) => a + (r.key === 'epf' ? Math.max(Math.min(n(tr.epf), epfLimit), epfEst) : Math.min(n(tr[r.key]), taxLimit(r))), 0);
+    const family = (o.spouse ? 4000 : 0) + o.kids * 2000;
+    const relief = z.indiv + reliefs + family;
+    const ci = Math.max(0, gross - relief);
+    const taxGross = taxOnChargeable(ci);
+    const rebate = ci <= 35000 ? Math.min(400, taxGross) : 0;
+    const tax = round2(Math.max(0, taxGross - rebate));
+    const pcb = round2(tax / 12);
+    // Zakat pendapatan: same method + nisab as the Zakat section (kasar / tolak had kifayah)
+    const hk = st.zakatMethod === 'tolakan' ? n(st.hadKifayah[person]) : 0;
+    const nisab = nisabFor(person).value;
+    const zBase = Math.max(0, gross - hk);
+    const zYear = nisab > 0 && zBase >= nisab ? round2(zBase * 0.025) : 0;
+    const zw = round2(zYear / 12);
+    const slip = psSorted(person)[0];
+    const slipPcb = slip ? psByTag(slip.deductions, 'pcb') : null, slipZak = slip ? psByTag(slip.deductions, 'zakat') : null;
+    // Zakat tetap: what you typed, else what your latest slip actually deducts, else the wajib amount
+    const fixedSrc = o.fixed > 0 ? 'isi' : slipZak > 0 ? 'slip' : 'wajib';
+    const fixed = o.fixed > 0 ? o.fixed : slipZak > 0 ? slipZak : Math.ceil(zw);
+    const opt = (label, zak, pcbM) => {
+        const zakY = zak * 12, pcbY = pcbM * 12;
+        const rebateY = Math.min(zakY, tax);
+        const balance = round2(tax - rebateY - pcbY);           // + = kena bayar lagi, - = refund
+        return { label, zak: round2(zak), pcb: round2(pcbM), total: round2(zak + pcbM), enough: zak >= zw - 0.5, extraZakat: round2(Math.max(0, zakY - zYear)), shortZakat: round2(Math.max(0, zYear - zakY)), balance, refundable: pcbM > 0 };
+    };
+    const options = [
+        opt('1. Full Zakat', pcb, 0),
+        opt('2. Zakat tetap, selebihnya PCB', fixed, Math.max(0, pcb - fixed)),
+        opt('3. Zakat tetap, selebihnya zakat', Math.max(fixed, pcb), 0)
+    ];
+    return { fixedSrc, person, grossM, gross, reliefs, family, relief, ci, taxGross, rebate, tax, pcb, zYear, zw, fixed, fixedAuto: !(o.fixed > 0), options, slip, slipPcb, slipZak, nisab };
+}
+function pcbzAdvice(c) {
+    if (c.gross <= 0) return 'Tiada pendapatan kasar direkod.';
+    if (c.zw <= 0 && c.tax <= 0) return 'Tiada cukai dan pendapatan bawah nisab zakat: tak perlu potongan.';
+    if (c.zw >= c.pcb) return `Zakat wajib (${formatRM2(c.zw)}) ≥ anggaran PCB (${formatRM2(c.pcb)}), jadi PCB jadi RM 0 dalam semua pilihan. Pilih 2 dengan zakat tetap sekurang-kurangnya zakat wajib; pilihan 1 akan kurang bayar zakat.`;
+    return `Zakat wajib (${formatRM2(c.zw)}) < anggaran PCB (${formatRM2(c.pcb)}). Pilihan 2 paling tepat: zakat ikut wajib, baki ke LHDN, refund masih boleh kalau ada pelepasan tambahan. Pilihan 1 dan 3 hantar baki cukai sebagai zakat tambahan (sah, tapi tiada refund).`;
+}
+function renderPcbz() {
+    const z = appState.settings.pcbz;
+    if (document.activeElement !== $('pz-indiv')) $('pz-indiv').value = z.indiv;
+    const box = $('pz-body');
+    const focusId = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
+    box.innerHTML = ['husband', 'wife'].map((p) => {
+        const c = pcbzCalc(p), o = z[p];
+        const row = (k, v, cls = '') => `<div class="flex justify-between gap-3 py-1 border-b bd"><span class="t-muted">${k}</span><span class="num font-semibold pv ${cls}">${v}</span></div>`;
+        const best = 1;   // pilihan 2 is the suggestion in both cases (see pcbzAdvice)
+        const cur = o.cur - 1;
+        return `<div class="border bd rounded-lg p-4 space-y-3">
+            <div class="flex items-center justify-between"><h4 class="text-sm font-bold">${esc(ownerLabel(p))}</h4><span class="badge b-mute">Kasar ${formatRM(c.grossM)}/bln</span></div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div><label class="lbl" for="pz-bonus-${p}">Bonus setahun</label><input id="pz-bonus-${p}" data-pz="bonus" data-p="${p}" type="number" min="0" step="100" class="field num" value="${o.bonus || ''}" placeholder="0"></div>
+                <div><label class="lbl" for="pz-kids-${p}">Anak &lt;18</label><input id="pz-kids-${p}" data-pz="kids" data-p="${p}" type="number" min="0" max="20" step="1" class="field num" value="${o.kids || ''}" placeholder="0"></div>
+                <div><label class="lbl" for="pz-fixed-${p}">Zakat tetap/bln</label><input id="pz-fixed-${p}" data-pz="fixed" data-p="${p}" type="number" min="0" step="1" class="field num" value="${o.fixed || ''}" placeholder="${c.fixedSrc === 'slip' ? c.fixed : Math.ceil(c.zw)}"></div>
+                <div class="col-span-2 sm:col-span-4"><label class="lbl" for="pz-cur-${p}">Pilihan dalam sistem gaji sekarang</label><select id="pz-cur-${p}" data-pz="cur" data-p="${p}" class="field">${['Full Zakat', 'Zakat tetap, selebihnya PCB', 'Zakat tetap, selebihnya zakat'].map((l, i) => `<option value="${i + 1}" ${o.cur === i + 1 ? 'selected' : ''}>${i + 1}. ${l}</option>`).join('')}</select></div>
+                <label class="flex items-center gap-2 text-xs mt-5"><input id="pz-sp-${p}" data-pz="spouse" data-p="${p}" type="checkbox" class="w-4 h-4 accent-emerald-600" ${o.spouse ? 'checked' : ''}>Pasangan tiada pendapatan</label>
+            </div>
+            <div class="text-xs">
+                ${row('Pendapatan kasar setahun', formatRM(c.gross))}
+                ${row('Jumlah pelepasan', `− ${formatRM(c.relief)}`)}
+                ${row('Pendapatan bercukai', formatRM(c.ci))}
+                ${row(`Cukai setahun${c.rebate ? ' (selepas rebat RM400)' : ''}`, formatRM2(c.tax))}
+                ${row('Anggaran PCB / bln', formatRM2(c.pcb), 't-blue')}
+                ${row(`Zakat pendapatan wajib / bln${c.zYear ? '' : ' (bawah nisab)'}`, formatRM2(c.zw), 't-sage')}
+                ${c.slip ? row(`Slip ${ymLabel(c.slip.month)}: PCB + zakat`, `${formatRM2(c.slipPcb)} + ${formatRM2(c.slipZak)}`) : ''}
+            </div>
+            <div class="scroll-x"><table class="tbl"><thead><tr><th>Pilihan</th><th class="text-right">Zakat/bln</th><th class="text-right">PCB/bln</th><th class="text-right">Zakat cukup?</th><th class="text-right">Zakat lebih/thn</th><th class="text-right">e-Filing</th></tr></thead><tbody>
+            ${c.options.map((x, i) => `<tr${i === best ? ' style="background:var(--sage-bg)"' : ''}><td class="font-semibold" style="min-width:14rem">${esc(x.label)}${i === best ? ' <span class="badge b-sage">cadangan</span>' : ''}${i === cur ? ' <span class="badge b-blue">semasa</span>' : ''}</td>
+                <td class="text-right num pv">${formatRM2(x.zak)}</td><td class="text-right num pv">${formatRM2(x.pcb)}</td>
+                <td class="text-right">${x.enough ? '<span class="t-sage font-semibold">Cukup</span>' : `<span class="t-rose font-semibold">Kurang ${formatRM(x.shortZakat)}/thn</span>`}</td>
+                <td class="text-right num pv">${x.extraZakat > 12 ? formatRM(x.extraZakat) : '—'}</td>
+                <td class="text-right text-xs">${Math.abs(x.balance) < 1 ? 'Seimbang' : x.balance > 0 ? `<span class="t-rose">Bayar lagi ${formatRM(x.balance)}</span>` : `<span class="t-sage">Refund ${formatRM(-x.balance)}</span>`}${x.refundable ? '' : '<br><span class="t-faint">tiada refund kalau pelepasan bertambah</span>'}</td></tr>`).join('')}
+            </tbody></table></div>
+            <p class="text-xs font-semibold">${esc(pcbzAdvice(c))}</p>
+            ${o.cur === 2 ? `<p class="text-xs ${c.options[1].enough ? 't-sage' : 't-rose'}">Pilihan semasa (2): ${c.options[1].enough ? `zakat tetap ${formatRM2(c.fixed)} cukup untuk zakat wajib ${formatRM2(c.zw)}.` : `zakat tetap ${formatRM2(c.fixed)} kurang daripada zakat wajib ${formatRM2(c.zw)}; naikkan jumlah tetap dalam sistem gaji.`}${c.slip && c.fixedSrc === 'isi' && c.slipZak > 0 && Math.abs(c.slipZak - c.fixed) >= 1 ? ` Slip terkini potong zakat ${formatRM2(c.slipZak)}, beza dengan jumlah tetap yang kau isi.` : ''}</p>` : ''}
+            ${c.fixedSrc === 'slip' ? `<p class="text-[11px] t-faint">Zakat tetap belum diisi, jadi guna potongan zakat slip terkini (${formatRM2(c.fixed)}).</p>` : c.fixedSrc === 'wajib' ? '<p class="text-[11px] t-faint">Zakat tetap belum diisi, jadi guna zakat wajib (dibundarkan ke atas).</p>' : ''}
+        </div>`;
+    }).join('');
+    if (focusId && $(focusId)) $(focusId).focus();
 }
 
 /* ---------- Kalkulator nafkah ---------- */
@@ -5994,6 +6117,17 @@ document.addEventListener('change', (e) => {
         const a = appState.assets.find((x) => x.id === el.dataset.svTarget);
         if (a) { a.saveTarget = rng(el.value, 0, 1e7, 0); saveState(); renderSavings(); refreshIcons(); }
         return;
+    }
+    if (el.dataset.pz != null) {
+        const z = appState.settings.pcbz, k = el.dataset.pz;
+        if (k === 'indiv') z.indiv = rng(el.value, 0, 1e5, 9000);
+        else if (el.dataset.p === 'husband' || el.dataset.p === 'wife') {
+            const o = z[el.dataset.p];
+            if (k === 'bonus') o.bonus = rng(el.value, 0, 1e7, 0); else if (k === 'kids') o.kids = Math.round(rng(el.value, 0, 20, 0));
+            else if (k === 'fixed') o.fixed = rng(el.value, 0, 1e5, 0); else if (k === 'spouse') o.spouse = el.checked;
+            else if (k === 'cur') o.cur = [1, 2, 3].includes(Number(el.value)) ? Number(el.value) : 2;
+        }
+        saveState(); renderPcbz(); refreshIcons(); return;
     }
     if (el.dataset.rt != null) {
         const ym = rtMonth || rtDefaultMonth();

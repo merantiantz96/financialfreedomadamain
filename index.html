@@ -332,6 +332,16 @@
 
         <!-- TAB: Dashboard -->
         <div id="tab-dashboard" class="view-tab-content p-4 md:p-6 space-y-5">
+            <!-- Cadangan lebihan simpanan -->
+            <div id="surplus-card" class="card-sub p-4 space-y-3">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                        <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="route" class="t-sage"></i>Cadangan Lebihan Bulan Ini</h3>
+                        <p class="text-xs t-muted">Ke mana nak hantar duit yang tinggal setiap bulan, ikut keutamaan: dana kecemasan → matlamat ketinggalan → hutang kadar tinggi → kecemasan ideal → pelaburan ikut sasaran agihan.</p>
+                    </div>
+                </div>
+                <div id="surplus-body" class="space-y-3 text-xs"></div>
+            </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div class="card-sub p-4">
                     <h3 class="text-sm font-bold mb-3">Agihan Aset</h3>
@@ -401,6 +411,26 @@
                     <thead><tr><th>Pemilik</th><th>Nama</th><th>Kategori</th><th>Status</th><th>Zakat</th><th class="text-right">Nilai</th><th class="text-right">% p.a</th><th class="text-right no-print">Tindakan</th></tr></thead>
                     <tbody id="tbody-assets"></tbody>
                 </table>
+            </div>
+
+            <!-- Kutu -->
+            <div class="card-sub p-4 space-y-3">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="users-round" class="t-gold"></i>Kutu</h3>
+                    <p class="text-xs t-muted">Bayar bulanan, dapat sekali gus ikut giliran. Sebelum giliran, duit yang dah dibayar dikira aset terkunci (bukan liquid). Kalau dapat awal, baki bayaran dikira hutang tanpa faedah. Jangan masukkan kutu sebagai aset biasa juga, nanti dikira dua kali.</p>
+                </div>
+                <form id="form-kutu" novalidate class="grid grid-cols-2 md:grid-cols-7 gap-2 items-end no-print">
+                    <input id="ku-id" type="hidden">
+                    <div class="col-span-2"><label class="lbl" for="ku-name">Nama</label><input id="ku-name" type="text" maxlength="60" class="field" placeholder="Kutu office"></div>
+                    <div><label class="lbl" for="ku-owner">Pemilik</label><select id="ku-owner" class="field"><option value="husband">Suami</option><option value="wife">Isteri</option></select></div>
+                    <div><label class="lbl" for="ku-monthly">RM / bln</label><input id="ku-monthly" type="number" min="0" step="1" inputmode="decimal" class="field num" placeholder="500"></div>
+                    <div><label class="lbl" for="ku-members">Ahli (bulan)</label><input id="ku-members" type="number" min="2" max="60" step="1" class="field num" placeholder="12"></div>
+                    <div><label class="lbl" for="ku-start">Bulan mula</label><input id="ku-start" type="month" class="field"></div>
+                    <div><label class="lbl" for="ku-turn">Giliran ke-</label><input id="ku-turn" type="number" min="1" max="60" step="1" class="field num" placeholder="12"></div>
+                    <div class="col-span-2 md:col-span-7 flex gap-2 justify-end"><button type="button" class="btn hidden" id="ku-cancel" data-action="kutu-cancel">Batal</button><button type="submit" class="btn btn-primary" id="ku-submit"><i data-lucide="plus"></i>Tambah kutu</button></div>
+                </form>
+                <div class="scroll-x"><table class="tbl"><thead><tr><th>Kutu</th><th>Pemilik</th><th class="text-right">Bayaran</th><th>Giliran</th><th>Status</th><th class="text-right">Kesan nilai bersih</th><th></th></tr></thead><tbody id="tbody-kutu"></tbody></table></div>
+                <p id="kutu-note" class="text-[11px] t-faint"></p>
             </div>
 
             <!-- Target allocation -->
@@ -1619,6 +1649,7 @@ const SAMPLE_DATA = {
     actuals: {},
     paid: {},
     routine: {},
+    kutus: [],
     checklist: { husband: {}, wife: {} },
     deposits: [
         { id: 'dp1', assetId: 'a2', assetName: 'ASB Suami', date: '2026-09-25', amount: 500, kind: 'masuk', src: '', note: 'Auto-debit bulanan' },
@@ -1961,12 +1992,22 @@ function normaliseState(raw) {
         statedNet: p.statedNet != null && p.statedNet !== '' && n(p.statedNet) > 0 ? r2(rng(p.statedNet, 0, 1e8, 0)) : null,
         earnings: psLines(p.earnings, PS_EARN_TAGS), deductions: psLines(p.deductions, PS_DED_TAGS)
     }));
+    // kutus: monthly kutu/ROSCA. Pay `monthly` for `members` months from `start`; receive monthly×members in month `turn`.
+    const kutuSeen = new Set();
+    const kutus = arr(raw.kutus).filter((k) => k && typeof k === 'object').slice(0, 50).map((k) => {
+        const members = Math.round(rng(k.members, 2, 60, 12));
+        let id = cleanText(k.id, 40).replace(/[^\w-]/g, '');
+        if (!id || kutuSeen.has(id) || id === '__proto__') id = uid('k');
+        kutuSeen.add(id);
+        return { id, owner: k.owner === 'wife' ? 'wife' : 'husband', name: cleanText(k.name, 60) || 'Kutu', monthly: round2(rng(k.monthly, 0, 1e6, 0)),
+            members, start: monthRe.test(k.start) ? k.start : '', turn: Math.min(members, Math.round(rng(k.turn, 1, 60, members))), note: cleanText(k.note, 80) };
+    }).filter((k) => k.monthly > 0 && k.start);
     const deposits = arr(raw.deposits).filter((d) => dateRe.test(d.date) && n(d.amount) > 0).slice(0, 5000).map((d) => ({
         id: safeId(d.id, 'dp'), assetId: typeof d.assetId === 'string' ? d.assetId : '', assetName: cleanText(d.assetName, 80) || 'Aset',
         date: d.date, amount: r2(rng(d.amount, 0, 1e9, 0)), kind: d.kind === 'keluar' ? 'keluar' : 'masuk',
         src: d.src === 'slip' ? 'slip' : '', note: cleanText(d.note, 80)
     })).filter((d) => d.amount > 0);       // Infinity / NaN clamp to 0 above, drop those too
-    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, paid, routine, checklist, dividends, payslips, deposits };
+    const state = { schemaVersion: SCHEMA_VERSION, rev: Math.max(0, Math.round(n(raw.rev))), settings, assets, liabilities, income, expenses, historySnapshots, taxRelief, goals, events, actuals, paid, routine, kutus, checklist, dividends, payslips, deposits };
     syncLinkedExpenses(state);
     return state;
 }
@@ -2209,13 +2250,15 @@ function computeMetrics(profile) {
     if (sinkSteady > 0) expenses.push({ id: 'auto-sink', owner: 'shared', name: 'Sinking fund (purata bulanan)', category: 'Sinking Fund', amount: sinkSteady, isFixed: true, auto: true, _share: 1 });
 
     const liquidRaw = sum(assets.filter((a) => !a.isLocked));
-    const locked = sum(assets.filter((a) => a.isLocked));
+    // Kutu: money already paid in (waiting for your turn) is a locked asset; after you collect early, the remaining payments are a debt
+    const kutuT = kutuTotals(profile);
+    const locked = sum(assets.filter((a) => a.isLocked)) + kutuT.held;
     const totalAssets = liquidRaw + locked;
     // Money already earmarked for dated goals (Haji, rumah...) is not FI money
     const goals = computeGoals(profile);
     const earmarked = Math.min(liquidRaw, goals.earmarked);
     const liquid = liquidRaw - earmarked;
-    const totalLiab = sum(liabilities);
+    const totalLiab = sum(liabilities) + kutuT.owed;
     // Take-home pay already excludes salary-deducted loans; add them back so income and the loan expense
     // are on the same basis (otherwise the loan is counted twice: lower pay AND an expense line).
     const salaryDeduct = salaryDeductions(profile);
@@ -2247,7 +2290,7 @@ function computeMetrics(profile) {
         netIncome, totalExp, savings, savingsRate, fixedExp, variableExp: totalExp - fixedExp,
         emergencyCash, runway, passive, passiveCoverage, debtPayments, dsr, takeHome, salaryDeduct,
         fiTarget, fiGap: Math.max(0, fiTarget - liquid), fiProgress, realReturn, yrs,
-        liquidRaw, earmarked, goals, savingsFI,
+        liquidRaw, earmarked, goals, savingsFI, kutu: kutuT,
         gold, goldPctOfLiquid: liquidRaw > 0 ? gold / liquidRaw * 100 : 0,
         asbThTotal: sum(asbTh), asbThDividend: asbTh.reduce((s, a) => s + a.amount * n(a.yieldPercent) / 100, 0),
         highInterest: liabilities.filter((l) => l.interestRate >= 8 || l.category === 'Kad Kredit')
@@ -2370,6 +2413,8 @@ function renderAll() {
     renderPayslips();
     renderSavings();
     renderCashflowScenario();
+    renderKutu();
+    renderSurplus();
     renderRoutine();
     if (activeTab === 'report') renderReport();
     renderNafkah();
@@ -4961,6 +5006,12 @@ function reportSections(ym, mask) {
         rows: pzRows.map((c) => [who(c.person), formatRM(c.gross), formatRM(c.ci), formatRM2(c.tax), formatRM2(c.pcb), formatRM2(c.zw), c.slip ? `${formatRM2(c.slipPcb)} + ${formatRM2(c.slipZak)}` : '—']) },
         note: 'Anggaran ikut kadar pemastautin dan pelepasan yang direkod; bukan pengiraan rasmi LHDN/PPZ.' });
 
+    const kt = kutuTotals('combined');
+    if (kt.list.length) add('Kutu', { table: { head: ['Kutu', 'Pemilik', 'RM/bln × ahli', 'Giliran', 'Status', 'Kesan nilai bersih'],
+        rows: kt.list.map(({ k, s: ks }, i) => [mask ? `Kutu ${i + 1}` : k.name, who(k.owner), `${formatRM(k.monthly)} × ${k.members}`, `ke-${k.turn} (${ymLabel(ks.payoutYM)})`, { belum: 'Belum mula', kumpul: 'Terkumpul', hutang: 'Dah terima, baki bayar', selesai: 'Selesai' }[ks.status], ks.held ? `+${formatRM(ks.held)}` : ks.owed ? `−${formatRM(ks.owed)}` : '—']) } });
+    const spr = surplusPlan('combined');
+    add('Cadangan lebihan bulanan', spr.base > 0.5 ? { kv: [['Lebihan untuk diagih', formatRM(spr.base)]], table: { head: ['Arahkan ke', 'Akaun', 'RM/bln'], rows: spr.steps.map((x) => [x.label, mask ? '—' : x.to, formatRM(x.amount)]) } } : { note: `Tiada lebihan (${formatRM(spr.base)}).` });
+
     // 4. Liabilities
     const base = simulateDebts(debtsFor('combined', true), { rollover: false });
     add('Liabiliti', { table: { head: ['Hutang', 'Pemilik', 'Baki', 'Bayaran / bln', 'Kadar', 'Cara bayar', 'Tamat'],
@@ -5239,7 +5290,7 @@ const ROUTINE = [
     { key: 'income', grp: 0, title: 'Pastikan gaji dalam Pendapatan sama dengan slip', why: 'Semua kiraan (kadar simpanan, DSR, cashflow) guna angka Pendapatan. Guna butang "Guna sebagai gaji semasa" kalau gaji berubah.', tab: 'payslip', target: 'tab-payslip' },
     { key: 'paid', grp: 1, title: 'Bayar komitmen tetap dan tick "dah bayar"', why: 'Ansuran, sewa, utiliti, takaful. Tick di senarai Tanda dah bayar supaya Sebenar vs Bajet terisi.', tab: 'cashflow', target: 'budget-paid' },
     { key: 'sinking', grp: 1, title: 'Pindah ke akaun sinking fund', why: 'Untuk bayaran tahunan (roadtax, insurans, yuran) supaya tak terkejut nanti. Kemas kini baki sinking selepas pindah.', tab: 'calendar', target: 'sinking-summary' },
-    { key: 'save', grp: 1, title: 'Pindah simpanan dan rekod ke aset', why: 'ASB, Versa, Wahed, TH dan lain-lain. Rekod di Rekod Simpanan supaya baki aset naik automatik.', tab: 'assets', target: 'form-sv' },
+    { key: 'save', grp: 1, title: 'Pindah simpanan dan rekod ke aset', why: 'Ikut Cadangan Lebihan di Ringkasan (ke mana dan berapa). Rekod di Rekod Simpanan supaya baki aset naik automatik.', tab: 'assets', target: 'form-sv' },
     { key: 'goals', grp: 1, title: 'Caruman matlamat', why: 'Asingkan duit untuk matlamat (rumah, kecemasan, haji) ikut pelan bulanan.', tab: 'goals', target: 'tab-goals' },
     { key: 'nafkah', grp: 1, title: 'Pindah nafkah isteri', why: 'Nafkah wajib dan elaun ikut kalkulator nafkah.', tab: 'cashflow', target: 'nf-result', when: () => n(appState.settings.nafkah.wajib) + n(appState.settings.nafkah.elaun) > 0 },
     { key: 'balances', grp: 2, title: 'Kemas kini baki aset dan hutang', why: 'Ikut penyata bank, ASB, KWSP dan baki pinjaman. Angka lama buat semua analisa tersasar.', tab: 'assets', target: 'tab-assets' },
@@ -5455,6 +5506,165 @@ function renderPcbz() {
         </div>`;
     }).join('');
     if (focusId && $(focusId)) $(focusId).focus();
+}
+
+/* ---------- Kutu ---------- */
+function kutuState(k, ym = currentYM()) {
+    const idx = k.start ? psMonthIdx(ym) - psMonthIdx(k.start) : -1;
+    const paidN = Math.max(0, Math.min(k.members, idx + 1));
+    const pot = round2(k.monthly * k.members);
+    const payoutYM = psAddMonths(k.start, k.turn - 1), endYM = psAddMonths(k.start, k.members - 1);
+    const received = idx >= k.turn - 1;
+    const paid = round2(k.monthly * paidN);
+    const held = received ? 0 : paid;                                   // in the pool, owed to you
+    const owed = received ? round2(k.monthly * (k.members - paidN)) : 0;   // collected already, still paying
+    const paying = idx >= 0 && idx < k.members;
+    const status = idx < 0 ? 'belum' : !received ? 'kumpul' : paidN < k.members ? 'hutang' : 'selesai';
+    return { idx, paidN, pot, payoutYM, endYM, received, paid, held, owed, paying, monthlyNow: paying ? k.monthly : 0, status };
+}
+function kutuTotals(profile) {
+    const out = { held: 0, owed: 0, monthly: 0, list: [] };
+    (appState.kutus || []).forEach((k) => {
+        const sh = shareFor(k, profile);
+        if (!sh) return;
+        const s2 = kutuState(k);
+        out.held += s2.held * sh; out.owed += s2.owed * sh; out.monthly += s2.monthlyNow * sh;
+        out.list.push({ k, s: s2 });
+    });
+    return out;
+}
+function renderKutu() {
+    const t = kutuTotals(activeProfile);
+    const lbl = { belum: ['Belum mula', 'b-mute'], kumpul: ['Terkumpul, tunggu giliran', 'b-gold'], hutang: ['Dah terima, baki bayar', 'b-rose'], selesai: ['Selesai', 'b-sage'] };
+    $('tbody-kutu').innerHTML = t.list.length ? t.list.map(({ k, s: st }) => `<tr>
+        <td class="font-semibold">${esc(k.name)}</td><td>${esc(ownerLabel(k.owner))}</td>
+        <td class="text-right num pv">${formatRM(k.monthly)} × ${k.members}<br><span class="t-faint">${st.paidN}/${k.members} dibayar</span></td>
+        <td class="num">Ke-${k.turn}: ${esc(ymLabel(st.payoutYM))}<br><span class="t-faint">dapat ${formatRM(st.pot)}</span></td>
+        <td><span class="badge ${lbl[st.status][1]}">${lbl[st.status][0]}</span></td>
+        <td class="text-right num pv ${st.owed ? 't-rose' : st.held ? 't-sage' : 't-faint'}">${st.held ? `+${formatRM(st.held)} aset` : st.owed ? `−${formatRM(st.owed)} hutang` : '—'}</td>
+        <td class="text-right whitespace-nowrap no-print"><button class="btn btn-icon" data-action="kutu-edit" data-id="${esc(k.id)}" aria-label="Edit ${esc(k.name)}"><i data-lucide="pencil"></i></button> <button class="btn btn-icon" data-action="kutu-del" data-id="${esc(k.id)}" aria-label="Padam ${esc(k.name)}"><i data-lucide="trash-2"></i></button></td></tr>`).join('')
+        : emptyRow(7, 'Belum ada kutu. Isi borang di atas.');
+    const inExp = appState.expenses.some((e) => /kutu/i.test(e.name));
+    const soon = t.list.filter(({ s: st }) => !st.received && st.idx >= 0).sort((a, b) => a.s.payoutYM.localeCompare(b.s.payoutYM))[0];
+    $('kutu-note').textContent = t.list.length
+        ? `Bayaran kutu bulan ni ${formatRM(t.monthly)}. ${inExp ? 'Ada baris "kutu" dalam Belanja, jadi cadangan lebihan tak tolak dua kali.' : 'Kutu tak perlu dimasukkan dalam Belanja; cadangan lebihan dah tolak bayaran ni.'}${soon ? ` Giliran seterusnya: ${soon.k.name} ${ymLabel(soon.s.payoutYM)} (${formatRM(soon.s.pot)}). Bila dapat, agih ikut Cadangan Lebihan di Ringkasan, jangan habiskan sekali gus.` : ''} Risiko kutu: tiada perlindungan undang-undang kalau penganjur atau ahli lari; masuk dengan orang yang dipercayai sahaja.`
+        : '';
+}
+function kutuFormReset() {
+    ['ku-id', 'ku-name', 'ku-monthly', 'ku-members', 'ku-turn'].forEach((id) => { $(id).value = ''; });
+    $('ku-start').value = currentYM(); $('ku-owner').value = activeProfile === 'wife' ? 'wife' : 'husband';
+    $('ku-submit').innerHTML = '<i data-lucide="plus"></i>Tambah kutu'; $('ku-cancel').classList.add('hidden');
+    refreshIcons();
+}
+function handleKutuSubmit(e) {
+    e.preventDefault();
+    const monthly = round2(n($('ku-monthly').value)), members = Math.round(n($('ku-members').value)), turn = Math.round(n($('ku-turn').value));
+    const start = $('ku-start').value;
+    if (!(monthly > 0) || !Number.isFinite(monthly)) return showToast('Isi bayaran sebulan.', 'error');
+    if (!(members >= 2 && members <= 60)) return showToast('Bilangan ahli 2 hingga 60.', 'error');
+    if (!(turn >= 1 && turn <= members)) return showToast(`Giliran mesti antara 1 dan ${members}.`, 'error');
+    if (!/^\d{4}-\d{2}$/.test(start)) return showToast('Pilih bulan mula.', 'error');
+    const rec = { owner: $('ku-owner').value === 'wife' ? 'wife' : 'husband', name: cleanText($('ku-name').value, 60) || 'Kutu', monthly, members, start, turn, note: '' };
+    const id = $('ku-id').value;
+    const ex = id && appState.kutus.find((k) => k.id === id);
+    if (ex) Object.assign(ex, rec); else appState.kutus.push({ id: uid('k'), ...rec });
+    saveState(); kutuFormReset(); renderAll(); refreshIcons();
+    showToast(ex ? 'Kutu dikemas kini.' : 'Kutu ditambah.', 'success');
+}
+function editKutu(id) {
+    const k = appState.kutus.find((x) => x.id === id);
+    if (!k) return;
+    $('ku-id').value = k.id; $('ku-name').value = k.name; $('ku-owner').value = k.owner; $('ku-monthly').value = k.monthly;
+    $('ku-members').value = k.members; $('ku-start').value = k.start; $('ku-turn').value = k.turn;
+    $('ku-submit').innerHTML = '<i data-lucide="check"></i>Simpan'; $('ku-cancel').classList.remove('hidden');
+    refreshIcons(); $('ku-name').focus();
+}
+function deleteKutu(id) {
+    const k = appState.kutus.find((x) => x.id === id);
+    if (!k) return;
+    confirmDialog('Padam kutu?', `"${k.name}" akan dibuang daripada dashboard.`, () => { appState.kutus = appState.kutus.filter((x) => x.id !== id); saveState(); renderAll(); refreshIcons(); }, 'Padam');
+}
+
+/* ---------- Cadangan lebihan simpanan ---------- */
+// Waterfall: each tier takes what it needs before the next. Amounts in RM/month for the active profile.
+function surplusPlan(profile) {
+    const st = appState.settings, m = computeMetrics(profile);
+    const kutuInExp = appState.expenses.some((e) => /kutu/i.test(e.name));
+    const kutuM = kutuInExp ? 0 : m.kutu.monthly;
+    const goalsPlan = m.goals.monthlyPlanActive;
+    const base = m.savings - goalsPlan - kutuM;
+    const steps = [];
+    const res = { m, base, goalsPlan, kutuM, kutuInExp, steps, left: 0 };
+    if (base <= 0.5) return res;
+    let S = base;
+    const take = (amt) => { const a = Math.max(0, Math.min(S, Math.round(amt))); S -= a; return a; };
+    const pick = (cats) => {
+        const a = scoped(appState.assets, profile).filter((x) => cats.includes(x.category) && !x.isLocked).sort((x, y) => y.amount - x.amount)[0];
+        return a ? a.name : null;
+    };
+    // 1. emergency fund to minimum
+    const minGap = Math.max(0, st.emergencyMin * m.totalExp - m.emergencyCash);
+    const a1 = take(minGap);
+    if (a1) steps.push({ tier: 1, label: 'Dana kecemasan (capai minimum)', amount: a1, to: pick(['Tunai & Simpanan']) || 'Akaun simpanan kecemasan', why: `Baru ${m.runway.toFixed(1)} bulan; minimum ${st.emergencyMin} bulan (kurang ${formatRM(minGap)}).` });
+    // 2. goals behind schedule: extra needed above current plan
+    const behind = m.goals.list.filter((g) => !g.done && (g.status === 'behind' || g.status === 'overdue'));
+    const need2 = behind.reduce((a, g) => a + Math.max(0, g.needed - g.plan), 0);
+    const a2 = take(need2);
+    if (a2) steps.push({ tier: 2, label: 'Matlamat ketinggalan', amount: a2, to: behind.map((g) => g.name).slice(0, 3).join(', '), why: `Tambahan atas pelan supaya sampai pada tarikh sasaran (perlu +${formatRM(need2)}/bln).` });
+    // 3. high-rate consumer debt (effective rate above ~6%, i.e. above what ASB/KWSP typically earn)
+    const hi = debtsFor(profile, false).filter((d) => d.rate > 6 && d.bal > 0).sort((a, b) => b.rate - a.rate)[0];
+    if (hi && S > 0) {
+        const a3 = take(Math.min(S * 0.5, hi.bal));
+        if (a3) steps.push({ tier: 3, label: 'Bayar lebih hutang kadar tinggi', amount: a3, to: hi.name, why: `Kadar efektif ~${hi.rate.toFixed(1)}%: setiap ringgit langsai awal = pulangan pasti ${hi.rate.toFixed(1)}%. Separuh lebihan ke sini.` });
+    }
+    // 4. emergency fund towards ideal
+    const idealGap = Math.max(0, st.emergencyIdeal * m.totalExp - (m.emergencyCash + a1));
+    if (idealGap > 0 && S > 0) {
+        const a4 = take(Math.min(S * 0.3, idealGap));
+        if (a4) steps.push({ tier: 4, label: 'Dana kecemasan (ke arah ideal)', amount: a4, to: pick(['Tunai & Simpanan']) || 'Akaun simpanan kecemasan', why: `Sasaran ideal ${st.emergencyIdeal} bulan; 30% baki ke sini sehingga capai.` });
+    }
+    // 5. invest the rest, filling the most underweight classes of the target allocation first
+    if (S > 0) {
+        const al = computeAllocation(profile);
+        const newTotal = al.total + S;
+        const def = al.rows.map((r) => ({ r, d: Math.max(0, newTotal * r.target / 100 - r.value) }));
+        const sumD = def.reduce((a, x) => a + x.d, 0);
+        const sumT = al.rows.reduce((a, r) => a + r.target, 0) || 1;
+        const pool = S;
+        let given = 0;
+        const parts = def.map((x, i) => {
+            const share = sumD > 0 ? x.d / sumD : x.r.target / sumT;
+            const amt = i === def.length - 1 ? 0 : Math.round(pool * share);
+            given += amt;
+            return { x, amt };
+        });
+        parts[parts.length - 1].amt = Math.max(0, Math.round(pool) - given);
+        parts.filter((p2) => p2.amt > 0).forEach(({ x, amt }) => {
+            const cls = ASSET_CLASSES[x.r.k];
+            steps.push({ tier: 5, label: `Pelaburan: ${cls.label}`, amount: amt, to: pick(cls.cats) || cls.label, why: `Sasaran ${x.r.target}%, sekarang ${x.r.actualPct.toFixed(0)}%${x.d > 0 ? '; kurang berat, jadi diutamakan' : ''}.` });
+        });
+        S = 0;
+    }
+    res.left = S;
+    return res;
+}
+function renderSurplus() {
+    const sp = surplusPlan(activeProfile);
+    const line = (k, v, cls = '') => `<div class="flex justify-between gap-3"><span class="t-muted">${k}</span><span class="num pv font-semibold ${cls}">${v}</span></div>`;
+    const head = `<div class="border bd rounded-lg p-3 space-y-1 max-w-xl">
+        ${line('Simpanan bulanan (pendapatan − belanja)', formatRM(sp.m.savings))}
+        ${sp.goalsPlan ? line('− Caruman matlamat (pelan)', formatRM(sp.goalsPlan)) : ''}
+        ${sp.kutuM ? line('− Bayaran kutu', formatRM(sp.kutuM)) : ''}
+        <div class="border-t bd pt-1">${line('= Lebihan untuk diagih', formatRM(sp.base), sp.base > 0 ? 't-sage' : 't-rose')}</div></div>`;
+    if (sp.base <= 0.5) {
+        $('surplus-body').innerHTML = head + `<p class="t-rose font-semibold">Tiada lebihan bulan ni${sp.base < -0.5 ? ` (kurang ${formatRM(-sp.base)})` : ''}. Semak Pelan Tampung Jurang di tab Liabiliti, dan kurangkan caruman matlamat atau belanja dulu.</p>`;
+        return;
+    }
+    const tierName = ['', 'Keselamatan', 'Matlamat', 'Hutang', 'Keselamatan', 'Pertumbuhan'];
+    $('surplus-body').innerHTML = head + `<div class="scroll-x"><table class="tbl"><thead><tr><th>#</th><th>Arahkan ke</th><th>Akaun / sasaran</th><th class="text-right">RM / bln</th><th>Sebab</th></tr></thead><tbody>
+        ${sp.steps.map((x, i) => `<tr><td class="num">${i + 1}</td><td class="font-semibold">${esc(x.label)}<br><span class="t-faint">${tierName[x.tier]}</span></td><td>${esc(x.to)}</td><td class="text-right num pv font-bold t-sage">${formatRM(x.amount)}</td><td class="t-muted" style="min-width:14rem">${esc(x.why)}</td></tr>`).join('')}
+        </tbody></table></div>
+        <p class="text-[11px] t-faint">Cadangan automatik berdasarkan angka dalam dashboard, bukan nasihat pelaburan berlesen. Tetapkan "sasaran simpanan bulanan" pada aset di tab Aset supaya transfer ni dijejak dalam Rutin Hari Gaji. Ubah peratus pelaburan di "Sasaran Agihan" (tab Aset).</p>`;
 }
 
 /* ---------- Kalkulator nafkah ---------- */
@@ -6043,6 +6253,9 @@ document.addEventListener('click', (e) => {
         'delete-event': () => { const id = editingEventId; confirmDialog('Padam tarikh?', 'Tarikh ni akan dibuang dari kalendar.', () => {
             appState.events = appState.events.filter((x) => x.id !== id); saveState(); closeModal('modal-event'); renderAll(); showToast('Tarikh dipadam.', 'warning'); }, 'Padam'); },
         'ics-all': downloadAllIcs,
+        'kutu-edit': () => editKutu(t.dataset.id),
+        'kutu-del': () => deleteKutu(t.dataset.id),
+        'kutu-cancel': kutuFormReset,
         'rt-toggle': () => { rtOpen = !rtOpen; renderRoutine(); refreshIcons(); },
         'rt-prev': () => { rtMonth = psAddMonths(rtMonth || rtDefaultMonth(), -1); rtOpen = true; renderRoutine(); refreshIcons(); },
         'rt-next': () => { rtMonth = psAddMonths(rtMonth || rtDefaultMonth(), 1); rtOpen = true; renderRoutine(); refreshIcons(); },
@@ -6227,6 +6440,7 @@ $('form-payslip').addEventListener('submit', handlePayslipSubmit);
 $('form-pspost').addEventListener('submit', handlePsPostSubmit);
 $('form-sv').addEventListener('submit', handleSvSubmit);
 $('form-payslip').addEventListener('input', updatePsTotals);
+$('form-kutu').addEventListener('submit', handleKutuSubmit);
 // Nafkah calculator: live preview while typing (saved on change)
 ['nf-wajib', 'nf-elaun', 'nf-target'].forEach((id) => $(id).addEventListener('input', (e) => {
     setNafkahField(id, e.target.value);
@@ -6265,6 +6479,7 @@ window.__hub = Object.freeze({
 document.addEventListener('DOMContentLoaded', () => {
     applyUiScale();
     const boot = loadState();
+    setTimeout(() => { if (!$('ku-start').value) $('ku-start').value = currentYM(); }, 0);
     appState = boot.state;
     applyTheme();
     switchTab('dashboard');
